@@ -3,9 +3,9 @@ import streamlit as st
 st.title("PV Dimensionierungshilfe")
 
 standorte = {
-    "Zürich": 1200,
-    "Bern": 1100,
-    "Lugano": 1400
+    "Zürich": 1,
+    "Bern": 2,
+    "Lugano": 3
 }
 
 
@@ -19,7 +19,7 @@ standort_name = st.selectbox(
     list(standorte.keys())
 )
 CO2Faktor = standorte[standort_name]
-st.write("CO2 Faktor:", CO2Faktor, "kWh/kWp")
+st.write("CO2 Faktor:", CO2Faktor, "-")
 
 batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
 maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
