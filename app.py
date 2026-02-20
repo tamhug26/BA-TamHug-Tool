@@ -18,10 +18,9 @@ standort_name = st.selectbox(
     "Standort wählen",
     list(standorte.keys())
 )
+CO2Faktor = standorte[standort_name]
+st.write("CO2 Faktor:", CO2Faktor, "kWh/kWp")
 
-pv_ertrag = standorte[standort_name]
-
-st.write("PV-Ertrag:", pv_ertrag, "kWh/kWp")
 batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
 maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
 maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 0, 20, 10)
