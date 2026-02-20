@@ -14,12 +14,14 @@ pv_Peakleistung = st.slider("PV-Peakleistung (kWp)", 0, 30, 10)
 Dachneigung = st.number_input("Dachneigung (°)", 0, 360, 180)
 #Dachausrichtung = 
 #Standort=
-#standort = st.selectbox(
-#    "Standort wählen",
-#    list(standorte.keys())
-#)
+standort_name = st.selectbox(
+    "Standort wählen",
+    list(standorte.keys())
+)
 
-#st.write("PV-Ertrag:", pv_ertrag, "kWh/kWp")
+pv_ertrag = standorte[standort_name]
+
+st.write("PV-Ertrag:", pv_ertrag, "kWh/kWp")
 batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
 maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
 maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 0, 20, 10)
