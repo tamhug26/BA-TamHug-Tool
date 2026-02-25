@@ -5,7 +5,7 @@ st.title("PV Dimensionierungshilfe")
 EVU = {
     "IWB": 12.88,
     "EBL": 50.1,
-    "Lugano": 3
+    "Lugano": 3,
     "Schweiz": 59
 }
 
