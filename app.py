@@ -18,8 +18,8 @@ EVU_name = st.selectbox(
     "EVU wählen",
     list(EVU.keys())
 )
-CO2Faktor = EVU[EVU_name]
-st.write("CO2 Emmisionen:", CO2 Emmisionen, "kg CO2e/MWh")
+CO2Emmisionen = EVU[EVU_name]
+st.write("CO2 Emmisionen:", CO2Emmisionen, "kg CO2e/MWh")
 
 batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
 maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
