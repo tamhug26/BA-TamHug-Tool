@@ -2,10 +2,11 @@ import streamlit as st
 
 st.title("PV Dimensionierungshilfe")
 
-standorte = {
-    "Zürich": 1,
-    "Bern": 2,
+EVU = {
+    "IWB": 12.88,
+    "EBL": 50.1,
     "Lugano": 3
+    "Schweiz": 59
 }
 
 
@@ -13,13 +14,12 @@ standorte = {
 pv_Peakleistung = st.slider("PV-Peakleistung (kWp)", 0, 30, 10)
 Dachneigung = st.number_input("Dachneigung (°)", 0, 360, 180)
 #Dachausrichtung = 
-#Standort=
-standort_name = st.selectbox(
-    "Standort wählen",
-    list(standorte.keys())
+EVU_name = st.selectbox(
+    "EVU wählen",
+    list(EVU.keys())
 )
-CO2Faktor = standorte[standort_name]
-st.write("CO2 Faktor:", CO2Faktor, "-")
+CO2Faktor = EVU[EVU_name]
+st.write("CO2 Emmisionen:", CO2 Emmisionen, "kg CO2e/MWh")
 
 batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
 maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
