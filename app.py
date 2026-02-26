@@ -9,8 +9,26 @@ st.header("header")
 st.subheader("subheader")
 st.code("code")
 
-st.button("hit me")
+left, middle, right = st.columns(3)
+if left.button("Plain button", width="stretch"):
+    left.markdown("You clicked the plain button.")
+if middle.button("Emoji button", icon="😃", width="stretch"):
+    middle.markdown("You clicked the emoji button.")
+if right.button("Material button", icon=":material/mood:", width="stretch"):
+    right.markdown("You clicked the Material button.")
 
+st.button("Reset", type="primary")
+if st.button("Say hello"):
+    st.write("Why hello there")
+else:
+    st.write("Goodbye")
+
+if st.button("Aloha", type="tertiary"):
+    st.write("Ciao")
+
+
+
+#-----------------------------------
 EVU = {
     "IWB": 12.88, #industrielle Werke Basel
     "EBL": 50.1, #Elektra Baselland
