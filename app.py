@@ -23,6 +23,10 @@ if st.button("Say hello"):
 else:
     st.write("Goodbye")
 
+if st.button("Aloha", type="secondary"):
+    st.write("Ciao")
+
+
 if st.button("Aloha", type="tertiary"):
     st.write("Ciao")
 
