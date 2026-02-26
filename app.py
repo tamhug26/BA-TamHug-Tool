@@ -9,6 +9,8 @@ st.header("header")
 st.subheader("subheader")
 st.code("code")
 
+st.button("hit me")
+
 EVU = {
     "IWB": 12.88, #industrielle Werke Basel
     "EBL": 50.1, #Elektra Baselland
