@@ -35,7 +35,9 @@ maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)",
 minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
 maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
 # regel einbauen minSoC muss < sein als maxSoC
-Einspeisegrenze = st.number_input("Einspeisegrenze (kW)", 60, 100, 80)
+Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
+EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
+st.write("Einspeisegrenz kW:", EinspeisegrenzekW, "kW")
 Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
 Jahresheizwärmebedarf = st.number_input("Jahresheizwärmebedarf (kWh/a)", 1000, 10000, 4500)
 jahresverbrauch = st.number_input("Jahresstrombedarf (kWh/a)", 1000, 10000, 4500)
