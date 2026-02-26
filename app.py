@@ -3,9 +3,17 @@ import streamlit as st
 st.title("PV Dimensionierungshilfe")
 
 EVU = {
-    "IWB": 12.88,
-    "EBL": 50.1,
-    "Lugano": 3,
+    "IWB": 12.88, #industrielle Werke Basel
+    "EBL": 50.1, #Elektra Baselland
+    "BKW": 84, #Bernische Kraftwerke AG Energie AG
+    "Elektra Zeiningen": 59, #Elektra Zeiningen
+    "CKW": 20, #Centralschweizerische Kraftwerke
+    "EKZ": 48.3, #Elektrizitätswerke des Kantons Zürich"
+    "EWZ": 15.9,
+    "Axpo Holding AG": 62,
+    "Alpiq AG": 13.4,
+    "Repower AG": 131,
+    "Romande Energie": 11.3,
     "Schweiz": 59
 }
 
