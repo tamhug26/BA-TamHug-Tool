@@ -1,6 +1,13 @@
 import streamlit as st
 
 st.title("PV Dimensionierungshilfe")
+st.markdown("markdown")
+st.caption("caption")
+st.latex("latex")
+st.write("write")
+st.header("header")
+st.subheader("subheader")
+st.code("code")
 
 EVU = {
     "IWB": 12.88, #industrielle Werke Basel
@@ -16,7 +23,6 @@ EVU = {
     "Romande Energie": 11.3,
     "Schweiz": 59
 }
-
 
 #inputs:
 pv_Peakleistung = st.slider("PV-Peakleistung (kWp)", 0, 30, 10)
