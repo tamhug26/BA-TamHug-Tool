@@ -37,13 +37,15 @@ maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
 # regel einbauen minSoC muss < sein als maxSoC
 Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
 EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
-st.write("Einspeisegrenz kW:", EinspeisegrenzekW, "kW")
+st.write("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
 Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
 Jahresheizwärmebedarf = st.number_input("Jahresheizwärmebedarf (kWh/a)", 1000, 10000, 4500)
 jahresverbrauch = st.number_input("Jahresstrombedarf (kWh/a)", 1000, 10000, 4500)
 
 JahresarbeitszahlJAZ = st.number_input("Jahresarbeitszahl JAZ (-)", 1000, 10000, 4500)
 #CO2Emissionen = 
+
+#Outputs:
 WärmeStrombedarf = Jahresheizwärmebedarf / JahresarbeitszahlJAZ
 
 st.metric("WärmeStrombedarf", f"{WärmeStrombedarf} kWp")
