@@ -60,13 +60,15 @@ df_Baujahr_Heizwaermebedarf = pd.DataFrame({
 )
 })
 
+# aus Baujahr Heizwärmebedarf kWh/m2
 Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
+m2 = st.number_input("m2", 50, 5000, 200)
 if Baujahr:
     # Prüfen, ob Baujahr in der Tabelle existiert
     treffer = df_Baujahr_Heizwaermebedarf.loc[df_Baujahr_Heizwaermebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
 
     if not treffer.empty:
-        Heizwaermebedarf = treffer.iloc[0]
+        Heizwaermebedarf = treffer.iloc[0] * m2
 
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/m2a",
