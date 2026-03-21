@@ -123,6 +123,7 @@ if heizsystem == "Fossil":
     if col3.button("Pellets", use_container_width=True):
         Pellets = Heizwaermebedarf/5
         st.write("Pelletverbrauch : ", Pellets, "kg/a")
+    # noch emmisionen draus rechnen
 elif heizsystem == "Wärmepumpe":
     col1, col2, col3 = st.columns(3)
     if col1.button("Luft/Wasser Wärmepumpe", use_container_width=True):
@@ -131,6 +132,7 @@ elif heizsystem == "Wärmepumpe":
         JAZsw = st.number_input("JAZ", 0.0, 10.0, 4.5)
     if col3.button("Wasser/Wasser Wärmepumpe", use_container_width=True):
         JAZww = st.number_input("JAZ", 0.0, 10.0, 4.0)
+    # noch Strom draus rechnen
 
 st.write("------------------------------")
 st.write("------------------------------")
@@ -163,9 +165,6 @@ jahresverbrauch = st.number_input("Jahresstrombedarf (kWh/a)", 1000, 10000, 4500
 
 JahresarbeitszahlJAZ = st.number_input("Jahresarbeitszahl JAZ (-)", 1000, 10000, 4500)
 #CO2Emissionen = 
-
-#Outputs:
-WärmeStrombedarf = Jahresheizwärmebedarf / JahresarbeitszahlJAZ
 
 st.metric("WärmeStrombedarf", f"{WärmeStrombedarf} kWp")
 st.metric("Batterie", f"{batteriekapazität} kWh")
