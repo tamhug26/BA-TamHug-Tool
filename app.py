@@ -122,7 +122,7 @@ elif bau_typ == "Minergie-P":
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 
 # sanierung vergessen haha 
-# minergie und minergie plus als option machen
+
 
 
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
