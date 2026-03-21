@@ -96,7 +96,8 @@ if Baujahr:
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-
+# sanierung vergessen haha 
+# minergie und minergie plus als option machen
 
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 Standort = st.selectbox(
@@ -107,10 +108,18 @@ Standort = st.selectbox(
 st.subheader("Heizsystem")
 left, right = st.columns(2)
 if left.button("Fossil", width="stretch"):
-    left.markdown("Fossil")
+    left, middle, right = st.columns(3)
+    if left.button("Gas"), width="stretch"):
+        st.write("Gasverbrauch m3/a: ")
+    if middle.button("Öl"), width="stretch"):
+        st.write("Ölverbrauch L/a:"")
+    if right.button("Pellets"), width="stretch"):
+        st.write("Pelletverbrauch kg/a:")
 if right.button("Wärmepumpe", width="stretch"):
     right.markdown("WP")
 
+st.write("------------------------------")
+st.write("------------------------------")
 st.write("------------------------------")
 
 
