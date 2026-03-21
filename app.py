@@ -121,7 +121,13 @@ if heizsystem == "Fossil":
     if col3.button("Pellets", use_container_width=True):
         st.write("Pelletverbrauch kg/a")
 elif heizsystem == "Wärmepumpe":
-    st.write("WP")
+    col1, col2, col3 = st.columns(3)
+    if col1.button("Luft/Wasser Wärmepumpe", use_container_width=True):
+        JAZ = st.number_input("JAZ", 0, 10, 2.5)
+    if col2.button("Sole/Wasser Wärmepumpe", use_container_width=True):
+        JAZ = st.number_input("JAZ", 0, 10, 4.5)
+    if col3.button("Wasser/Wasser Wärmepumpe", use_container_width=True):
+        JAZ = st.number_input("JAZ", 0, 10, 4)
 
 st.write("------------------------------")
 st.write("------------------------------")
