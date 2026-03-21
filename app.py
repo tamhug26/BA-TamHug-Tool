@@ -52,7 +52,7 @@ df_Baujahr_Heizwärmebedarf = ({
 Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
 if Baujahr:
     # Prüfen, ob Baujahr in der Tabelle existiert
-    treffer = df.loc[df["Baujahr"] == Baujahr, "Heizwaermebedarf"]
+    treffer = df_Baujahr_Heizwärmebedarf.loc[df_Baujahr_Heizwärmebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
 
     if not treffer.empty:
         heizwaermebedarf = treffer.iloc[0]
