@@ -6,11 +6,54 @@ if st.button("Say hello"):
 else:
     st.write("Goodbye")
 
+Standort = {
+    "Adelboden" : -10,
+    "Aigle" : -6,
+    "Altdorf" : -6,
+    "Basel-Binningen" : -7,
+    "Bern-Liebefeld" : -7,
+    "Buchs-Aarau" : -7,
+    "Chur" : -7,
+    "Davos" : -13,
+    "Disentis" : -10,
+    "Engelberg" : -11,
+    "Genève-Cointrin" : -4,
+    "Glarus" : -8,
+    "Grand-St-Bernard" : -15,
+    "Güttingen" : -7,
+    "Interlaken" : -7,
+    "La Chaux-de-Fonds" : -10,
+    "La Frétaz" : -10,
+    "Locarno-Monti" : -1,
+    "Lugano" : -1,
+    "Luzern" : -6,
+    "Magadino" : -3,
+    "Montana" : -10,
+    "Neuchâtel" : -5,
+    "Payerne" : -7,
+    "Piotta" : -7,
+    "Pully" : -4,
+    "Robbia" : -8,
+    "Rünenberg" : -8,
+    "Samedan" : -18,
+    "San Bernardino" : -11,
+    "St. Gallen" : -9,
+    "Schaffhausen" : -8,
+    "Scuol" : -12,
+    "Sion" : -6,
+    "Ulrichen" : -16,
+    "Vaduz" : -8,
+    "Wynau" : -7,
+    "Zermatt" : -11,
+    "Zürich-Kloten" : -8,
+    "Zürich-MeteoSchweiz" : -8
+}
 
 Baujahr = st.number_input("Baujahr", 1900, 2030, 1990)
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 Standort = st.selectbox(
-    kommt_noch
+    "standort wählen",
+    list(Standort.keys())
 ) 
 
 st.subheader("Wärmepumpe")
