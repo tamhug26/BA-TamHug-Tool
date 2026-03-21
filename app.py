@@ -99,7 +99,7 @@ if bau_typ == "Baujahr":
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 elif bau_typ == "Minergie":
-    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
+    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == bau_typ, "Heizwaermebedarf"]
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
         Heizwaermebedarf_input = st.number_input(
@@ -110,7 +110,7 @@ elif bau_typ == "Minergie":
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 elif bau_typ == "Minergie-P":
-    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
+    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == bau_typ, "Heizwaermebedarf"]
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
         Heizwaermebedarf_input = st.number_input(
