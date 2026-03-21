@@ -45,8 +45,8 @@ Standort = {
     "Zürich-MeteoSchweiz" : -8
 }
 
-df_Baujahr_Heizwaermebedarf = pd.DataFrame({
-    "Baujahr" : list(range(1901, 2016)) + ["Minergie", "Minergie-P"],
+df_Bautyp_Heizwaermebedarf = pd.DataFrame({
+    "Bautyp" : list(range(1901, 2016)) + ["Minergie", "Minergie-P"],
     "Heizwaermebedarf" : (
     [140]*20 +
     [150]*30 +
@@ -88,10 +88,9 @@ bau_typ = st.selectbox(
 )
 if bau_typ == "Baujahr":
     Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
-    treffer = df_Baujahr_Heizwaermebedarf.loc[df_Baujahr_Heizwaermebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
+    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
-
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
@@ -100,10 +99,9 @@ if bau_typ == "Baujahr":
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 elif bau_typ == "Minergie":
-    treffer = df_Baujahr_Heizwaermebedarf.loc[df_Baujahr_Heizwaermebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
+    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
-
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
@@ -112,10 +110,9 @@ elif bau_typ == "Minergie":
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 elif bau_typ == "Minergie-P":
-    treffer = df_Baujahr_Heizwaermebedarf.loc[df_Baujahr_Heizwaermebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
+    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
-
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
