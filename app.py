@@ -73,7 +73,7 @@ Standort = st.selectbox(
     list(Standort.keys())
 ) 
 
-Jahresheizwärmebedarf = 
+#Jahresheizwärmebedarf = 
 
 st.subheader("Wärmepumpe")
 left, middle, right = st.columns(3)
