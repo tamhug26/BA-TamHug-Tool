@@ -104,19 +104,37 @@ Standort = st.selectbox(
     "Standort wählen",
     list(Standort.keys())
 ) 
+st.write("------------------------------")
 
+if "heizsystem" not in st.session_state:
+    st.session_state.heizsystem = None
 st.subheader("Heizsystem")
-left, right = st.columns(2)
-if left.button("Fossil", width="stretch"):
-    left, middle, right = st.columns(3)
-    if left.button("Gas", width="stretch"):
-        st.write("Gasverbrauch m3/a: ")
-    if middle.button("Öl", width="stretch"):
-        st.write("Ölverbrauch L/a:")
-    if right.button("Pellets", width="stretch"):
-        st.write("Pelletverbrauch kg/a:")
-if right.button("Wärmepumpe", width="stretch"):
-    right.markdown("WP")
+col1, col2 = st.columns(2)
+
+if col1.button(
+    "Fossil",
+    use_container_width=True,
+    disabled=st.session_state.heizsystem == "fossil"
+):
+    st.session_state.heizsystem = "fossil"
+
+if col2.button(
+    "Wärmepumpe",
+    use_container_width=True,
+    disabled=st.session_state.heizsystem == "wp"
+):
+    st.session_state.heizsystem = "wp"
+
+if st.session_state.heizsystem == "fossil":
+    col1, col2, col3 = st.columns(3)
+    if col1.button("Gas", use_container_width=True):
+        st.write("Gasverbrauch m3/a")
+    if col2.button("Öl", use_container_width=True):
+        st.write("Ölverbrauch L/a")
+    if col3.button("Pellets", use_container_width=True):
+        st.write("Pelletverbrauch kg/a")
+elif st.session_state.heizsystem == "wp":
+    st.write("WP")
 
 st.write("------------------------------")
 st.write("------------------------------")
