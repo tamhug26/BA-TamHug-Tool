@@ -46,7 +46,7 @@ Standort = {
 }
 
 df_Baujahr_Heizwaermebedarf = pd.DataFrame({
-    "Baujahr" : list(range(1901, 2016) + ["Minergie", "Minergie-P"],
+    "Baujahr" : list(range(1901, 2016)) + ["Minergie", "Minergie-P"],
     "Heizwaermebedarf" : (
     [140]*20 +
     [150]*30 +
