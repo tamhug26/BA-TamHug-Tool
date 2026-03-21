@@ -68,12 +68,12 @@ if Baujahr:
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0]
 
-        st.write(f"Eingegebenes Baujahr: {Baujahr}")
-        st.write(f"Gefundener Heizwärmebedarf: {Heizwaermebedarf}")
+        Heizwaermebedarf_input = st.number_input(
+            "Heizwärmebedarf kWh/m2a",
+            value=float(Heizwaermebedarf)
+        )
 
-        # Weiterrechnung mit Heizwärmebedarf, nicht mit Baujahr
-        ergebnis = Heizwaermebedarf
-        st.write(f"Heizwärmebedarf kWh/m2a: {ergebnis}")
+        ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 
