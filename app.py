@@ -81,21 +81,14 @@ EVU = {
 st.header("Dimersionierungstool")
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
+m2 = st.number_input("m2", 50, 5000, 200)
 bau_typ = st.selectbox(
     "Gebäudestandard",
     ["Baujahr", "Minergie", "Minergie-P"]
 )
 if bau_typ == "Baujahr":
     Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
-elif bau_typ == "Minergie":
-    Heizwärmebedarf = 38
-elif bau_typ == "Minergie-P":
-    Heizwärmebedarf = 30
-m2 = st.number_input("m2", 50, 5000, 200)
-if Baujahr:
-    # Prüfen, ob Baujahr in der Tabelle existiert
     treffer = df_Baujahr_Heizwaermebedarf.loc[df_Baujahr_Heizwaermebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
-
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
 
@@ -103,12 +96,17 @@ if Baujahr:
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
         )
-
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
+elif bau_typ == "Minergie":
+    Heizwärmebedarf = 38
+elif bau_typ == "Minergie-P":
+    Heizwärmebedarf = 30
+
 # sanierung vergessen haha 
 # minergie und minergie plus als option machen
+
 
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 Standort = st.selectbox(
