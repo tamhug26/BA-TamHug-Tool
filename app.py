@@ -55,13 +55,13 @@ if Baujahr:
     treffer = df_Baujahr_Heizwärmebedarf.loc[df_Baujahr_Heizwärmebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
 
     if not treffer.empty:
-        heizwaermebedarf = treffer.iloc[0]
+        Heizwärmebedarf = treffer.iloc[0]
 
         st.write(f"Eingegebenes Baujahr: {Baujahr}")
-        st.write(f"Gefundener Heizwärmebedarf: {heizwaermebedarf}")
+        st.write(f"Gefundener Heizwärmebedarf: {Heizwärmebedarf}")
 
         # Weiterrechnung mit Heizwärmebedarf, nicht mit Baujahr
-        ergebnis = heizwaermebedarf * 2
+        ergebnis = Heizwärmebedarf * 2
         st.write(f"Ergebnis der Berechnung: {ergebnis}")
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
