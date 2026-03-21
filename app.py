@@ -46,7 +46,7 @@ Standort = {
 }
 
 df_Baujahr_Heizwaermebedarf = pd.DataFrame({
-    "Baujahr" : list(range(1901, 2016)),
+    "Baujahr" : list(range(1901, 2016) + ["Minergie", "Minergie-P"],
     "Heizwaermebedarf" : (
     [140]*20 +
     [150]*30 +
@@ -57,7 +57,9 @@ df_Baujahr_Heizwaermebedarf = pd.DataFrame({
     [110]*6 +
     [90]*13 +
     [70]*7 +
-    [50]*6
+    [50]*6 +
+    [40] +
+    [30]
 )
 })
 
@@ -79,7 +81,16 @@ EVU = {
 st.header("Dimersionierungstool")
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
-Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
+bau_typ = st.selectbox(
+    "Gebäudestandard",
+    ["Baujahr", "Minergie", "Minergie-P"]
+)
+if bau_typ == "Baujahr":
+    Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
+elif bau_typ == "Minergie":
+    Heizwärmebedarf = 38
+elif bau_typ == "Minergie-P":
+    Heizwärmebedarf = 30
 m2 = st.number_input("m2", 50, 5000, 200)
 if Baujahr:
     # Prüfen, ob Baujahr in der Tabelle existiert
