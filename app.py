@@ -115,11 +115,12 @@ heizsystem = st.segmented_control(
 if heizsystem == "Fossil":
     col1, col2, col3 = st.columns(3)
     if col1.button("Gas", use_container_width=True):
-        st.write("Gasverbrauch m3/a")
+        Gas = Heizwaermebedarf /10
+        st.write("Gasverbrauch m3/a : " + Gas)
     if col2.button("Öl", use_container_width=True):
-        st.write("Ölverbrauch L/a")
+        st.write("Ölverbrauch L/a: ")
     if col3.button("Pellets", use_container_width=True):
-        st.write("Pelletverbrauch kg/a")
+        st.write("Pelletverbrauch kg/a: ")
 elif heizsystem == "Wärmepumpe":
     col1, col2, col3 = st.columns(3)
     if col1.button("Luft/Wasser Wärmepumpe", use_container_width=True):
