@@ -109,8 +109,7 @@ st.write("------------------------------")
 st.subheader("Heizsystem")
 
 heizsystem = st.segmented_control(
-    "Heizsystem wählen",
-    ["Fossil", "Wärmepumpe"],
+    "Heizsystem wählen", ["Fossil", "Wärmepumpe"],
     default="Fossil"
 )
 if heizsystem == "Fossil":
