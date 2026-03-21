@@ -123,11 +123,11 @@ if heizsystem == "Fossil":
 elif heizsystem == "Wärmepumpe":
     col1, col2, col3 = st.columns(3)
     if col1.button("Luft/Wasser Wärmepumpe", use_container_width=True):
-        JAZ = st.number_input("JAZ", 0, 10, 2.5)
+        JAZlw = st.number_input("JAZ", 0, 10, 2.5)
     if col2.button("Sole/Wasser Wärmepumpe", use_container_width=True):
-        JAZ = st.number_input("JAZ", 0, 10, 4.5)
+        JAZsw = st.number_input("JAZ", 0, 10, 4.5)
     if col3.button("Wasser/Wasser Wärmepumpe", use_container_width=True):
-        JAZ = st.number_input("JAZ", 0, 10, 4)
+        JAZww = st.number_input("JAZ", 0, 10, 4)
 
 st.write("------------------------------")
 st.write("------------------------------")
