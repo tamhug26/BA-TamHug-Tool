@@ -70,7 +70,7 @@ if Baujahr:
 
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/m2a",
-            value=float(Heizwaermebedarf)
+            value=int(Heizwaermebedarf)
         )
 
         ergebnis = Heizwaermebedarf_input
