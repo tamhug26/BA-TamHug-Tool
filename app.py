@@ -60,6 +60,10 @@ df_Baujahr_Heizwaermebedarf = pd.DataFrame({
 )
 })
 
+
+st.header("Dimersionierungstool")
+st.subheader("Heizwärmebedarf ermittlung")
+
 # aus Baujahr Heizwärmebedarf kWh/m2
 Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
 m2 = st.number_input("m2", 50, 5000, 200)
@@ -71,7 +75,7 @@ if Baujahr:
         Heizwaermebedarf = treffer.iloc[0] * m2
 
         Heizwaermebedarf_input = st.number_input(
-            "Heizwärmebedarf kWh/m2a",
+            "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
         )
 
@@ -86,16 +90,12 @@ Standort = st.selectbox(
     list(Standort.keys())
 ) 
 
-#Jahresheizwärmebedarf = 
-
-st.subheader("Wärmepumpe")
-left, middle, right = st.columns(3)
-if left.button("nur m2 und Gebäudeart bekannt", width="stretch"):
-    left.markdown("You clicked the plain button.")
-if middle.button("GEAK zur Hand", width="stretch"):
-    middle.markdown("You clicked the emoji button.")
-if right.button("Material button", icon=":material/mood:", width="stretch"):
-    right.markdown("You clicked the Material button.")
+st.subheader("Heizsystem")
+left, right = st.columns(2)
+if left.button("Fossil", width="stretch"):
+    left.markdown("Fossil")
+if right.button("Wärmepumpe", width="stretch"):
+    right.markdown("WP")
 
 #-----------------------------------
 EVU = {
