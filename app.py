@@ -100,9 +100,29 @@ if bau_typ == "Baujahr":
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 elif bau_typ == "Minergie":
-    Heizwärmebedarf = 38
+    treffer = df_Baujahr_Heizwaermebedarf.loc[df_Baujahr_Heizwaermebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
+    if not treffer.empty:
+        Heizwaermebedarf = treffer.iloc[0] * m2
+
+        Heizwaermebedarf_input = st.number_input(
+            "Heizwärmebedarf kWh/m2",
+            value=int(Heizwaermebedarf)
+        )
+        ergebnis = Heizwaermebedarf_input
+    else:
+        st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 elif bau_typ == "Minergie-P":
-    Heizwärmebedarf = 30
+    treffer = df_Baujahr_Heizwaermebedarf.loc[df_Baujahr_Heizwaermebedarf["Baujahr"] == Baujahr, "Heizwaermebedarf"]
+    if not treffer.empty:
+        Heizwaermebedarf = treffer.iloc[0] * m2
+
+        Heizwaermebedarf_input = st.number_input(
+            "Heizwärmebedarf kWh/m2",
+            value=int(Heizwaermebedarf)
+        )
+        ergebnis = Heizwaermebedarf_input
+    else:
+        st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 
 # sanierung vergessen haha 
 # minergie und minergie plus als option machen
