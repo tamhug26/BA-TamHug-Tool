@@ -109,11 +109,11 @@ st.subheader("Heizsystem")
 left, right = st.columns(2)
 if left.button("Fossil", width="stretch"):
     left, middle, right = st.columns(3)
-    if left.button("Gas"), width="stretch"):
+    if left.button("Gas", width="stretch"):
         st.write("Gasverbrauch m3/a: ")
-    if middle.button("Öl"), width="stretch"):
-        st.write("Ölverbrauch L/a:"")
-    if right.button("Pellets"), width="stretch"):
+    if middle.button("Öl", width="stretch"):
+        st.write("Ölverbrauch L/a:")
+    if right.button("Pellets", width="stretch"):
         st.write("Pelletverbrauch kg/a:")
 if right.button("Wärmepumpe", width="stretch"):
     right.markdown("WP")
