@@ -7,11 +7,17 @@ else:
     st.write("Goodbye")
 
 
+Baujahr = st.number_input("Baujahr", 1900, 2030, 1990)
+EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
+Standort = st.selectbox(
+    kommt_noch
+) 
+
 st.subheader("Wärmepumpe")
 left, middle, right = st.columns(3)
 if left.button("nur m2 und Gebäudeart bekannt", width="stretch"):
     left.markdown("You clicked the plain button.")
-if middle.button("Emoji button", icon="😃", width="stretch"):
+if middle.button("GEAK zur Hand", width="stretch"):
     middle.markdown("You clicked the emoji button.")
 if right.button("Material button", icon=":material/mood:", width="stretch"):
     right.markdown("You clicked the Material button.")
