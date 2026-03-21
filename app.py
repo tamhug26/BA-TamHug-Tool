@@ -166,6 +166,6 @@ jahresverbrauch = st.number_input("Jahresstrombedarf (kWh/a)", 1000, 10000, 4500
 JahresarbeitszahlJAZ = st.number_input("Jahresarbeitszahl JAZ (-)", 1000, 10000, 4500)
 #CO2Emissionen = 
 
-st.metric("WärmeStrombedarf", f"{WärmeStrombedarf} kWp")
+
 st.metric("Batterie", f"{batteriekapazität} kWh")
 st.metric("Jahresverbrauch", f"{jahresverbrauch} kWh/a")
