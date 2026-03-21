@@ -1,10 +1,5 @@
 import streamlit as st
-
-st.button("Reset", type="primary")
-if st.button("Say hello"):
-    st.write("Why hello there")
-else:
-    st.write("Goodbye")
+import pandas as pd
 
 Standort = {
     "Adelboden" : -10,
@@ -49,12 +44,36 @@ Standort = {
     "Zürich-MeteoSchweiz" : -8
 }
 
-Baujahr = st.number_input("Baujahr", 1900, 2030, 1990)
+df_Baujahr_Heizwärmebedarf = ({
+    "Baujahr" : [1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1910, 1911, 1912, 1913, 1914, 1915, 1916, 1917, 1918, 1919, 1920, 1921, 1922, 1923, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1936, 1937, 1938, 1939, 1940, 1941, 1942, 1943, 1944, 1945, 1946, 1947, 1948, 1949, 1950, 1951, 1952, 1953, 1954, 1955, 1956, 1957, 1958, 1959, 1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015],
+    "Heizwärmebedarf" : [140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 140, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 160, 160, 160, 160, 160, 160, 160, 160, 160, 160, 160, 160, 160, 160, 160, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 162, 162, 162, 130, 130, 110, 110, 110, 110, 110, 110, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 70, 70, 70, 70, 70, 70, 70, 50, 50, 50, 50, 50, 50, 50]
+})
+
+Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
+if Baujahr:
+    # Prüfen, ob Baujahr in der Tabelle existiert
+    treffer = df.loc[df["Baujahr"] == Baujahr, "Heizwaermebedarf"]
+
+    if not treffer.empty:
+        heizwaermebedarf = treffer.iloc[0]
+
+        st.write(f"Eingegebenes Baujahr: {Baujahr}")
+        st.write(f"Gefundener Heizwärmebedarf: {heizwaermebedarf}")
+
+        # Weiterrechnung mit Heizwärmebedarf, nicht mit Baujahr
+        ergebnis = heizwaermebedarf * 2
+        st.write(f"Ergebnis der Berechnung: {ergebnis}")
+    else:
+        st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
+
+
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 Standort = st.selectbox(
-    "standort wählen",
+    "Standort wählen",
     list(Standort.keys())
 ) 
+
+Jahresheizwärmebedarf = 
 
 st.subheader("Wärmepumpe")
 left, middle, right = st.columns(3)
@@ -102,7 +121,6 @@ Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
 EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
 st.write("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
 Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
-Jahresheizwärmebedarf = st.number_input("Jahresheizwärmebedarf (kWh/a)", 1000, 10000, 4500)
 jahresverbrauch = st.number_input("Jahresstrombedarf (kWh/a)", 1000, 10000, 4500)
 
 JahresarbeitszahlJAZ = st.number_input("Jahresarbeitszahl JAZ (-)", 1000, 10000, 4500)
