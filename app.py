@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 
+#Tabellen bzw Dataframes
 Standort = {
     "Adelboden" : -10,
     "Aigle" : -6,
@@ -60,10 +61,23 @@ df_Baujahr_Heizwaermebedarf = pd.DataFrame({
 )
 })
 
+EVU = {
+    "IWB": 12.88, #industrielle Werke Basel
+    "EBL": 50.1, #Elektra Baselland
+    "BKW": 84, #Bernische Kraftwerke AG Energie AG
+    "Elektra Zeiningen": 59, #Elektra Zeiningen
+    "CKW": 20, #Centralschweizerische Kraftwerke
+    "EKZ": 48.3, #Elektrizitätswerke des Kantons Zürich"
+    "EWZ": 15.9,
+    "Axpo Holding AG": 62,
+    "Alpiq AG": 13.4,
+    "Repower AG": 131,
+    "Romande Energie": 11.3,
+    "Schweiz": 59
+}
 
 st.header("Dimersionierungstool")
 st.subheader("Heizwärmebedarf ermittlung")
-
 # aus Baujahr Heizwärmebedarf kWh/m2
 Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
 m2 = st.number_input("m2", 50, 5000, 200)
@@ -97,21 +111,9 @@ if left.button("Fossil", width="stretch"):
 if right.button("Wärmepumpe", width="stretch"):
     right.markdown("WP")
 
-#-----------------------------------
-EVU = {
-    "IWB": 12.88, #industrielle Werke Basel
-    "EBL": 50.1, #Elektra Baselland
-    "BKW": 84, #Bernische Kraftwerke AG Energie AG
-    "Elektra Zeiningen": 59, #Elektra Zeiningen
-    "CKW": 20, #Centralschweizerische Kraftwerke
-    "EKZ": 48.3, #Elektrizitätswerke des Kantons Zürich"
-    "EWZ": 15.9,
-    "Axpo Holding AG": 62,
-    "Alpiq AG": 13.4,
-    "Repower AG": 131,
-    "Romande Energie": 11.3,
-    "Schweiz": 59
-}
+st.write("------------------------------")
+
+
 
 #inputs:
 pv_Peakleistung = st.slider("PV-Peakleistung (kWp)", 0, 30, 10)
