@@ -60,7 +60,7 @@ df_Baujahr_Heizwaermebedarf = pd.DataFrame({
     [50]*6 +
     [40] +
     [30]
-)
+    )
 })
 
 EVU = {
