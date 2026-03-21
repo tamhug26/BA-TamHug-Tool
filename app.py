@@ -72,7 +72,7 @@ if Baujahr:
         st.write(f"Gefundener Heizwärmebedarf: {Heizwaermebedarf}")
 
         # Weiterrechnung mit Heizwärmebedarf, nicht mit Baujahr
-        ergebnis = Heizwaermebedarf * 2
+        ergebnis = Heizwaermebedarf
         st.write(f"Heizwärmebedarf kWh/m2a: {ergebnis}")
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
