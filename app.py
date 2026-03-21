@@ -106,26 +106,14 @@ Standort = st.selectbox(
 ) 
 st.write("------------------------------")
 
-if "heizsystem" not in st.session_state:
-    st.session_state.heizsystem = None
 st.subheader("Heizsystem")
-col1, col2 = st.columns(2)
 
-if col1.button(
-    "Fossil",
-    use_container_width=True,
-    disabled=st.session_state.heizsystem == "fossil"
-):
-    st.session_state.heizsystem = "fossil"
-
-if col2.button(
-    "Wärmepumpe",
-    use_container_width=True,
-    disabled=st.session_state.heizsystem == "wp"
-):
-    st.session_state.heizsystem = "wp"
-
-if st.session_state.heizsystem == "fossil":
+heizsystem = st.segmented_control(
+    "Heizsystem wählen",
+    ["Fossil", "Wärmepumpe"],
+    default="Fossil"
+)
+if heizsystem == "Fossil":
     col1, col2, col3 = st.columns(3)
     if col1.button("Gas", use_container_width=True):
         st.write("Gasverbrauch m3/a")
@@ -133,7 +121,7 @@ if st.session_state.heizsystem == "fossil":
         st.write("Ölverbrauch L/a")
     if col3.button("Pellets", use_container_width=True):
         st.write("Pelletverbrauch kg/a")
-elif st.session_state.heizsystem == "wp":
+elif heizsystem == "Wärmepumpe":
     st.write("WP")
 
 st.write("------------------------------")
