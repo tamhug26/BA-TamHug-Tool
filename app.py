@@ -209,14 +209,21 @@ elif heizsystem == "Wärmepumpe":
 
 
 st.write("------------------------------")
-st.write("------------------------------")
-st.write("------------------------------")
 
-
-
-#inputs:
-pv_Peakleistung = st.slider("PV-Peakleistung (kWp)", 0, 30, 10)
+st.subheader("Photovoltaikanlage")
+pv_Peakleistung = st.number_input("PV-Peakleistung (kWp)", 0, 30, 10)
 Dachneigung = st.number_input("Dachneigung (°)", 0, 360, 180)
+#Dachausrichtung = 
+
+st.write("------------------------------")
+st.subheader("Batterie")
+batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
+maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
+maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 0, 20, 10)
+minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
+maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+
+
 #Dachausrichtung = 
 EVU_name = st.selectbox(
     "EVU wählen",
@@ -225,21 +232,14 @@ EVU_name = st.selectbox(
 CO2Emmisionen = EVU[EVU_name]
 st.write("CO2 Emmisionen:", CO2Emmisionen, "kg CO2e/MWh")
 
-batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
-maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
-maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 0, 20, 10)
-minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
-maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+st.subheader("Ein- und Ausspeisen")
 # regel einbauen minSoC muss < sein als maxSoC
 Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
 EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
-st.write("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
+st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
 Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
-jahresverbrauch = st.number_input("Jahresstrombedarf (kWh/a)", 1000, 10000, 4500)
 
-JahresarbeitszahlJAZ = st.number_input("Jahresarbeitszahl JAZ (-)", 1000, 10000, 4500)
-#CO2Emissionen = 
+jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 
 
-st.metric("Batterie", f"{batteriekapazität} kWh")
-st.metric("Jahresverbrauch", f"{jahresverbrauch} kWh/a")
+
