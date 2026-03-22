@@ -161,13 +161,26 @@ if heizsystem == "Fossil":
     if fossil_typ == "Gas":
         gas = Heizwaermebedarf / 10
         st.write(f"Gasverbrauch: {gas:.1f} m³/a")
+        Gasverbrauch_input = st.number_input(
+            "Gasverbrauch m³/a",
+            value=int(gas)
+        )
+        ergebnis = Gasverbrauch_input
+        st.write("Emissionen UBP/a: ")
+        st.write("Emissionen kgCO2/a: ")
     elif fossil_typ == "Öl":
         oel = Heizwaermebedarf / 10
         st.write(f"Ölverbrauch: {oel:.1f} L/a")
+        st.write("Emissionen UBP/a: ")
+        st.write("Emissionen kgCO2/a: ")
     elif fossil_typ == "Pellets":
         pellets = Heizwaermebedarf / 5
         st.write(f"Pelletverbrauch: {pellets:.1f} kg/a")
+        st.write("Emissionen UBP/a: ")
+        st.write("Emissionen kgCO2/a: ")
     # noch emmisionen draus rechnen
+    # .1f = 1 Nachkommastelle
+    # variablen direkt in text als f-String (formatted string).
 elif heizsystem == "Wärmepumpe":
     wp_typ = st.radio(
         "Wärmepumpenart",
