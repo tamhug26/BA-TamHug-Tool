@@ -89,22 +89,29 @@ bau_typ = st.selectbox(
 if bau_typ == "Baujahr":
     Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
     treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
-    saniert = st.radio(
-        "Wurde das Gebäude saniert?",
-        ["Nein", "Ja"],
-        horizontal=True
-    )
-    if saniert == "Ja":
-        Sanierungstyp = st.radio(
-            "Sanierungtyp",
-            ["Typ1", "Typ2", "Typ3"],
-            horizontal=True
-        )
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
+        saniert = st.radio(
+            "Wurde das Gebäude saniert?",
+            ["Nein", "Ja"],
+            horizontal=True
+        )
+        reduktion = 0.0
+        if saniert == "Ja":
+            Sanierungstyp = st.multiselect(
+                "Sanierungtyp",
+                ["Dämmung Dach", "neue Fenster", "Dämmung Fassade"],
+            )
+            reduktionen = {
+                "Dämmung Dach": 0.15,
+                "neue Fenster": 0.15,
+                "Dämmung Fassade": 0.25
+            }
+            reduktion = sum(reduktionen[typ] for typ in Sanierungstyp)
+        Heizwaermebedarf_total = Heizwaermebedarf * (1 - reduktion)
         Heizwaermebedarf_input = st.number_input(
-            "Heizwärmebedarf kWh/m2",
-            value=int(Heizwaermebedarf)
+            "Heizwärmebedarf kWh/a",
+            value=int(Heizwaermebedarf_total)
         )
         ergebnis = Heizwaermebedarf_input
     else:
@@ -132,7 +139,7 @@ elif bau_typ == "Minergie-P":
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
 
-# sanierung vergessen haha 
+
 
 
 
