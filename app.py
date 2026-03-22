@@ -285,5 +285,11 @@ df_ts = add_household_load_profile(df_ts, jahresstromverbrauch)
 st.write("Anzahl Stunden im Jahr:", len(df_ts))
 st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
 
-st.line_chart(df_ts["hauslast_kWh"].head(168))  # erste 7 Tage
+st.write("Erste 24 Stunden:")
 st.dataframe(df_ts[["Monat", "Stunde", "hauslast_kWh"]].head(24))
+
+st.write("Haushaltslast über 24 Stunden:")
+st.bar_chart(df_ts["hauslast_kWh"].head(24))
+
+st.write("Haushaltslast über 7 Tage:")
+st.line_chart(df_ts["hauslast_kWh"].head(168))
