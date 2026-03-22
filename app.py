@@ -170,7 +170,7 @@ elif heizsystem == "Wärmepumpe":
         jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
     else:
         jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
-    stromverbrauch = heizwaermebedarf_input / jaz
+    stromverbrauch = Heizwaermebedarf / jaz
     st.write(f"Stromverbrauch: {stromverbrauch:.1f} kWh/a")
 
 
