@@ -223,8 +223,8 @@ maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)",
 minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
 maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
 
-
-#Dachausrichtung = 
+st.write("------------------------------")
+st.subheader("EVU")
 EVU_name = st.selectbox(
     "EVU wählen",
     list(EVU.keys())
@@ -232,6 +232,7 @@ EVU_name = st.selectbox(
 CO2Emmisionen = EVU[EVU_name]
 st.write("CO2 Emmisionen:", CO2Emmisionen, "kg CO2e/MWh")
 
+st.write("------------------------------")
 st.subheader("Ein- und Ausspeisen")
 # regel einbauen minSoC muss < sein als maxSoC
 Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
