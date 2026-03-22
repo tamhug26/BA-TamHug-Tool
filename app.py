@@ -89,11 +89,17 @@ bau_typ = st.selectbox(
 if bau_typ == "Baujahr":
     Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
     treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
-    Sanierungstyp = st.radio(
-        "Sanierungtyp",
-        ["Typ1", "Typ2", "Typ3"],
+    saniert = st.radio(
+        "Wurde das Gebäude saniert?",
+        ["Nein", "Ja"],
         horizontal=True
     )
+    if saniert == "Ja":
+        Sanierungstyp = st.radio(
+            "Sanierungtyp",
+            ["Typ1", "Typ2", "Typ3"],
+            horizontal=True
+        )
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
         Heizwaermebedarf_input = st.number_input(
