@@ -91,7 +91,25 @@ def create_base_dataframe(year=2025):
     df["Stunde"] = df.index.hour
     df["Tag_im_Jahr"] = df.index.dayofyear
     return df
-
+def add_household_load_profile(df, jahresstromverbrauch):
+    df = df.copy()
+    
+    # Einfaches Tagesprofil
+    # nachts tief, morgens etwas höher, abends am höchsten
+    stundenfaktoren = {
+        0: 0.4, 1: 0.35, 2: 0.3, 3: 0.3, 4: 0.35, 5: 0.5,
+        6: 0.8, 7: 1.0, 8: 0.9, 9: 0.7, 10: 0.6, 11: 0.6,
+        12: 0.7, 13: 0.6, 14: 0.6, 15: 0.7, 16: 0.9, 17: 1.2,
+        18: 1.4, 19: 1.5, 20: 1.3, 21: 1.0, 22: 0.7, 23: 0.5
+    }
+    
+    df["haus_faktor"] = df["Stunde"].map(stundenfaktoren)
+    
+    # auf Jahresstromverbrauch normieren
+    faktor_summe = df["haus_faktor"].sum()
+    df["hauslast_kWh"] = df["haus_faktor"] / faktor_summe * jahresstromverbrauch
+    
+    return df
 
 st.header("Dimensionierungstool")
 
@@ -257,11 +275,15 @@ Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
 
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 
+
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
 
 df_ts = create_base_dataframe()
+df_ts = add_household_load_profile(df_ts, jahresstromverbrauch)
 
 st.write("Anzahl Stunden im Jahr:", len(df_ts))
-st.dataframe(df_ts.head(24))
+st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
 
+st.line_chart(df_ts["hauslast_kWh"].head(168))  # erste 7 Tage
+st.dataframe(df_ts[["Monat", "Stunde", "hauslast_kWh"]].head(24))
