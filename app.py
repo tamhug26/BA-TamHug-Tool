@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 
 #Tabellen bzw Dataframes
 Standort = {
@@ -77,6 +78,20 @@ EVU = {
     "Romande Energie": 11.3,
     "Schweiz": 59
 }
+
+#Zeitdimension mit Dataframe
+def create_base_dataframe(year=2025):
+    zeitindex = pd.date_range(
+        start=f"{year}-01-01 00:00",
+        end=f"{year}-12-31 23:00",
+        freq="h"
+    )
+    df = pd.DataFrame(index=zeitindex)
+    df["Monat"] = df.index.month
+    df["Stunde"] = df.index.hour
+    df["Tag_im_Jahr"] = df.index.dayofyear
+    return df
+
 
 st.header("Dimensionierungstool")
 
@@ -242,5 +257,11 @@ Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
 
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 
+st.write("------------------------------")
+st.subheader("Test Zeitreihe")
 
+df_ts = create_base_dataframe()
+
+st.write("Anzahl Stunden im Jahr:", len(df_ts))
+st.dataframe(df_ts.head(24))
 
