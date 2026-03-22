@@ -79,6 +79,13 @@ EVU = {
 }
 
 st.header("Dimensionierungstool")
+
+EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
+Standort = st.selectbox(
+    "Standort wählen",
+    list(Standort.keys())
+) 
+
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
 m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
@@ -138,17 +145,6 @@ elif bau_typ == "Minergie-P":
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-
-
-
-
-
-EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
-Standort = st.selectbox(
-    "Standort wählen",
-    list(Standort.keys())
-) 
-st.write("------------------------------")
 
 st.subheader("Heizsystem")
 
