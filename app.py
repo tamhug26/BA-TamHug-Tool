@@ -81,7 +81,7 @@ EVU = {
 st.header("Dimensionierungstool")
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
-m2 = st.number_input("m2", 50, 5000, 200)
+m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
 bau_typ = st.selectbox(
     "Gebäudestandard",
     ["Baujahr", "Minergie", "Minergie-P"]
