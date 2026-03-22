@@ -93,7 +93,6 @@ def create_base_dataframe(year=2025):
     return df
 def add_household_load_profile(df, jahresstromverbrauch):
     df = df.copy()
-    
     # Einfaches Tagesprofil
     # nachts tief, morgens etwas höher, abends am höchsten
     stundenfaktoren = {
@@ -102,14 +101,45 @@ def add_household_load_profile(df, jahresstromverbrauch):
         12: 0.7, 13: 0.6, 14: 0.6, 15: 0.7, 16: 0.9, 17: 1.2,
         18: 1.4, 19: 1.5, 20: 1.3, 21: 1.0, 22: 0.7, 23: 0.5
     }
-    
     df["haus_faktor"] = df["Stunde"].map(stundenfaktoren)
-    
     # auf Jahresstromverbrauch normieren
     faktor_summe = df["haus_faktor"].sum()
     df["hauslast_kWh"] = df["haus_faktor"] / faktor_summe * jahresstromverbrauch
-    
     return df
+def add_heating_profile(df, heizwaermebedarf_jahr):
+    df = df.copy()
+    # Heizanteile pro Monat (typisches Schweizer EFH)
+    monatsanteile = {
+        1: 0.17,
+        2: 0.15,
+        3: 0.12,
+        4: 0.08,
+        5: 0.04,
+        6: 0.01,
+        7: 0.00,
+        8: 0.01,
+        9: 0.03,
+        10: 0.09,
+        11: 0.14,
+        12: 0.16
+    }
+    df["heiz_monat"] = df["Monat"].map(monatsanteile)
+    # leichtes Tagesprofil
+    stundenfaktoren = {
+        0:0.9,1:0.85,2:0.8,3:0.8,4:0.85,5:1.0,
+        6:1.1,7:1.2,8:1.1,9:1.0,10:0.95,11:0.95,
+        12:0.9,13:0.9,14:0.9,15:0.95,16:1.0,17:1.1,
+        18:1.2,19:1.25,20:1.2,21:1.1,22:1.0,23:0.95
+    }
+    df["heiz_stunde"] = df["Stunde"].map(stundenfaktoren)
+    df["heiz_faktor"] = df["heiz_monat"] * df["heiz_stunde"]
+    faktor_summe = df["heiz_faktor"].sum()
+    if faktor_summe > 0:
+        df["heizwaerme_kWh"] = df["heiz_faktor"] / faktor_summe * heizwaermebedarf_jahr
+    else:
+        df["heizwaerme_kWh"] = 0
+    return df
+
 
 st.header("Dimensionierungstool")
 
@@ -280,16 +310,25 @@ st.write("------------------------------")
 st.subheader("Test Zeitreihe")
 
 df_ts = create_base_dataframe()
+
 df_ts = add_household_load_profile(df_ts, jahresstromverbrauch)
+
+# Heizwärmebedarf übernehmen (oder Testwert)
+if "Heizwaermebedarf_input" in locals():
+    heizwaerme_jahr = Heizwaermebedarf_input
+else:
+    heizwaerme_jahr = 12000
+
+df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
 
 st.write("Anzahl Stunden im Jahr:", len(df_ts))
 st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
 
 st.write("Erste 24 Stunden:")
-st.dataframe(df_ts[["Monat", "Stunde", "hauslast_kWh"]].head(24))
+st.dataframe(df_ts[["Monat","Stunde","hauslast_kWh","heizwaerme_kWh"]].head(24))
 
 st.write("Haushaltslast über 24 Stunden:")
 st.bar_chart(df_ts["hauslast_kWh"].head(24))
 
 st.write("Haushaltslast über 7 Tage:")
-st.line_chart(df_ts["hauslast_kWh"].head(168))
+st.line_chart(df_ts[["hauslast_kWh","heizwaerme_kWh"]].head(168))
