@@ -78,7 +78,7 @@ EVU = {
     "Schweiz": 59
 }
 
-st.header("Dimersionierungstool")
+st.header("Dimensionierungstool")
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
 m2 = st.number_input("m2", 50, 5000, 200)
@@ -139,34 +139,40 @@ heizsystem = st.segmented_control(
     default="Fossil"
 )
 if heizsystem == "Fossil":
-    col1, col2, col3 = st.columns(3)
-    if col1.button("Gas", use_container_width=True):
-        Gas = Heizwaermebedarf /10
-        st.write("Gasverbrauch : ", Gas, "m3/a")
-    if col2.button("Öl", use_container_width=True):
-        Oel =Heizwaermebedarf /10
-        st.write("Ölverbrauch :", Oel, "L/a")
-    if col3.button("Pellets", use_container_width=True):
-        Pellets = Heizwaermebedarf/5
-        st.write("Pelletverbrauch : ", Pellets, "kg/a")
+    fossil_typ = st.radio(
+        "Fossiles Heizsystem",
+        ["Gas", "Öl", "Pellets"],
+        horizontal=True
+    )
+    if fossil_typ == "Gas":
+        gas = Heizwaermebedarf / 10
+        st.write(f"Gasverbrauch: {gas:.1f} m³/a")
+    elif fossil_typ == "Öl":
+        oel = Heizwaermebedarf / 10
+        st.write(f"Ölverbrauch: {oel:.1f} L/a")
+    elif fossil_typ == "Pellets":
+        pellets = Heizwaermebedarf / 5
+        st.write(f"Pelletverbrauch: {pellets:.1f} kg/a")
     # noch emmisionen draus rechnen
 elif heizsystem == "Wärmepumpe":
-    col1, col2, col3 = st.columns(3)
-    if col1.button("Luft/Wasser Wärmepumpe", use_container_width=True):
-        JAZlw = st.number_input("JAZ", 0.0, 10.0, 2.5)
-        Energieverbrauchlw = Heizwaermebedarf / JAZlw 
-        StromverbrauchWPlw = Energieverbrauchlw * m2
-        st.write("Stromverbrauch: ", StromverbrauchWPlw, "kWh/a")
-    if col2.button("Sole/Wasser Wärmepumpe", use_container_width=True):
-        JAZsw = st.number_input("JAZ", 0.0, 10.0, 4.5)
-        Energieverbrauchsw = Heizwaermebedarf / JAZsw 
-        StromverbrauchWPsw = Energieverbrauchsw * m2
-        st.write("Stromverbrauch: ", StromverbrauchWPsw, "kWh/a")
-    if col3.button("Wasser/Wasser Wärmepumpe", use_container_width=True):
-        JAZww = st.number_input("JAZ", 0.0, 10.0, 4.0)
-        Energieverbrauchww = Heizwaermebedarf / JAZww 
-        StromverbrauchWPww = Energieverbrauchww * m2
-        st.write("Stromverbrauch: ", StromverbrauchWPww, "kWh/a")
+    wp_typ = st.radio(
+        "Wärmepumpenart",
+        [
+            "Luft/Wasser Wärmepumpe",
+            "Sole/Wasser Wärmepumpe",
+            "Wasser/Wasser Wärmepumpe"
+        ],
+        horizontal=True
+    )
+    if wp_typ == "Luft/Wasser Wärmepumpe":
+        jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
+    elif wp_typ == "Sole/Wasser Wärmepumpe":
+        jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
+    else:
+        jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
+    stromverbrauch = heizwaermebedarf_input / jaz
+    st.write(f"Stromverbrauch: {stromverbrauch:.1f} kWh/a")
+
 
 st.write("------------------------------")
 st.write("------------------------------")
