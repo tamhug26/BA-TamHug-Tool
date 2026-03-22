@@ -154,11 +154,19 @@ elif heizsystem == "Wärmepumpe":
     col1, col2, col3 = st.columns(3)
     if col1.button("Luft/Wasser Wärmepumpe", use_container_width=True):
         JAZlw = st.number_input("JAZ", 0.0, 10.0, 2.5)
+        Energieverbrauchlw = Heizwaermebedarf / JAZlw 
+        StromverbrauchWPlw = Energieverbrauchlw * m2
+        st.write("Stromverbrauch: ", StromverbrauchWPlw, "kWh/a")
     if col2.button("Sole/Wasser Wärmepumpe", use_container_width=True):
         JAZsw = st.number_input("JAZ", 0.0, 10.0, 4.5)
+        Energieverbrauchsw = Heizwaermebedarf / JAZsw 
+        StromverbrauchWPsw = Energieverbrauchsw * m2
+        st.write("Stromverbrauch: ", StromverbrauchWPsw, "kWh/a")
     if col3.button("Wasser/Wasser Wärmepumpe", use_container_width=True):
         JAZww = st.number_input("JAZ", 0.0, 10.0, 4.0)
-    # noch Strom draus rechnen
+        Energieverbrauchww = Heizwaermebedarf / JAZww 
+        StromverbrauchWPww = Energieverbrauchww * m2
+        st.write("Stromverbrauch: ", StromverbrauchWPww, "kWh/a")
 
 st.write("------------------------------")
 st.write("------------------------------")
