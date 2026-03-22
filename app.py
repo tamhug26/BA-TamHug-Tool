@@ -139,12 +139,20 @@ def add_heating_profile(df, heizwaermebedarf_jahr):
     else:
         df["heizwaerme_kWh"] = 0
     return df
+def add_heatpump_consumption(df, heizsystem, jaz=None):
+    df = df.copy()
+    if heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0:
+        df["wp_strom_kWh"] = df["heizwaerme_kWh"] / jaz
+    else:
+        df["wp_strom_kWh"] = 0.0
+    df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
+    return df
 
 
 st.header("Dimensionierungstool")
 
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
-Standort = st.selectbox(
+standort_auswahl = st.selectbox(
     "Standort wählen",
     list(Standort.keys())
 ) 
@@ -267,7 +275,10 @@ elif heizsystem == "Wärmepumpe":
         jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
     else:
         jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
-    stromverbrauch = Heizwaermebedarf / jaz
+    if "Heizwaermebedarf_input" in locals():
+        stromverbrauch = Heizwaermebedarf_input / jaz
+    else:
+        stromverbrauch = 0.0
     st.write(f"Stromverbrauch: {stromverbrauch:.1f} kWh/a")
 
 
@@ -321,14 +332,24 @@ else:
 
 df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
 
+if heizsystem == "Wärmepumpe":
+    df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
+else:
+    df_ts = add_heatpump_consumption(df_ts, heizsystem)
+
 st.write("Anzahl Stunden im Jahr:", len(df_ts))
 st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
+st.write("Summe Heizwärme [kWh/a]:", round(df_ts["heizwaerme_kWh"].sum(), 2))
+st.write("Summe Wärmepumpenstrom [kWh/a]:", round(df_ts["wp_strom_kWh"].sum(), 2))
+st.write("Summe Gesamtlast [kWh/a]:", round(df_ts["gesamtlast_kWh"].sum(), 2))
 
 st.write("Erste 24 Stunden:")
-st.dataframe(df_ts[["Monat","Stunde","hauslast_kWh","heizwaerme_kWh"]].head(24))
+st.dataframe(
+    df_ts[["Monat", "Stunde", "hauslast_kWh", "heizwaerme_kWh", "wp_strom_kWh", "gesamtlast_kWh"]].head(24)
+)
 
-st.write("Haushaltslast über 24 Stunden:")
-st.bar_chart(df_ts["hauslast_kWh"].head(24))
+st.write("Elektrische Last über 24 Stunden:")
+st.bar_chart(df_ts[["hauslast_kWh", "wp_strom_kWh", "gesamtlast_kWh"]].head(24))
 
-st.write("Haushaltslast über 7 Tage:")
-st.line_chart(df_ts[["hauslast_kWh","heizwaerme_kWh"]].head(168))
+st.write("Elektrische Last über 7 Tage:")
+st.line_chart(df_ts[["hauslast_kWh", "wp_strom_kWh", "gesamtlast_kWh"]].head(168))
