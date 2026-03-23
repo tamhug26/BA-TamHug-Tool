@@ -333,6 +333,36 @@ def create_energy_summary(df):
     }
 
     return df, monatsbilanz, jahreskennzahlen
+def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
+    df = df.copy()
+
+    if zeitraum == "Tag":
+        if start_datum is None:
+            start_datum = df.index.min().date()
+        start = pd.Timestamp(start_datum)
+        ende = start + pd.Timedelta(days=1)
+        df_anzeige = df[(df.index >= start) & (df.index < ende)]
+
+    elif zeitraum == "Woche":
+        if start_datum is None:
+            start_datum = df.index.min().date()
+        start = pd.Timestamp(start_datum)
+        ende = start + pd.Timedelta(days=7)
+        df_anzeige = df[(df.index >= start) & (df.index < ende)]
+
+    elif zeitraum == "Monat":
+        if start_monat is None:
+            start_monat = 1
+        df_anzeige = df[df.index.month == start_monat]
+
+    elif zeitraum == "Jahr":
+        df_anzeige = df.copy()
+
+    else:
+        df_anzeige = df.copy()
+
+    return df_anzeige
+
 
 st.header("Dimensionierungstool")
 
@@ -621,3 +651,63 @@ st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
 
 st.write("Monatliche Produktion und Eigenverbrauch:")
 st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
+
+st.write("------------------------------")
+st.subheader("Graphik 1 – Zeitverlauf")
+
+zeitraum = st.selectbox(
+    "Zeitraum wählen",
+    ["Tag", "Woche", "Monat", "Jahr"]
+)
+
+if zeitraum in ["Tag", "Woche"]:
+    start_datum = st.date_input(
+        "Startdatum wählen",
+        value=df_ts.index.min().date(),
+        min_value=df_ts.index.min().date(),
+        max_value=df_ts.index.max().date()
+    )
+    df_plot = get_display_dataframe(df_ts, zeitraum, start_datum=start_datum)
+
+elif zeitraum == "Monat":
+    monat_namen = {
+        1: "Januar", 2: "Februar", 3: "März", 4: "April",
+        5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+        9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
+    }
+
+    start_monat = st.selectbox(
+        "Monat wählen",
+        list(monat_namen.keys()),
+        format_func=lambda x: monat_namen[x]
+    )
+    df_plot = get_display_dataframe(df_ts, zeitraum, start_monat=start_monat)
+
+else:
+    df_plot = get_display_dataframe(df_ts, zeitraum)
+
+st.write("Ausgewählter Zeitraum:")
+st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
+
+st.line_chart(
+    df_plot[[
+        "pv_kWh",
+        "gesamtlast_kWh",
+        "soc_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh"
+    ]]
+)
+
+st.write("Daten im ausgewählten Zeitraum:")
+st.dataframe(
+    df_plot[[
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "soc_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh",
+        "abregelung_kWh",
+        "unterdeckung_kWh"
+    ]].round(3)
+)
