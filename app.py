@@ -725,8 +725,8 @@ st.line_chart(
     ]].head(168)
 )
 
-st.write("Abregelung und Unterdeckung über 7 Tage:")
-st.line_chart(
+#st.write("Abregelung und Unterdeckung über 7 Tage:")
+#st.line_chart(
     df_ts[[
         "abregelung_kWh",
         "unterdeckung_kWh"
