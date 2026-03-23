@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
+
 
 #Tabellen bzw Dataframes
 Standort = {
@@ -362,7 +364,110 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df.copy()
 
     return df_anzeige
+def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw):
+    fig = go.Figure()
 
+    # PV-Produktion
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["pv_kWh"],
+        mode="lines",
+        name="PV-Produktion",
+        line=dict(color="gold", width=2)
+    ))
+
+    # Gesamtlast
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["gesamtlast_kWh"],
+        mode="lines",
+        name="Hausverbrauch / Gesamtlast",
+        line=dict(color="blue", width=2)
+    ))
+
+    # SoC
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["soc_kWh"],
+        mode="lines",
+        name="Batterie-SoC",
+        line=dict(color="green", width=2),
+        yaxis="y2"
+    ))
+
+    # Netzbezug
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["netzbezug_kWh"],
+        mode="lines",
+        name="Netzbezug",
+        line=dict(color="orange", width=2)
+    ))
+
+    # Netzeinspeisung
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["netzeinspeisung_kWh"],
+        mode="lines",
+        name="Netzeinspeisung",
+        line=dict(color="purple", width=2)
+    ))
+
+    # Einspeisegrenze
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=[einspeisegrenze_kw] * len(df_plot),
+        mode="lines",
+        name="Einspeisegrenze",
+        line=dict(color="red", width=1.5, dash="dash")
+    ))
+
+    # Bezugsgrenze
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=[bezugsgrenze_kw] * len(df_plot),
+        mode="lines",
+        name="Bezugsgrenze",
+        line=dict(color="red", width=1.5, dash="dot")
+    ))
+
+    # Abregelung rot markieren
+    df_abregelung = df_plot[df_plot["abregelung_kWh"] > 0]
+    if not df_abregelung.empty:
+        fig.add_trace(go.Scatter(
+            x=df_abregelung.index,
+            y=df_abregelung["netzeinspeisung_kWh"] + df_abregelung["abregelung_kWh"],
+            mode="markers",
+            name="Abregelung",
+            marker=dict(color="red", size=8, symbol="x")
+        ))
+
+    # Unterdeckung rot markieren
+    df_unterdeckung = df_plot[df_plot["unterdeckung_kWh"] > 0]
+    if not df_unterdeckung.empty:
+        fig.add_trace(go.Scatter(
+            x=df_unterdeckung.index,
+            y=df_unterdeckung["gesamtlast_kWh"],
+            mode="markers",
+            name="Unterdeckung",
+            marker=dict(color="darkred", size=8, symbol="circle-open")
+        ))
+
+    fig.update_layout(
+        title="Zeitverlauf von PV, Last, Batterie und Netz",
+        xaxis_title="Zeit",
+        yaxis_title="Leistung / Energie pro Zeitschritt",
+        yaxis2=dict(
+            title="SoC Batterie [kWh]",
+            overlaying="y",
+            side="right"
+        ),
+        legend=dict(orientation="h", y=-0.2),
+        height=600,
+        margin=dict(l=40, r=40, t=60, b=80)
+    )
+
+    return fig
 
 st.header("Dimensionierungstool")
 
@@ -689,25 +794,34 @@ else:
 st.write("Ausgewählter Zeitraum:")
 st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
 
-st.line_chart(
-    df_plot[[
-        "pv_kWh",
-        "gesamtlast_kWh",
-        "soc_kWh",
-        "netzbezug_kWh",
-        "netzeinspeisung_kWh"
-    ]]
-)
+fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
+st.plotly_chart(fig, use_container_width=True)
 
-st.write("Daten im ausgewählten Zeitraum:")
-st.dataframe(
-    df_plot[[
-        "gesamtlast_kWh",
-        "pv_kWh",
-        "soc_kWh",
-        "netzbezug_kWh",
-        "netzeinspeisung_kWh",
-        "abregelung_kWh",
-        "unterdeckung_kWh"
-    ]].round(3)
-)
+st.write("Zusammenfassung für den ausgewählten Zeitraum:")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("PV-Produktion", f"{df_plot['pv_kWh'].sum():.1f} kWh")
+    st.metric("Gesamtlast", f"{df_plot['gesamtlast_kWh'].sum():.1f} kWh")
+
+with col2:
+    st.metric("Netzbezug", f"{df_plot['netzbezug_kWh'].sum():.1f} kWh")
+    st.metric("Netzeinspeisung", f"{df_plot['netzeinspeisung_kWh'].sum():.1f} kWh")
+
+with col3:
+    st.metric("Abregelung", f"{df_plot['abregelung_kWh'].sum():.1f} kWh")
+    st.metric("Unterdeckung", f"{df_plot['unterdeckung_kWh'].sum():.1f} kWh")
+
+with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
+    st.dataframe(
+        df_plot[[
+            "gesamtlast_kWh",
+            "pv_kWh",
+            "soc_kWh",
+            "netzbezug_kWh",
+            "netzeinspeisung_kWh",
+            "abregelung_kWh",
+            "unterdeckung_kWh"
+        ]].round(3)
+    )
