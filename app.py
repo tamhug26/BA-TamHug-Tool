@@ -673,16 +673,16 @@ df_ts = simulate_battery(
 df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
 
 #Kennzahlenblock
-st.write("Anzahl Stunden im Jahr:", len(df_ts))
-st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
-st.write("Summe Heizwärme [kWh/a]:", round(df_ts["heizwaerme_kWh"].sum(), 2))
-st.write("Summe Wärmepumpenstrom [kWh/a]:", round(df_ts["wp_strom_kWh"].sum(), 2))
-st.write("Summe Gesamtlast [kWh/a]:", round(df_ts["gesamtlast_kWh"].sum(), 2))
-st.write("Summe PV-Produktion [kWh/a]:", round(df_ts["pv_kWh"].sum(), 2))
-st.write("Summe Netzbezug [kWh/a]:", round(df_ts["netzbezug_kWh"].sum(), 2))
-st.write("Summe Netzeinspeisung [kWh/a]:", round(df_ts["netzeinspeisung_kWh"].sum(), 2))
-st.write("Summe Abregelung [kWh/a]:", round(df_ts["abregelung_kWh"].sum(), 2))
-st.write("Summe Unterdeckung [kWh/a]:", round(df_ts["unterdeckung_kWh"].sum(), 2))
+#st.write("Anzahl Stunden im Jahr:", len(df_ts))
+#st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
+#st.write("Summe Heizwärme [kWh/a]:", round(df_ts["heizwaerme_kWh"].sum(), 2))
+#st.write("Summe Wärmepumpenstrom [kWh/a]:", round(df_ts["wp_strom_kWh"].sum(), 2))
+#st.write("Summe Gesamtlast [kWh/a]:", round(df_ts["gesamtlast_kWh"].sum(), 2))
+#st.write("Summe PV-Produktion [kWh/a]:", round(df_ts["pv_kWh"].sum(), 2))
+#st.write("Summe Netzbezug [kWh/a]:", round(df_ts["netzbezug_kWh"].sum(), 2))
+#st.write("Summe Netzeinspeisung [kWh/a]:", round(df_ts["netzeinspeisung_kWh"].sum(), 2))
+#st.write("Summe Abregelung [kWh/a]:", round(df_ts["abregelung_kWh"].sum(), 2))
+#st.write("Summe Unterdeckung [kWh/a]:", round(df_ts["unterdeckung_kWh"].sum(), 2))
 
 #Tabelle
 st.write("Erste 24 Stunden:")
@@ -708,7 +708,6 @@ st.line_chart(
     df_ts[[
         "gesamtlast_kWh",
         "pv_kWh",
-        "soc_kWh",
         "netzbezug_kWh",
         "netzeinspeisung_kWh"
     ]].head(24)
