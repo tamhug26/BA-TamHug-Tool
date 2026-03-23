@@ -207,6 +207,77 @@ def add_pv_profile(df, pv_peakleistung):
     else:
         df["pv_kWh"] = 0.0
     return df
+def simulate_battery(
+    df,
+    batteriekapazitaet,
+    max_ladeleistung,
+    max_entladeleistung,
+    min_soc_prozent,
+    max_soc_prozent,
+    einspeisegrenze_kw,
+    bezugsgrenze_kw
+):
+    df = df.copy()
+
+    # neue Spalten vorbereiten
+    df["direktverbrauch_pv_kWh"] = 0.0
+    df["batterie_ladung_kWh"] = 0.0
+    df["batterie_entladung_kWh"] = 0.0
+    df["soc_kWh"] = 0.0
+    df["netzbezug_kWh"] = 0.0
+    df["netzeinspeisung_kWh"] = 0.0
+    df["abregelung_kWh"] = 0.0
+    df["unterdeckung_kWh"] = 0.0
+
+    soc_min = batteriekapazitaet * (min_soc_prozent / 100)
+    soc_max = batteriekapazitaet * (max_soc_prozent / 100)
+
+    # Startwert Batterie: Mitte zwischen min und max
+    soc = (soc_min + soc_max) / 2
+
+    for i in df.index:
+        last = df.at[i, "gesamtlast_kWh"]
+        pv = df.at[i, "pv_kWh"]
+
+        # 1) direkter PV-Verbrauch
+        direktverbrauch = min(pv, last)
+
+        pv_ueberschuss = pv - direktverbrauch
+        restlast = last - direktverbrauch
+
+        # 2) Batterie laden bei PV-Überschuss
+        freie_kapazitaet = soc_max - soc
+        batterie_ladung = min(pv_ueberschuss, max_ladeleistung, freie_kapazitaet)
+        soc += batterie_ladung
+
+        rest_pv_nach_batterie = pv_ueberschuss - batterie_ladung
+
+        # 3) Einspeisen bis Grenze, Rest abregeln
+        netzeinspeisung = min(rest_pv_nach_batterie, einspeisegrenze_kw)
+        abregelung = max(0.0, rest_pv_nach_batterie - netzeinspeisung)
+
+        # 4) Batterie entladen bei Restlast
+        verfuegbar_batterie = soc - soc_min
+        batterie_entladung = min(restlast, max_entladeleistung, verfuegbar_batterie)
+        soc -= batterie_entladung
+
+        restlast_nach_batterie = restlast - batterie_entladung
+
+        # 5) Netzbezug bis Grenze, Rest = Unterdeckung
+        netzbezug = min(restlast_nach_batterie, bezugsgrenze_kw)
+        unterdeckung = max(0.0, restlast_nach_batterie - netzbezug)
+
+        # speichern
+        df.at[i, "direktverbrauch_pv_kWh"] = direktverbrauch
+        df.at[i, "batterie_ladung_kWh"] = batterie_ladung
+        df.at[i, "batterie_entladung_kWh"] = batterie_entladung
+        df.at[i, "soc_kWh"] = soc
+        df.at[i, "netzbezug_kWh"] = netzbezug
+        df.at[i, "netzeinspeisung_kWh"] = netzeinspeisung
+        df.at[i, "abregelung_kWh"] = abregelung
+        df.at[i, "unterdeckung_kWh"] = unterdeckung
+
+    return df
 
 st.header("Dimensionierungstool")
 
@@ -396,27 +467,74 @@ if heizsystem == "Wärmepumpe":
 else:
     df_ts = add_heatpump_consumption(df_ts, heizsystem)
 df_ts = add_pv_profile(df_ts, pv_Peakleistung)
+df_ts = simulate_battery(
+    df_ts,
+    batteriekapazität,
+    maxLadeleistungBatterie,
+    maxEntladeleistungBatterie,
+    minSoC,
+    maxSoC,
+    EinspeisegrenzekW,
+    Bezugsgrenze
+)
 
+#Kennzahlenblock
 st.write("Anzahl Stunden im Jahr:", len(df_ts))
 st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
 st.write("Summe Heizwärme [kWh/a]:", round(df_ts["heizwaerme_kWh"].sum(), 2))
 st.write("Summe Wärmepumpenstrom [kWh/a]:", round(df_ts["wp_strom_kWh"].sum(), 2))
 st.write("Summe Gesamtlast [kWh/a]:", round(df_ts["gesamtlast_kWh"].sum(), 2))
 st.write("Summe PV-Produktion [kWh/a]:", round(df_ts["pv_kWh"].sum(), 2))
+st.write("Summe Netzbezug [kWh/a]:", round(df_ts["netzbezug_kWh"].sum(), 2))
+st.write("Summe Netzeinspeisung [kWh/a]:", round(df_ts["netzeinspeisung_kWh"].sum(), 2))
+st.write("Summe Abregelung [kWh/a]:", round(df_ts["abregelung_kWh"].sum(), 2))
+st.write("Summe Unterdeckung [kWh/a]:", round(df_ts["unterdeckung_kWh"].sum(), 2))
 
+#Tabelle
 st.write("Erste 24 Stunden:")
 st.dataframe(
-    df_ts[["Monat", "Stunde", "hauslast_kWh", "heizwaerme_kWh", "wp_strom_kWh", "gesamtlast_kWh", "pv_kWh"]].head(24)
+    df_ts[[
+        "Monat",
+        "Stunde",
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "batterie_ladung_kWh",
+        "batterie_entladung_kWh",
+        "soc_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh",
+        "abregelung_kWh",
+        "unterdeckung_kWh"
+    ]].head(24)
 )
 
-st.write("Last und PV über 24 Stunden:")
-st.bar_chart(df_ts[["gesamtlast_kWh", "pv_kWh"]].head(24))
+#Plots
+st.write("Last, PV und Batterie über 24 Stunden:")
+st.line_chart(
+    df_ts[[
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "soc_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh"
+    ]].head(24)
+)
 
-st.write("Last und PV über 7 Tage:")
-st.line_chart(df_ts[["gesamtlast_kWh", "pv_kWh"]].head(168))
+st.write("Last, PV und Batterie über 7 Tage:")
+st.line_chart(
+    df_ts[[
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "soc_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh"
+    ]].head(168)
+)
 
-st.write("PV im Winter (erste 7 Tage im Januar):")
-st.line_chart(df_ts["pv_kWh"].iloc[:168])
-
-st.write("PV im Sommer (erste 7 Tage im Juli):")
-st.line_chart(df_ts["pv_kWh"].iloc[24*181:24*181+168])
+st.write("Abregelung und Unterdeckung über 7 Tage:")
+st.line_chart(
+    df_ts[[
+        "abregelung_kWh",
+        "unterdeckung_kWh"
+    ]].head(168)
+)
