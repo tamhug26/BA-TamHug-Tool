@@ -79,7 +79,7 @@ EVU = {
     "Schweiz": 59
 }
 
-#Zeitdimension mit Dataframe
+#def Zeitdimension mit Dataframe
 def create_base_dataframe(year=2025):
     zeitindex = pd.date_range(
         start=f"{year}-01-01 00:00",
@@ -278,6 +278,61 @@ def simulate_battery(
         df.at[i, "unterdeckung_kWh"] = unterdeckung
 
     return df
+def create_energy_summary(df):
+    df = df.copy()
+
+    # Eigenverbrauch aus PV:
+    # PV-Produktion minus Einspeisung minus Abregelung
+    df["eigenverbrauch_kWh"] = df["pv_kWh"] - df["netzeinspeisung_kWh"] - df["abregelung_kWh"]
+
+    # Sicherheit: keine negativen Rundungsreste
+    df["eigenverbrauch_kWh"] = df["eigenverbrauch_kWh"].clip(lower=0)
+
+    # Monatsbilanz
+    monatsbilanz = df.groupby("Monat")[[
+        "pv_kWh",
+        "eigenverbrauch_kWh",
+        "netzeinspeisung_kWh",
+        "netzbezug_kWh"
+    ]].sum()
+
+    monatsbilanz = monatsbilanz.rename(columns={
+        "pv_kWh": "Produktion_kWh",
+        "eigenverbrauch_kWh": "Eigenverbrauch_kWh",
+        "netzeinspeisung_kWh": "Einspeisung_kWh",
+        "netzbezug_kWh": "Bezug_kWh"
+    })
+
+    # Jahreskennzahlen
+    gesamtlast = df["gesamtlast_kWh"].sum()
+    pv_produktion = df["pv_kWh"].sum()
+    eigenverbrauch = df["eigenverbrauch_kWh"].sum()
+    netzbezug = df["netzbezug_kWh"].sum()
+    abregelung = df["abregelung_kWh"].sum()
+    unterdeckung = df["unterdeckung_kWh"].sum()
+
+    if gesamtlast > 0:
+        autarkiegrad = (1 - netzbezug / gesamtlast) * 100
+    else:
+        autarkiegrad = 0.0
+
+    if pv_produktion > 0:
+        eigenverbrauchsquote = (eigenverbrauch / pv_produktion) * 100
+    else:
+        eigenverbrauchsquote = 0.0
+
+    jahreskennzahlen = {
+        "Autarkiegrad_%": autarkiegrad,
+        "Eigenverbrauchsquote_%": eigenverbrauchsquote,
+        "Abgeregelte_Energie_kWh": abregelung,
+        "Unterdeckung_kWh": unterdeckung,
+        "PV_Produktion_kWh": pv_produktion,
+        "Eigenverbrauch_kWh": eigenverbrauch,
+        "Netzbezug_kWh": netzbezug,
+        "Netzeinspeisung_kWh": df["netzeinspeisung_kWh"].sum()
+    }
+
+    return df, monatsbilanz, jahreskennzahlen
 
 st.header("Dimensionierungstool")
 
@@ -477,6 +532,7 @@ df_ts = simulate_battery(
     EinspeisegrenzekW,
     Bezugsgrenze
 )
+df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
 
 #Kennzahlenblock
 st.write("Anzahl Stunden im Jahr:", len(df_ts))
@@ -538,3 +594,30 @@ st.line_chart(
         "unterdeckung_kWh"
     ]].head(168)
 )
+
+st.write("------------------------------")
+st.subheader("Jahreskennzahlen")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
+    st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
+
+with col2:
+    st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
+    st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
+
+st.write("------------------------------")
+st.subheader("Monatsbilanz")
+
+st.dataframe(monatsbilanz.round(1))
+
+st.write("Monatsbilanz als Balkendiagramm:")
+st.bar_chart(monatsbilanz)
+
+st.write("Monatlicher Netzbezug und Einspeisung:")
+st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
+
+st.write("Monatliche Produktion und Eigenverbrauch:")
+st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
