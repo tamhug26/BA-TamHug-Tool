@@ -718,7 +718,6 @@ st.line_chart(
     df_ts[[
         "gesamtlast_kWh",
         "pv_kWh",
-        "soc_kWh",
         "netzbezug_kWh",
         "netzeinspeisung_kWh"
     ]].head(168)
@@ -750,7 +749,7 @@ st.subheader("Monatsbilanz")
 
 st.dataframe(monatsbilanz.round(1))
 
-st.write("Monatsbilanz als Balkendiagramm:")
+st.write("Monatsbilanz:")
 st.bar_chart(monatsbilanz)
 
 st.write("Monatlicher Netzbezug und Einspeisung:")
