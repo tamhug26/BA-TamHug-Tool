@@ -147,7 +147,66 @@ def add_heatpump_consumption(df, heizsystem, jaz=None):
         df["wp_strom_kWh"] = 0.0
     df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
     return df
-
+def add_pv_profile(df, pv_peakleistung):
+    df = df.copy()
+    # Monatsfaktoren: Sommer höher, Winter tiefer
+    pv_monatsfaktoren = {
+        1: 0.35,
+        2: 0.50,
+        3: 0.80,
+        4: 1.00,
+        5: 1.15,
+        6: 1.20,
+        7: 1.20,
+        8: 1.05,
+        9: 0.85,
+        10: 0.60,
+        11: 0.35,
+        12: 0.25
+    }
+    df["pv_monat"] = df["Monat"].map(pv_monatsfaktoren)
+    # Einfaches Tagesprofil: nachts 0, mittags Peak
+    def pv_stundenfaktor(stunde):
+        if 0 <= stunde <= 5:
+            return 0.0
+        elif stunde == 6:
+            return 0.08
+        elif stunde == 7:
+            return 0.20
+        elif stunde == 8:
+            return 0.40
+        elif stunde == 9:
+            return 0.60
+        elif stunde == 10:
+            return 0.78
+        elif stunde == 11:
+            return 0.92
+        elif stunde == 12:
+            return 1.00
+        elif stunde == 13:
+            return 0.95
+        elif stunde == 14:
+            return 0.82
+        elif stunde == 15:
+            return 0.62
+        elif stunde == 16:
+            return 0.42
+        elif stunde == 17:
+            return 0.22
+        elif stunde == 18:
+            return 0.08
+        else:
+            return 0.0
+    df["pv_stunde"] = df["Stunde"].apply(pv_stundenfaktor)
+    df["pv_faktor"] = df["pv_monat"] * df["pv_stunde"]
+    # grobe Annahme: 1 kWp ≈ 1000 kWh/a
+    pv_jahresertrag = pv_peakleistung * 1000
+    faktor_summe = df["pv_faktor"].sum()
+    if faktor_summe > 0:
+        df["pv_kWh"] = df["pv_faktor"] / faktor_summe * pv_jahresertrag
+    else:
+        df["pv_kWh"] = 0.0
+    return df
 
 st.header("Dimensionierungstool")
 
@@ -336,20 +395,28 @@ if heizsystem == "Wärmepumpe":
     df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
 else:
     df_ts = add_heatpump_consumption(df_ts, heizsystem)
+df_ts = add_pv_profile(df_ts, pv_Peakleistung)
 
 st.write("Anzahl Stunden im Jahr:", len(df_ts))
 st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
 st.write("Summe Heizwärme [kWh/a]:", round(df_ts["heizwaerme_kWh"].sum(), 2))
 st.write("Summe Wärmepumpenstrom [kWh/a]:", round(df_ts["wp_strom_kWh"].sum(), 2))
 st.write("Summe Gesamtlast [kWh/a]:", round(df_ts["gesamtlast_kWh"].sum(), 2))
+st.write("Summe PV-Produktion [kWh/a]:", round(df_ts["pv_kWh"].sum(), 2))
 
 st.write("Erste 24 Stunden:")
 st.dataframe(
-    df_ts[["Monat", "Stunde", "hauslast_kWh", "heizwaerme_kWh", "wp_strom_kWh", "gesamtlast_kWh"]].head(24)
+    df_ts[["Monat", "Stunde", "hauslast_kWh", "heizwaerme_kWh", "wp_strom_kWh", "gesamtlast_kWh", "pv_kWh"]].head(24)
 )
 
-st.write("Elektrische Last über 24 Stunden:")
-st.bar_chart(df_ts[["hauslast_kWh", "wp_strom_kWh", "gesamtlast_kWh"]].head(24))
+st.write("Last und PV über 24 Stunden:")
+st.bar_chart(df_ts[["gesamtlast_kWh", "pv_kWh"]].head(24))
 
-st.write("Elektrische Last über 7 Tage:")
-st.line_chart(df_ts[["hauslast_kWh", "wp_strom_kWh", "gesamtlast_kWh"]].head(168))
+st.write("Last und PV über 7 Tage:")
+st.line_chart(df_ts[["gesamtlast_kWh", "pv_kWh"]].head(168))
+
+st.write("PV im Winter (erste 7 Tage im Januar):")
+st.line_chart(df_ts["pv_kWh"].iloc[:168])
+
+st.write("PV im Sommer (erste 7 Tage im Juli):")
+st.line_chart(df_ts["pv_kWh"].iloc[24*181:24*181+168])
