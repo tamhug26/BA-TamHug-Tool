@@ -541,10 +541,10 @@ elif bau_typ == "Minergie-P":
 st.subheader("Heizsystem")
 
 heizsystem = st.segmented_control(
-    "Heizsystem wählen", ["Fossil", "Wärmepumpe"],
-    default="Fossil"
+    "Heizsystem wählen", ["Fossil & Holz", "Wärmepumpe"],
+    default="Fossil & Holz"
 )
-if heizsystem == "Fossil":
+if heizsystem == "Fossil & Holz":
     fossil_typ = st.radio(
         "Fossiles Heizsystem",
         ["Gas", "Öl", "Pellets"],
@@ -627,7 +627,12 @@ EVU_name = st.selectbox(
     list(EVU.keys())
 )
 CO2Emmisionen = EVU[EVU_name]
-st.write("CO2 Emmisionen:", CO2Emmisionen, "kg CO2e/MWh")
+CO2Emmisionen_input = st.number_input(
+    "CO2 Emmisionen [kg CO2e/MWh]",
+    value=int(CO2Emmisionen)
+)
+ergebnis = CO2Emmisionen
+
 
 st.write("------------------------------")
 st.subheader("Ein- und Ausspeisen")
