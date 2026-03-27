@@ -95,7 +95,8 @@ GEAK_Klassen = {
 reduktionen = {
                 "Dämmung Dach": 0.15,
                 "neue Fenster": 0.15,
-                "Dämmung Fassade": 0.25
+                "Dämmung Fassade": 0.25,
+                "Dämmmung Kellerdecke": 0.1
             }
 
 #def Zeitdimension mit Dataframe
