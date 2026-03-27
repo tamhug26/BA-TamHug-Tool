@@ -82,6 +82,22 @@ EVU = {
     "Schweiz": 59
 }
 
+GEAK_Klassen = {
+    "A": 25, 
+    "B": 50, 
+    "C": 75, 
+    "D": 100, 
+    "E": 125, 
+    "F": 150,
+    "G": 175
+}
+
+reduktionen = {
+                "Dämmung Dach": 0.15,
+                "neue Fenster": 0.15,
+                "Dämmung Fassade": 0.25
+            }
+
 #def Zeitdimension mit Dataframe
 def create_base_dataframe(year=2025):
     zeitindex = pd.date_range(
@@ -490,24 +506,28 @@ if bau_typ == "Baujahr":
     treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
     if not treffer.empty:
         Heizwaermebedarf = treffer.iloc[0] * m2
-        saniert = st.radio(
-            "Wurde das Gebäude saniert?",
-            ["Nein", "Ja"],
+        status = st.radio(
+            "Gebäude saniert oder sogar GEAK bekannt?",
+            ["Nein", "Ja", "GEAK Klasse"],
             horizontal=True
         )
         reduktion = 0.0
-        if saniert == "Ja":
+        if status == "Ja":
             Sanierungstyp = st.multiselect(
-                "Sanierungtyp",
-                ["Dämmung Dach", "neue Fenster", "Dämmung Fassade"],
+                "Sanierungstyp",
+                list(reduktionen.keys())
             )
-            reduktionen = {
-                "Dämmung Dach": 0.15,
-                "neue Fenster": 0.15,
-                "Dämmung Fassade": 0.25
-            }
             reduktion = sum(reduktionen[typ] for typ in Sanierungstyp)
-        Heizwaermebedarf_total = Heizwaermebedarf * (1 - reduktion)
+            Heizwaermebedarf_total = Heizwaermebedarf * (1 - reduktion)
+        elif status == "GEAK Klasse":
+            geak_klasse = st.selectbox(
+                "GEAK Klasse wählen",
+                list(GEAK_Klassen.keys())
+            )
+            Heizwaermebedarf_total = GEAK_Klassen[geak_klasse] * m2
+
+        else:
+            Heizwaermebedarf_total = Heizwaermebedarf
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/a",
             value=int(Heizwaermebedarf_total)
@@ -605,9 +625,6 @@ elif heizsystem == "Wärmepumpe":
         value=int(stromverbrauch)
     )
     ergebnis = stromverbrauch
-    
-    st.write(f"Stromverbrauch: {stromverbrauch:.1f} kWh/a")
-
 
 st.write("------------------------------")
 
