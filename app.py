@@ -629,20 +629,6 @@ elif heizsystem == "Wärmepumpe":
 st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
-PVAnlagen = st.number_input("Mengen PV Anlagen bzw Ausrichtungen oder Neigungen", 1, 5, 1)
-if PVAnlagen == "1":
-    PVart = st.segmented_control(
-        "Photovoltaikart", ["Monokristalin", "Polykristalin"],
-        default="Monokristalin"
-    )
-    pv_Peakleistung = st.number_input("PV-Peakleistung (kWp)", 0, 30, 10)
-    Dachneigung = st.number_input("Dachneigung (°)", 0, 90, 45) #0 = Flachdach, 90 = Fassade
-    st.write("0 = Flachdach, 90 = Fassade")
-    Dachausrichtung = st.number_input("Dachausrichtung (°)", -180, 180, 0) #0 = Süd, -90 = Ost, +90 = West, -180 & +180 = Nord
-    st.write("0 = Süd, -90 = Ost, +90 = West, -180 & +180 = Nord")
-
-st.subheader("Photovoltaikanlage")
-
 PVAnlagen = st.number_input(
     "Anzahl PV-Anlagen / Ausrichtungen / Neigungen",
     min_value=1,
@@ -650,13 +636,12 @@ PVAnlagen = st.number_input(
     value=1,
     step=1
 )
-
 pv_anlagen_daten = []
 for i in range(PVAnlagen):
     st.markdown(f"### PV-Anlage {i+1}")
 
     PVart = st.segmented_control(
-        f"Photovoltaikart {i+1}",
+        f"Photovoltaiktyp {i+1}",
         ["Monokristalin", "Polykristalin"],
         default="Monokristalin",
         key=f"pvart_{i}"
