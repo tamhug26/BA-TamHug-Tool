@@ -695,8 +695,19 @@ maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)",
 minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
 maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
 
+
 st.write("------------------------------")
-st.subheader("EVU")
+st.subheader("Einspeisen")
+# regel einbauen minSoC muss < sein als maxSoC
+Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
+EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
+st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
+
+jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
+
+st.write("------------------------------")
+st.subheader("Ausspeisen")
+Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
 EVU_name = st.selectbox(
     "EVU wählen",
     list(EVU.keys())
@@ -707,18 +718,6 @@ CO2Emmisionen_input = st.number_input(
     value=int(CO2Emmisionen)
 )
 ergebnis = CO2Emmisionen
-
-
-st.write("------------------------------")
-st.subheader("Ein- und Ausspeisen")
-# regel einbauen minSoC muss < sein als maxSoC
-Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
-EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
-st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
-Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
-
-jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
-
 
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
