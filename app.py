@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-st.write("test")
-
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
 #Tabellen bzw Dataframes
