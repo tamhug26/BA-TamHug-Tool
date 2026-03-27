@@ -630,7 +630,7 @@ st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
 PVAnlagen = st.number_input(
-    "Anzahl PV-Anlagen / Ausrichtungen / Neigungen",
+    "Anzahl PV-Anlagen",
     min_value=1,
     max_value=5,
     value=1,
@@ -641,14 +641,14 @@ for i in range(PVAnlagen):
     st.markdown(f"### PV-Anlage {i+1}")
 
     PVart = st.segmented_control(
-        f"Photovoltaiktyp {i+1}",
+        f"Photovoltaiktyp",
         ["Monokristalin", "Polykristalin"],
         default="Monokristalin",
         key=f"pvart_{i}"
     )
 
     pv_Peakleistung = st.number_input(
-        f"PV-Peakleistung {i+1} (kWp)",
+        f"PV-Peakleistung (kWp)",
         min_value=0.0,
         max_value=1000.0,
         value=10.0,
@@ -657,7 +657,7 @@ for i in range(PVAnlagen):
     )
 
     Dachneigung = st.number_input(
-        f"Dachneigung {i+1} (°)",
+        f"Dachneigung (°)",
         min_value=0,
         max_value=90,
         value=45,
@@ -666,7 +666,7 @@ for i in range(PVAnlagen):
     )
 
     Dachausrichtung = st.number_input(
-        f"Dachausrichtung {i+1} (°)",
+        f"Dachausrichtung (°)",
         min_value=-180,
         max_value=180,
         value=0,
