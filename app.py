@@ -600,6 +600,12 @@ elif heizsystem == "Wärmepumpe":
         stromverbrauch = Heizwaermebedarf_input / jaz
     else:
         stromverbrauch = 0.0
+    StromverbrauchWP_input = st.number_input(
+        "Stromverbrauch [kWh/a]",
+        value=int(stromverbrauch)
+    )
+    ergebnis = stromverbrauch
+    
     st.write(f"Stromverbrauch: {stromverbrauch:.1f} kWh/a")
 
 
