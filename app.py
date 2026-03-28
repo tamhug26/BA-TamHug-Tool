@@ -3,9 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-slp_df = pd.read_excel("Standartprofil H25.xlsx")
-st.write(slp_df.head())
-
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
 #Tabellen bzw Dataframes
@@ -102,32 +99,47 @@ reduktionen = {
                 "Dämmmung Kellerdecke": 0.1
             }
 
+#Standartlastprofile
+slp_df = pd.read_excel("Standartprofil H25.xlsx")
+slp_df["Zeit"] = pd.to_datetime(slp_df["Zeit"], format="%H:%M:%S").dt.strftime("%H:%M")
+
+
 #def Zeitdimension mit Dataframe
 def create_base_dataframe(year=2025):
     zeitindex = pd.date_range(
         start=f"{year}-01-01 00:00",
-        end=f"{year}-12-31 23:00",
-        freq="h"
+        end=f"{year}-12-31 23:45",
+        freq="15min"
     )
     df = pd.DataFrame(index=zeitindex)
     df["Monat"] = df.index.month
     df["Stunde"] = df.index.hour
     df["Tag_im_Jahr"] = df.index.dayofyear
     return df
-def add_household_load_profile(df, jahresstromverbrauch):
+def get_day_type(timestamp):
+    if timestamp.weekday() < 5:
+        return "WT"
+    elif timestamp.weekday() == 5:
+        return "SA"
+    else:
+        return "FT"
+def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df = df.copy()
-    # Einfaches Tagesprofil
-    # nachts tief, morgens etwas höher, abends am höchsten
-    stundenfaktoren = {
-        0: 0.4, 1: 0.35, 2: 0.3, 3: 0.3, 4: 0.35, 5: 0.5,
-        6: 0.8, 7: 1.0, 8: 0.9, 9: 0.7, 10: 0.6, 11: 0.6,
-        12: 0.7, 13: 0.6, 14: 0.6, 15: 0.7, 16: 0.9, 17: 1.2,
-        18: 1.4, 19: 1.5, 20: 1.3, 21: 1.0, 22: 0.7, 23: 0.5
-    }
-    df["haus_faktor"] = df["Stunde"].map(stundenfaktoren)
-    # auf Jahresstromverbrauch normieren
-    faktor_summe = df["haus_faktor"].sum()
-    df["hauslast_kWh"] = df["haus_faktor"] / faktor_summe * jahresstromverbrauch
+
+    df["Tagtyp"] = df.index.map(get_day_type)
+    df["Zeit"] = df.index.strftime("%H:%M")
+
+    df = df.merge(
+        slp_df,
+        how="left",
+        on=["Monat", "Zeit"]
+    )
+
+    df["slp_wert"] = df.apply(lambda row: row[row["Tagtyp"]], axis=1)
+
+    faktor_summe = df["slp_wert"].sum()
+    df["hauslast_kWh"] = df["slp_wert"] / faktor_summe * jahresstromverbrauch
+
     return df
 def add_heating_profile(df, heizwaermebedarf_jahr):
     df = df.copy()
