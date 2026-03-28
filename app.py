@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-st.write("test3")
+st.write("test4")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
@@ -916,22 +916,23 @@ st.plotly_chart(fig_week, use_container_width=True)
 
 st.subheader("Test: Gesamtlast über das Jahr")
 
+df_year_plot = df_ts.resample("D").sum()
+
 fig_year = go.Figure()
 fig_year.add_trace(go.Scatter(
-    x=df_ts.index,
-    y=df_ts["gesamtlast_kWh"],
+    x=df_year_plot.index,
+    y=df_year_plot["gesamtlast_kWh"],
     mode="lines",
     name="Gesamtlast"
 ))
+
 fig_year.update_layout(
     xaxis_title="Zeit",
-    yaxis_title="kWh pro 15 min",
+    yaxis_title="kWh pro Stunde",
     height=400
 )
+
 st.plotly_chart(fig_year, use_container_width=True)
-
-st.write("Summe Gesamtlast:", round(df_ts["gesamtlast_kWh"].sum(), 2))
-
 
 st.write("------------------------------")
 st.subheader("Graphik 1 – Zeitverlauf")
