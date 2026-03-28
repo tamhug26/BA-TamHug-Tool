@@ -101,8 +101,9 @@ reduktionen = {
 
 #Standartlastprofile
 slp_df = pd.read_excel("Standartprofil H25.xlsx")
+slp_df.columns = slp_df.columns.str.strip()
+slp_df["Monat"] = slp_df["Monat"].astype(int)
 slp_df["Zeit"] = pd.to_datetime(slp_df["Zeit"], format="%H:%M:%S").dt.strftime("%H:%M")
-
 
 #def Zeitdimension mit Dataframe
 def create_base_dataframe(year=2025):
@@ -135,7 +136,13 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
         on=["Monat", "Zeit"]
     )
 
-    df["slp_wert"] = df.apply(lambda row: row[row["Tagtyp"]], axis=1)
+    df["slp_wert"] = np.where(
+        df["Tagtyp"] == "WT", df["WT"],
+        np.where(
+            df["Tagtyp"] == "SA", df["SA"],
+            df["FT"]
+        )
+    )
 
     faktor_summe = df["slp_wert"].sum()
     df["hauslast_kWh"] = df["slp_wert"] / faktor_summe * jahresstromverbrauch
