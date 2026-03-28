@@ -871,7 +871,6 @@ st.write("--------------------------------")
 st.write("--------------------------------")
 st.subheader("Test: Gesamtlast – 1 Woche")
 
-# Beispiel: erste volle Woche ab Montag
 df_woche = df_ts.loc["2025-01-06":"2025-01-12 23:45"].copy()
 
 fig_week = go.Figure()
@@ -884,18 +883,17 @@ fig_week.add_trace(go.Scatter(
 
 fig_week.update_layout(
     title="Gesamtlast einer Woche",
-    xaxis_title="Tag",
+    xaxis_title="Wochentag / Datum",
     yaxis_title="Energie [kWh pro 15 min]",
     height=450
 )
 
 fig_week.update_xaxes(
-    tickformat="%a\n%d.%m",
+    tickformat="%a<br>%d.%m",
     dtick="D1"
 )
 
 st.plotly_chart(fig_week, use_container_width=True)
-st.write(df_woche[["Tagtyp", "hauslast_kWh"]].head(120))
 
 st.subheader("Test: Gesamtlast über das Jahr")
 
