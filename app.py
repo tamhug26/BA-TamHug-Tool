@@ -865,21 +865,34 @@ st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
 
 
 st.write("--------------------------------")
+st.write("--------------------------------")
 st.subheader("Test: Gesamtlast – 1 Woche")
+
+# Beispiel: erste volle Woche ab Montag
+df_woche = df_ts.loc["2025-01-06":"2025-01-12 23:45"].copy()
 
 fig_week = go.Figure()
 fig_week.add_trace(go.Scatter(
-    x=df_ts.index[:96*7],
-    y=df_ts["gesamtlast_kWh"].iloc[:96*7],
+    x=df_woche.index,
+    y=df_woche["gesamtlast_kWh"],
     mode="lines",
     name="Gesamtlast"
 ))
+
 fig_week.update_layout(
-    xaxis_title="Zeit",
-    yaxis_title="kWh pro 15 min",
-    height=400
+    title="Gesamtlast einer Woche",
+    xaxis_title="Tag",
+    yaxis_title="Energie [kWh pro 15 min]",
+    height=450
 )
+
+fig_week.update_xaxes(
+    tickformat="%a\n%d.%m",
+    dtick="D1"
+)
+
 st.plotly_chart(fig_week, use_container_width=True)
+st.write(df_woche[["Tagtyp", "hauslast_kWh"]].head(120))
 
 st.subheader("Test: Gesamtlast über das Jahr")
 
