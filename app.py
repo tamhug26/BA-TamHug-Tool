@@ -126,26 +126,29 @@ def get_day_type(timestamp):
         return "FT"
 def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df = df.copy()
-    
-    original_index = df.index.copy()
 
+    # Zeitinfos aus dem bestehenden DatetimeIndex
     df["Tagtyp"] = df.index.map(get_day_type)
     df["Zeit"] = df.index.strftime("%H:%M")
 
-    df = df.merge(
-        slp_df,
-        how="left",
-        on=["Monat", "Zeit"]
-    )
+    # Excel vorbereiten
+    slp_lookup = slp_df.copy()
+    slp_lookup["Monat"] = slp_lookup["Monat"].astype(int)
+    slp_lookup["Zeit"] = slp_lookup["Zeit"].astype(str).str[:5]
+    slp_lookup = slp_lookup.set_index(["Monat", "Zeit"])
 
+    # Werte holen, OHNE den DatetimeIndex zu zerstören
+    df["SA"] = [slp_lookup.loc[(m, z), "SA"] for m, z in zip(df["Monat"], df["Zeit"])]
+    df["FT"] = [slp_lookup.loc[(m, z), "FT"] for m, z in zip(df["Monat"], df["Zeit"])]
+    df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]
+
+    # richtigen Typtag wählen
     df["slp_wert"] = np.where(
         df["Tagtyp"] == "WT", df["WT"],
-        np.where(
-            df["Tagtyp"] == "SA", df["SA"],
-            df["FT"]
-        )
+        np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
     )
 
+    # auf Jahresverbrauch normieren
     faktor_summe = df["slp_wert"].sum()
     df["hauslast_kWh"] = df["slp_wert"] / faktor_summe * jahresstromverbrauch
 
