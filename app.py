@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+slp_df = pd.read_excel("Standartprofil H25.xlsx")
+st.write(slp_df.head())
+
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
 #Tabellen bzw Dataframes
