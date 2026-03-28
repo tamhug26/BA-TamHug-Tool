@@ -126,6 +126,8 @@ def get_day_type(timestamp):
         return "FT"
 def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df = df.copy()
+    
+    original_index = df.index.copy()
 
     df["Tagtyp"] = df.index.map(get_day_type)
     df["Zeit"] = df.index.strftime("%H:%M")
@@ -864,28 +866,36 @@ st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
 
 st.write("--------------------------------")
 st.subheader("Test: Gesamtlast – 1 Woche")
-st.line_chart(df_ts["gesamtlast_kWh"].head(96*7))
+
+fig_week = go.Figure()
+fig_week.add_trace(go.Scatter(
+    x=df_ts.index[:96*7],
+    y=df_ts["gesamtlast_kWh"].iloc[:96*7],
+    mode="lines",
+    name="Gesamtlast"
+))
+fig_week.update_layout(
+    xaxis_title="Zeit",
+    yaxis_title="kWh pro 15 min",
+    height=400
+)
+st.plotly_chart(fig_week, use_container_width=True)
 
 st.subheader("Test: Gesamtlast über das Jahr")
-st.line_chart(df_ts["gesamtlast_kWh"])
 
-fig_test = go.Figure()
-
-fig_test.add_trace(go.Scatter(
+fig_year = go.Figure()
+fig_year.add_trace(go.Scatter(
     x=df_ts.index,
     y=df_ts["gesamtlast_kWh"],
     mode="lines",
     name="Gesamtlast"
 ))
-
-fig_test.update_layout(
-    title="Gesamtlast über das Jahr",
+fig_year.update_layout(
     xaxis_title="Zeit",
-    yaxis_title="kWh pro 15min",
+    yaxis_title="kWh pro 15 min",
     height=400
 )
-
-st.plotly_chart(fig_test, use_container_width=True)
+st.plotly_chart(fig_year, use_container_width=True)
 
 st.write("Summe Gesamtlast:", round(df_ts["gesamtlast_kWh"].sum(), 2))
 
