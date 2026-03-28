@@ -860,6 +860,36 @@ st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
 st.write("Monatliche Produktion und Eigenverbrauch:")
 st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
 
+
+
+st.write("--------------------------------")
+st.subheader("Test: Gesamtlast – 1 Woche")
+st.line_chart(df_ts["gesamtlast_kWh"].head(96*7))
+
+st.subheader("Test: Gesamtlast über das Jahr")
+st.line_chart(df_ts["gesamtlast_kWh"])
+
+fig_test = go.Figure()
+
+fig_test.add_trace(go.Scatter(
+    x=df_ts.index,
+    y=df_ts["gesamtlast_kWh"],
+    mode="lines",
+    name="Gesamtlast"
+))
+
+fig_test.update_layout(
+    title="Gesamtlast über das Jahr",
+    xaxis_title="Zeit",
+    yaxis_title="kWh pro 15min",
+    height=400
+)
+
+st.plotly_chart(fig_test, use_container_width=True)
+
+st.write("Summe Gesamtlast:", round(df_ts["gesamtlast_kWh"].sum(), 2))
+
+
 st.write("------------------------------")
 st.subheader("Graphik 1 – Zeitverlauf")
 
