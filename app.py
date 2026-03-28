@@ -740,7 +740,7 @@ st.subheader("Test Zeitreihe")
 
 df_ts = create_base_dataframe()
 
-df_ts = add_household_load_profile(df_ts, jahresstromverbrauch)
+df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
 
 # Heizwärmebedarf übernehmen (oder Testwert)
 if "Heizwaermebedarf_input" in locals():
