@@ -898,7 +898,6 @@ fig_week.update_xaxes(
     dtick=24 * 60 * 60 * 1000
 )
 
-st.plotly_chart(fig_week, use_container_width=True)
 # Senkrechte Linien für jeden Tagesanfang
 for tag in pd.date_range(df_woche.index.min().normalize(),
                          df_woche.index.max().normalize(),
@@ -912,6 +911,8 @@ for tag in pd.date_range(df_woche.index.min().normalize(),
         opacity=0.5
         layer="below"
     )
+st.plotly_chart(fig_week, use_container_width=True)
+
 
 st.subheader("Test: Gesamtlast über das Jahr")
 
