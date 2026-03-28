@@ -869,13 +869,15 @@ st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
 
 st.write("--------------------------------")
 st.write("--------------------------------")
+st.write("--------------------------------")
 st.subheader("Test: Gesamtlast – 1 Woche")
 
 df_woche = df_ts.loc["2025-01-06":"2025-01-12 23:45"].copy()
+df_woche["Zeitstempel"] = pd.to_datetime(df_woche.index)
 
 fig_week = go.Figure()
 fig_week.add_trace(go.Scatter(
-    x=df_woche.index,
+    x=df_woche["Zeitstempel"],
     y=df_woche["gesamtlast_kWh"],
     mode="lines",
     name="Gesamtlast"
@@ -889,8 +891,9 @@ fig_week.update_layout(
 )
 
 fig_week.update_xaxes(
+    type="date",
     tickformat="%a<br>%d.%m",
-    dtick="D1"
+    dtick=24 * 60 * 60 * 1000
 )
 
 st.plotly_chart(fig_week, use_container_width=True)
