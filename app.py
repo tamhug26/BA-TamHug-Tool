@@ -185,6 +185,19 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     faktor_summe = df["slp_dyn"].sum()
     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
 
+    st.write("Term 1 Tag 365:", (-3.92e-10 * t**4).iloc[-1])
+    st.write("Term 2 Tag 365:", ( 3.20e-7  * t**3).iloc[-1])
+    st.write("Term 3 Tag 365:", (-7.02e-5  * t**2).iloc[-1])
+    st.write("Term 4 Tag 365:", ( 2.10e-3  * t).iloc[-1])
+    st.write("Term 5 konstant:", 1.24)
+    st.write("Summe Formel Tag 365:", (
+        -3.92e-10 * t**4
+        + 3.20e-7 * t**3
+        - 7.02e-5 * t**2
+        + 2.10e-3 * t
+        + 1.24
+    ).iloc[-1])
+
     return df
 def add_heating_profile(df, heizwaermebedarf_jahr):
     df = df.copy()
