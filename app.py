@@ -513,7 +513,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw):
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
         xaxis_title="Zeit",
-        yaxis_title="Leistung / Energie pro Zeitschritt",
+        yaxis_title="Energie [kWh pro 15 min]",
         # yaxis2=dict(
         #     title="SoC Batterie [kWh]",
         #     overlaying="y",
