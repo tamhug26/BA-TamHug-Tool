@@ -922,32 +922,28 @@ st.write("--------------------------------")
 #     )
 # st.plotly_chart(fig_week, use_container_width=True)
 
-# st.subheader("Test: Gesamtlast über das Jahr")
+st.subheader("Test: Gesamtlast über das Jahr")
 
-# df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
-# df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
-
-# fig_year = go.Figure()
-# fig_year.add_trace(go.Scatter(
-#     x=df_year_plot.index,
-#     y=df_year_plot["monatslast_kWh"],
-#     mode="lines+markers",
-#     name="Gesamtlast"
-# ))
-
-# fig_year.update_layout(
-#     title="Gesamtlast im Jahresverlauf",
-#     xaxis_title="Monat",
-#     yaxis_title="Energie [kWh pro Monat]",
-#     height=450
-# )
-
-# fig_year.update_xaxes(
-#     tickformat="%b",
-#     dtick="M1"
-# )
-
-# st.plotly_chart(fig_year, use_container_width=True)
+df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
+df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
+fig_year = go.Figure()
+fig_year.add_trace(go.Scatter(
+    x=df_year_plot.index,
+    y=df_year_plot["monatslast_kWh"],
+    mode="lines+markers",
+    name="Gesamtlast"
+))
+fig_year.update_layout(
+    title="Gesamtlast im Jahresverlauf",
+    xaxis_title="Monat",
+    yaxis_title="Energie [kWh pro Monat]",
+    height=450
+)
+fig_year.update_xaxes(
+    tickformat="%b",
+    dtick="M1"
+)
+st.plotly_chart(fig_year, use_container_width=True)
 
 st.write("------------------------------")
 st.subheader("Graphik 1 – Zeitverlauf")
@@ -1010,7 +1006,7 @@ with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
         df_plot[[
             "gesamtlast_kWh",
             "pv_kWh",
-            #"soc_kWh",
+            "soc_kWh",
             "netzbezug_kWh",
             "netzeinspeisung_kWh",
             "abregelung_kWh",
