@@ -804,43 +804,43 @@ df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
 #st.write("Summe Unterdeckung [kWh/a]:", round(df_ts["unterdeckung_kWh"].sum(), 2))
 
 #Tabelle
-st.write("Erste 24 Stunden:")
-st.dataframe(
-    df_ts[[
-        "Monat",
-        "Stunde",
-        "gesamtlast_kWh",
-        "pv_kWh",
-        "batterie_ladung_kWh",
-        "batterie_entladung_kWh",
-        "soc_kWh",
-        "netzbezug_kWh",
-        "netzeinspeisung_kWh",
-        "abregelung_kWh",
-        "unterdeckung_kWh"
-    ]].head(24)
-)
+# st.write("Erste 24 Stunden:")
+# st.dataframe(
+#     df_ts[[
+#         "Monat",
+#         "Stunde",
+#         "gesamtlast_kWh",
+#         "pv_kWh",
+#         "batterie_ladung_kWh",
+#         "batterie_entladung_kWh",
+#         "soc_kWh",
+#         "netzbezug_kWh",
+#         "netzeinspeisung_kWh",
+#         "abregelung_kWh",
+#         "unterdeckung_kWh"
+#     ]].head(24)
+# )
 
 #Plots
-st.write("Last, PV und Batterie über 24 Stunden:")
-st.line_chart(
-    df_ts[[
-        "gesamtlast_kWh",
-        "pv_kWh",
-        "netzbezug_kWh",
-        "netzeinspeisung_kWh"
-    ]].head(24)
-)
+# st.write("Last, PV und Batterie über 24 Stunden:")
+# st.line_chart(
+#     df_ts[[
+#         "gesamtlast_kWh",
+#         "pv_kWh",
+#         "netzbezug_kWh",
+#         "netzeinspeisung_kWh"
+#     ]].head(24)
+# )
 
-st.write("Last, PV und Batterie über 7 Tage:")
-st.line_chart(
-    df_ts[[
-        "gesamtlast_kWh",
-        "pv_kWh",
-        "netzbezug_kWh",
-        "netzeinspeisung_kWh"
-    ]].head(168)
-)
+# st.write("Last, PV und Batterie über 7 Tage:")
+# st.line_chart(
+#     df_ts[[
+#         "gesamtlast_kWh",
+#         "pv_kWh",
+#         "netzbezug_kWh",
+#         "netzeinspeisung_kWh"
+#     ]].head(168)
+# )
 
 #st.write("Abregelung und Unterdeckung über 7 Tage:")
 #st.line_chart(
@@ -880,74 +880,74 @@ st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
 
 
 st.write("--------------------------------")
-st.write("--------------------------------")
-st.subheader("Test: Gesamtlast – 1 Woche")
+# st.write("--------------------------------")
+# st.subheader("Test: Gesamtlast – 1 Woche")
 
-df_woche = df_ts.loc["2025-01-06":"2025-01-12 23:45"].copy()
-df_woche["Zeitstempel"] = pd.to_datetime(df_woche.index)
+# df_woche = df_ts.loc["2025-01-06":"2025-01-12 23:45"].copy()
+# df_woche["Zeitstempel"] = pd.to_datetime(df_woche.index)
 
-fig_week = go.Figure()
-fig_week.add_trace(go.Scatter(
-    x=df_woche["Zeitstempel"],
-    y=df_woche["gesamtlast_kWh"],
-    mode="lines",
-    name="Gesamtlast"
-))
+# fig_week = go.Figure()
+# fig_week.add_trace(go.Scatter(
+#     x=df_woche["Zeitstempel"],
+#     y=df_woche["gesamtlast_kWh"],
+#     mode="lines",
+#     name="Gesamtlast"
+# ))
 
-fig_week.update_layout(
-    title="Gesamtlast einer Woche",
-    xaxis_title="Wochentag / Datum",
-    yaxis_title="Energie [kWh pro 15 min]",
-    height=450
-)
+# fig_week.update_layout(
+#     title="Gesamtlast einer Woche",
+#     xaxis_title="Wochentag / Datum",
+#     yaxis_title="Energie [kWh pro 15 min]",
+#     height=450
+# )
 
-fig_week.update_xaxes(
-    type="date",
-    tickformat="%a<br>%d.%m",
-    dtick=24 * 60 * 60 * 1000
-)
+# fig_week.update_xaxes(
+#     type="date",
+#     tickformat="%a<br>%d.%m",
+#     dtick=24 * 60 * 60 * 1000
+# )
 
-# Senkrechte Linien für jeden Tagesanfang
-for tag in pd.date_range(df_woche.index.min().normalize(),
-                         df_woche.index.max().normalize(),
-                         freq="D"):
+# # Senkrechte Linien für jeden Tagesanfang
+# for tag in pd.date_range(df_woche.index.min().normalize(),
+#                          df_woche.index.max().normalize(),
+#                          freq="D"):
 
-    fig_week.add_vline(
-        x=tag,
-        line_width=1,
-        line_dash="dot",
-        line_color="lightgrey",
-        opacity= 0.5,
-        layer="below"
-    )
-st.plotly_chart(fig_week, use_container_width=True)
+#     fig_week.add_vline(
+#         x=tag,
+#         line_width=1,
+#         line_dash="dot",
+#         line_color="lightgrey",
+#         opacity= 0.5,
+#         layer="below"
+#     )
+# st.plotly_chart(fig_week, use_container_width=True)
 
-st.subheader("Test: Gesamtlast über das Jahr")
+# st.subheader("Test: Gesamtlast über das Jahr")
 
-df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
-df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
+# df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
+# df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
 
-fig_year = go.Figure()
-fig_year.add_trace(go.Scatter(
-    x=df_year_plot.index,
-    y=df_year_plot["monatslast_kWh"],
-    mode="lines+markers",
-    name="Gesamtlast"
-))
+# fig_year = go.Figure()
+# fig_year.add_trace(go.Scatter(
+#     x=df_year_plot.index,
+#     y=df_year_plot["monatslast_kWh"],
+#     mode="lines+markers",
+#     name="Gesamtlast"
+# ))
 
-fig_year.update_layout(
-    title="Gesamtlast im Jahresverlauf",
-    xaxis_title="Monat",
-    yaxis_title="Energie [kWh pro Monat]",
-    height=450
-)
+# fig_year.update_layout(
+#     title="Gesamtlast im Jahresverlauf",
+#     xaxis_title="Monat",
+#     yaxis_title="Energie [kWh pro Monat]",
+#     height=450
+# )
 
-fig_year.update_xaxes(
-    tickformat="%b",
-    dtick="M1"
-)
+# fig_year.update_xaxes(
+#     tickformat="%b",
+#     dtick="M1"
+# )
 
-st.plotly_chart(fig_year, use_container_width=True)
+# st.plotly_chart(fig_year, use_container_width=True)
 
 st.write("------------------------------")
 st.subheader("Graphik 1 – Zeitverlauf")
