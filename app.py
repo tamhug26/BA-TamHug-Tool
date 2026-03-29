@@ -3,6 +3,18 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+def test_dyn_formula(t):
+    return (
+        -3.92e-10 * t**4
+        + 3.20e-7 * t**3
+        - 7.02e-5 * t**2
+        + 2.10e-3 * t
+        + 1.24
+    )
+
+st.write("Formeltest Tag 1:", test_dyn_formula(1))
+st.write("Formeltest Tag 365:", test_dyn_formula(365))
+
 st.write("test1")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
