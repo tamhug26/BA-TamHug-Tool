@@ -172,6 +172,12 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     )
     df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
 
+    st.write("t letzte 5:", t.tail().tolist())
+    st.write("dynamikfaktor letzte 5:", dynamikfaktor.tail().tolist())
+    st.write("slp_wert letzte 5:", df["slp_wert"].tail().tolist())
+    st.write("slp_dyn letzte 5:", df["slp_dyn"].tail().tolist())
+    st.write("Verhältnis slp_dyn/slp_wert letzte 5:",
+            (df["slp_dyn"] / df["slp_wert"]).tail().tolist())
     st.write("Dynamikfaktor Tag 1:", dynamikfaktor.iloc[0])
     st.write("Dynamikfaktor Tag 365:", dynamikfaktor.iloc[-1])
 
