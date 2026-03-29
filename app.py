@@ -916,7 +916,7 @@ st.plotly_chart(fig_week, use_container_width=True)
 
 st.subheader("Test: Gesamtlast über das Jahr")
 
-df_year_plot = df_ts["gesamtlast_kWh"].resample("M").sum().to_frame()
+df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
 df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
 
 fig_year = go.Figure()
