@@ -162,7 +162,7 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
         np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
     )
 
-    t = df["Tag_im_Jahr"]
+    t = df["Tag_im_Jahr"].astype("float64")
     dynamikfaktor = (
         - 3.92e-10 * t**4
         + 3.20e-7 * t**3
