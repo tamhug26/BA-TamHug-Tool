@@ -871,7 +871,6 @@ st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
 
 st.write("--------------------------------")
 st.write("--------------------------------")
-st.write("--------------------------------")
 st.subheader("Test: Gesamtlast – 1 Woche")
 
 df_woche = df_ts.loc["2025-01-06":"2025-01-12 23:45"].copy()
@@ -917,7 +916,9 @@ st.plotly_chart(fig_week, use_container_width=True)
 
 st.subheader("Test: Gesamtlast über das Jahr")
 
-df_year_plot = df_ts["gesamtlast_kWh"].resample("W-MON").sum().to_frame()
+df_year_plot = df_ts["gesamtlast_kWh"].resample("W-MON").sum()
+#erste und letzte Woche entfernen da sie runter gingen da es keine vollen wochen sind
+df_year_plot = df_year_plot.iloc[1:-1]
 df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "wochenlast_kWh"})
 
 fig_year = go.Figure()
