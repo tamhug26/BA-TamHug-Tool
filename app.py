@@ -791,6 +791,16 @@ df_ts = simulate_battery(
 )
 df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
 
+st.write("Summe slp_wert:", float(df_ts["slp_wert"].sum()))
+st.write("Summe slp_dyn:", float(df_ts["slp_dyn"].sum()))
+st.write("Summe hauslast_kWh:", float(df_ts["hauslast_kWh"].sum()))
+st.write("Summe wp_strom_kWh:", float(df_ts["wp_strom_kWh"].sum()))
+st.write("Summe gesamtlast_kWh:", float(df_ts["gesamtlast_kWh"].sum()))
+
+st.write(df_ts[["Tag_im_Jahr", "slp_wert", "slp_dyn", "hauslast_kWh"]].head())
+st.write(df_ts[["Tag_im_Jahr", "slp_wert", "slp_dyn", "hauslast_kWh"]].tail())
+
+
 #Kennzahlenblock
 #st.write("Anzahl Stunden im Jahr:", len(df_ts))
 #st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
