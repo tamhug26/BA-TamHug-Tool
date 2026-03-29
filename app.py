@@ -150,9 +150,19 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
         np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
     )
 
+    t = df["Tag_im_Jahr"]
+    dynamikfaktor = (
+        -3.92e-10 * t**4
+        + 3.20e-7 * t**3
+        - 7.02e-5 * t**2
+        + 2.10e-3 * t
+        + 1.24
+    )
+    df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
+
     # auf Jahresverbrauch normieren
-    faktor_summe = df["slp_wert"].sum()
-    df["hauslast_kWh"] = df["slp_wert"] / faktor_summe * jahresstromverbrauch
+    faktor_summe = df["slp_dyn"].sum()
+    df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
 
     return df
 def add_heating_profile(df, heizwaermebedarf_jahr):
