@@ -922,7 +922,7 @@ df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
 fig_year = go.Figure()
 fig_year.add_trace(go.Scatter(
     x=df_year_plot.index,
-    y=df_year_plot["wochenlast_kWh"],
+    y=df_year_plot["monatslast_kWh"],
     mode="lines+markers",
     name="Gesamtlast"
 ))
@@ -930,7 +930,7 @@ fig_year.add_trace(go.Scatter(
 fig_year.update_layout(
     title="Gesamtlast im Jahresverlauf",
     xaxis_title="Monat",
-    yaxis_title="Energie [kWh pro Woche]",
+    yaxis_title="Energie [kWh pro Monat]",
     height=450
 )
 
