@@ -160,6 +160,9 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     )
     df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
 
+    st.write("Dynamikfaktor Tag 1:", dynamikfaktor.iloc[0])
+    st.write("Dynamikfaktor Tag 365:", dynamikfaktor.iloc[-1])
+
     # auf Jahresverbrauch normieren
     faktor_summe = df["slp_dyn"].sum()
     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
