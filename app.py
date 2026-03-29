@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 def test_dyn_formula(t):
     return (
-        -3.92e-10 * t**4
+        - 3.92e-10 * t**4
         + 3.20e-7 * t**3
         - 7.02e-5 * t**2
         + 2.10e-3 * t
@@ -164,7 +164,7 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
 
     t = df["Tag_im_Jahr"]
     dynamikfaktor = (
-        -3.92e-10 * t**4
+        - 3.92e-10 * t**4
         + 3.20e-7 * t**3
         - 7.02e-5 * t**2
         + 2.10e-3 * t
