@@ -3,18 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-def test_dyn_formula(t):
-    return (
-        - 3.92e-10 * t**4
-        + 3.20e-7 * t**3
-        - 7.02e-5 * t**2
-        + 2.10e-3 * t
-        + 1.24
-    )
-
-st.write("Formeltest Tag 1:", test_dyn_formula(1))
-st.write("Formeltest Tag 365:", test_dyn_formula(365))
-
 st.write("test3")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
@@ -172,31 +160,9 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     )
     df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
 
-    st.write("t letzte 5:", t.tail().tolist())
-    st.write("dynamikfaktor letzte 5:", dynamikfaktor.tail().tolist())
-    st.write("slp_wert letzte 5:", df["slp_wert"].tail().tolist())
-    st.write("slp_dyn letzte 5:", df["slp_dyn"].tail().tolist())
-    st.write("Verhältnis slp_dyn/slp_wert letzte 5:",
-            (df["slp_dyn"] / df["slp_wert"]).tail().tolist())
-    st.write("Dynamikfaktor Tag 1:", dynamikfaktor.iloc[0])
-    st.write("Dynamikfaktor Tag 365:", dynamikfaktor.iloc[-1])
-
     # auf Jahresverbrauch normieren
     faktor_summe = df["slp_dyn"].sum()
     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
-
-    st.write("Term 1 Tag 365:", (-3.92e-10 * t**4).iloc[-1])
-    st.write("Term 2 Tag 365:", ( 3.20e-7  * t**3).iloc[-1])
-    st.write("Term 3 Tag 365:", (-7.02e-5  * t**2).iloc[-1])
-    st.write("Term 4 Tag 365:", ( 2.10e-3  * t).iloc[-1])
-    st.write("Term 5 konstant:", 1.24)
-    st.write("Summe Formel Tag 365:", (
-        -3.92e-10 * t**4
-        + 3.20e-7 * t**3
-        - 7.02e-5 * t**2
-        + 2.10e-3 * t
-        + 1.24
-    ).iloc[-1])
 
     return df
 def add_heating_profile(df, heizwaermebedarf_jahr):
@@ -825,16 +791,6 @@ df_ts = simulate_battery(
 )
 df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
 
-st.write("Summe slp_wert:", float(df_ts["slp_wert"].sum()))
-st.write("Summe slp_dyn:", float(df_ts["slp_dyn"].sum()))
-st.write("Summe hauslast_kWh:", float(df_ts["hauslast_kWh"].sum()))
-st.write("Summe wp_strom_kWh:", float(df_ts["wp_strom_kWh"].sum()))
-st.write("Summe gesamtlast_kWh:", float(df_ts["gesamtlast_kWh"].sum()))
-
-st.write(df_ts[["Tag_im_Jahr", "slp_wert", "slp_dyn", "hauslast_kWh"]].head())
-st.write(df_ts[["Tag_im_Jahr", "slp_wert", "slp_dyn", "hauslast_kWh"]].tail())
-
-
 #Kennzahlenblock
 #st.write("Anzahl Stunden im Jahr:", len(df_ts))
 #st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
@@ -965,8 +921,6 @@ for tag in pd.date_range(df_woche.index.min().normalize(),
         layer="below"
     )
 st.plotly_chart(fig_week, use_container_width=True)
-
-
 
 st.subheader("Test: Gesamtlast über das Jahr")
 
