@@ -1010,7 +1010,7 @@ with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
         df_plot[[
             "gesamtlast_kWh",
             "pv_kWh",
-            "soc_kWh",
+            #"soc_kWh",
             "netzbezug_kWh",
             "netzeinspeisung_kWh",
             "abregelung_kWh",
