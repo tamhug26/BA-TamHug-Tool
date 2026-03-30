@@ -98,7 +98,6 @@ standort_dateien = {
     "Zürich-MeteoSchweiz": "ZUESTA_2023_DRY.csv"
 }  
 
-
 df_Bautyp_Heizwaermebedarf = pd.DataFrame({
     "Bautyp" : list(range(1901, 2016)) + ["Minergie", "Minergie-P"],
     "Heizwaermebedarf" : (
@@ -599,6 +598,7 @@ standort_auswahl = st.selectbox(
     "Standort wählen",
     list(Standort.keys())
 ) 
+jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
@@ -812,8 +812,6 @@ st.subheader("Einspeisen")
 Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
 EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
 st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
-
-jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 
 st.write("------------------------------")
 st.subheader("Ausspeisen")
