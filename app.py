@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 st.set_page_config(layout="wide")
 
+
 st.write("test4")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
@@ -51,6 +52,52 @@ Standort = {
     "Zürich-Kloten" : -8,
     "Zürich-MeteoSchweiz" : -8
 }
+
+basis_pfad_weather = "/Users/tamara/Library/Mobile Documents/com~apple~CloudDocs/FHNW/Bachelorarbeit UT/PV Ertragsdaten"
+
+standort_dateien = {
+    "Aadorf / Tänikon": "TAE_2023_DRY.csv",
+    "Aigle": "AIG_2023_DRY.csv",
+    "Altdorf": "ALT_2023_DRY.csv",
+    "Basel-Binningen": "BAS_2023_DRY.csv",
+    "Bern-Liebefeld": "BER_2023_DRY.csv",
+    "Buchs-Aarau": "BUS_2023_DRY.csv",
+    "Chur": "CHU_2023_DRY.csv",
+    "Davos": "DAV_2023_DRY.csv",
+    "Disentis": "DIS_2023_DRY.csv",
+    "Engelberg": "ENG_2023_DRY.csv",
+    "Genève-Cointrin": "GVE_2023_DRY.csv",
+    "Glarus": "GLA_2023_DRY.csv",
+    "Grand-St-Bernard": "SBO_2023_DRY.csv",
+    "Güttingen": "GUT_2023_DRY.csv",
+    "Interlaken": "INT_2023_DRY.csv",
+    "La Chaux-de-Fonds": "CDF_2023_DRY.csv",
+    "La Frétaz": "FRE_2023_DRY.csv",
+    "Locarno-Monti": "OTL_2023_DRY.csv",
+    "Lugano": "LUG_2023_DRY.csv",
+    "Luzern": "LUZ_2023_DRY.csv",
+    "Magadino": "MAG_2023_DRY.csv",
+    "Montana": "MVE_2023_DRY.csv",
+    "Neuchâtel": "NEU_2023_DRY.csv",
+    "Payerne": "PAY_2023_DRY.csv",
+    "Piotta": "PIO_2023_DRY.csv",
+    "Pully": "PLF_2023_DRY.csv",
+    "Robbia": "ROB_2023_DRY.csv",
+    "Rünenberg": "RUE_2023_DRY.csv",
+    "Samedan": "SAM_2023_DRY.csv",
+    "San Bernardino": "SBE_2023_DRY.csv",
+    "St. Gallen": "STG_2023_DRY.csv",
+    "Schaffhausen": "SHA_2023_DRY.csv",
+    "Scuol": "SCU_2023_DRY.csv",
+    "Sion": "SIO_2023_DRY.csv",
+    "Ulrichen": "ULR_2023_DRY.csv",
+    "Vaduz": "VAD_2023_DRY.csv",
+    "Wynau": "WYN_2023_DRY.csv",
+    "Zermatt": "ZER_2023_DRY.csv",
+    "Zürich-Kloten": "KLO_2023_DRY.csv",
+    "Zürich-MeteoSchweiz": "ZUESTA_2023_DRY.csv"
+}  
+
 
 df_Bautyp_Heizwaermebedarf = pd.DataFrame({
     "Bautyp" : list(range(1901, 2016)) + ["Minergie", "Minergie-P"],
@@ -526,6 +573,24 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw):
     )
 
     return fig
+def load_weather_data(standort_name):
+    dateiname = standort_dateien[standort_name]
+    dateipfad = f"{basis_pfad_weather}/{dateiname}"
+
+    df_weather = pd.read_csv(dateipfad)
+
+    df_weather["timestamp"] = pd.to_datetime(
+        dict(
+            year=df_weather["time.yy"],
+            month=df_weather["time.mm"],
+            day=df_weather["time.dd"],
+            hour=df_weather["time.hh"]
+        )
+    )
+
+    df_weather = df_weather.set_index("timestamp")
+    return df_weather
+
 
 st.header("Dimensionierungstool")
 
@@ -670,6 +735,10 @@ elif heizsystem == "Wärmepumpe":
 st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
+standort_auswahl = st.selectbox(
+    "Standort wählen",
+    list(standort_dateien.keys())
+)
 PVAnlagen = st.number_input(
     "Anzahl PV-Anlagen",
     min_value=1,
