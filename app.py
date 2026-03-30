@@ -1007,11 +1007,15 @@ fig_year.update_layout(
     yaxis_title="Energie [kWh pro Monat]",
     height=450
 )
-fig_year.update_xaxes(
-    tickformat="%b",
-    dtick="M1"
+# fig_year.update_xaxes(
+#     tickformat="%b",
+#     dtick="M1"
+# )
+# fig_year.update_yaxes(range=[0, 500])
+fig_year.update_yaxes(
+    range=[0, 500],
+    dtick=100
 )
-fig_year.update_yaxes(range=[0, 500])
 st.plotly_chart(fig_year, use_container_width=True)
 
 st.write("------------------------------")
