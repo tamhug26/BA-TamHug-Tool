@@ -4,8 +4,6 @@ import numpy as np
 import plotly.graph_objects as go
 #st.set_page_config(layout="wide")
 
-df_ts = create_base_dataframe()
-
 st.write("test4")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
@@ -595,6 +593,8 @@ def load_weather_data(standort_name):
 
 st.header("Dimensionierungstool")
 
+df_ts = create_base_dataframe()
+
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 standort_auswahl = st.selectbox(
     "Standort wählen",
@@ -602,11 +602,12 @@ standort_auswahl = st.selectbox(
 ) 
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 Stromnutzung = st.segmented_control(
-    f"Standartstromnutzungsprofil oder eigene daten als csv?",
+    "Standartstromnutzungsprofil oder eigene daten als csv?",
     ["Standartprofil", "eigene Daten als csv"],
     default="Standartprofil",
-    key=f"Stromnutzung"
+    key="Stromnutzung"
 )
+uploaded_file = None
 if Stromnutzung == "Standartprofil":
     df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
 elif Stromnutzung == "eigene Daten als csv":
@@ -856,8 +857,6 @@ ergebnis = CO2Emmisionen
 
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
-
-df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
 
 # Heizwärmebedarf übernehmen (oder Testwert)
 if "Heizwaermebedarf_input" in locals():
