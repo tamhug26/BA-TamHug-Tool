@@ -53,7 +53,8 @@ Standort = {
     "Zürich-MeteoSchweiz" : -8
 }
 
-basis_pfad_weather = "/Users/tamara/Library/Mobile Documents/com~apple~CloudDocs/FHNW/Bachelorarbeit UT/PV Ertragsdaten"
+basis_pfad_weather = "Weather_data"
+#dateipfad = f"{basis_pfad_weather}/{dateiname}"
 
 standort_dateien = {
     "Aadorf / Tänikon": "TAE_2023_DRY.csv",
@@ -173,45 +174,45 @@ def get_day_type(timestamp):
         return "SA"
     else:
         return "FT"
-# def add_slp_profile(df, slp_df, jahresstromverbrauch):
-#     df = df.copy()
+def add_slp_profile(df, slp_df, jahresstromverbrauch):
+    df = df.copy()
 
-#     # Zeitinfos aus dem bestehenden DatetimeIndex
-#     df["Tagtyp"] = df.index.map(get_day_type)
-#     df["Zeit"] = df.index.strftime("%H:%M")
+    # Zeitinfos aus dem bestehenden DatetimeIndex
+    df["Tagtyp"] = df.index.map(get_day_type)
+    df["Zeit"] = df.index.strftime("%H:%M")
 
-#     # Excel vorbereiten
-#     slp_lookup = slp_df.copy()
-#     slp_lookup["Monat"] = slp_lookup["Monat"].astype(int)
-#     slp_lookup["Zeit"] = slp_lookup["Zeit"].astype(str).str[:5]
-#     slp_lookup = slp_lookup.set_index(["Monat", "Zeit"])
+    # Excel vorbereiten
+    slp_lookup = slp_df.copy()
+    slp_lookup["Monat"] = slp_lookup["Monat"].astype(int)
+    slp_lookup["Zeit"] = slp_lookup["Zeit"].astype(str).str[:5]
+    slp_lookup = slp_lookup.set_index(["Monat", "Zeit"])
 
-#     # Werte holen, OHNE den DatetimeIndex zu zerstören
-#     df["SA"] = [slp_lookup.loc[(m, z), "SA"] for m, z in zip(df["Monat"], df["Zeit"])]
-#     df["FT"] = [slp_lookup.loc[(m, z), "FT"] for m, z in zip(df["Monat"], df["Zeit"])]
-#     df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]
+    # Werte holen, OHNE den DatetimeIndex zu zerstören
+    df["SA"] = [slp_lookup.loc[(m, z), "SA"] for m, z in zip(df["Monat"], df["Zeit"])]
+    df["FT"] = [slp_lookup.loc[(m, z), "FT"] for m, z in zip(df["Monat"], df["Zeit"])]
+    df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]
+        
+    # richtigen Typtag wählen
+    df["slp_wert"] = np.where(
+        df["Tagtyp"] == "WT", df["WT"],
+        np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
+    )
 
-#     # richtigen Typtag wählen
-#     df["slp_wert"] = np.where(
-#         df["Tagtyp"] == "WT", df["WT"],
-#         np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
-#     )
+    t = df["Tag_im_Jahr"].astype("float64")
+    dynamikfaktor = (
+        - 3.92e-10 * t**4
+        + 3.20e-7 * t**3
+        - 7.02e-5 * t**2
+        + 2.10e-3 * t
+        + 1.24
+    )
+    df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
 
-#     t = df["Tag_im_Jahr"].astype("float64")
-#     dynamikfaktor = (
-#         - 3.92e-10 * t**4
-#         + 3.20e-7 * t**3
-#         - 7.02e-5 * t**2
-#         + 2.10e-3 * t
-#         + 1.24
-#     )
-#     df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
+    # auf Jahresverbrauch normieren
+    faktor_summe = df["slp_dyn"].sum()
+    df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
 
-#     # auf Jahresverbrauch normieren
-#     faktor_summe = df["slp_dyn"].sum()
-#     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
-
-#     return df
+    return df
 def add_heating_profile(df, heizwaermebedarf_jahr):
     df = df.copy()
     # Heizanteile pro Monat (typisches Schweizer EFH)
@@ -606,53 +607,25 @@ Stromnutzung = st.segmented_control(
     key=f"Stromnutzung"
 )
 if Stromnutzung == "Standartprofil":
-    def add_slp_profile(df, slp_df, jahresstromverbrauch):
-        df = df.copy()
-
-        # Zeitinfos aus dem bestehenden DatetimeIndex
-        df["Tagtyp"] = df.index.map(get_day_type)
-        df["Zeit"] = df.index.strftime("%H:%M")
-
-        # Excel vorbereiten
-        slp_lookup = slp_df.copy()
-        slp_lookup["Monat"] = slp_lookup["Monat"].astype(int)
-        slp_lookup["Zeit"] = slp_lookup["Zeit"].astype(str).str[:5]
-        slp_lookup = slp_lookup.set_index(["Monat", "Zeit"])
-
-        # Werte holen, OHNE den DatetimeIndex zu zerstören
-        df["SA"] = [slp_lookup.loc[(m, z), "SA"] for m, z in zip(df["Monat"], df["Zeit"])]
-        df["FT"] = [slp_lookup.loc[(m, z), "FT"] for m, z in zip(df["Monat"], df["Zeit"])]
-        df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]
-        
-        # richtigen Typtag wählen
-        df["slp_wert"] = np.where(
-            df["Tagtyp"] == "WT", df["WT"],
-            np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
-        )
-
-        t = df["Tag_im_Jahr"].astype("float64")
-        dynamikfaktor = (
-            - 3.92e-10 * t**4
-            + 3.20e-7 * t**3
-            - 7.02e-5 * t**2
-            + 2.10e-3 * t
-            + 1.24
-        )
-        df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
-
-        # auf Jahresverbrauch normieren
-        faktor_summe = df["slp_dyn"].sum()
-        df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
-
-        return df
+    df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
 elif Stromnutzung == "eigene Daten als csv":
-    uploaded_files = st.file_uploader(
+    uploaded_file = st.file_uploader(
         "Upload data", accept_multiple_files=False, type="csv"
     )
-    for uploaded_file in uploaded_files:
-        df = pd.read_csv(uploaded_file)
-        st.write("oui")
+    st.info("""
+    CSV-Format:
+    timestamp,verbrauch_kWh
+    2025-01-01 00:00,0.42
+    2025-01-01 00:15,0.38
+    2025-01-01 00:30,0.35
+    """)
+    if uploaded_file is not None:
+        df_csv = pd.read_csv(uploaded_file)
+    else: 
+        st.warning("Bitte eine CSV-Datei hochladen.")
+        st.stop()
 
+st.write("-----------------------")
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
 m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
