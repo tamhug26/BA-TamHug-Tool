@@ -765,11 +765,13 @@ pv_anlagen_daten = []
 for i in range(PVAnlagen):
     st.markdown(f"### PV-Anlage {i+1}")
 
-    PVart = st.segmented_control(
-        f"Photovoltaiktyp",
-        ["Monokristalin", "Polykristalin"],
-        default="Monokristalin",
-        key=f"pvart_{i}"
+    PV_Wirkungsgrad = st.number_input(
+        f"PV Wirkungsgrad",
+        min_value=0.0,
+        max_value=100.0,
+        value=10.0,
+        step=0.1,
+        key=f"PV_Wirkungsgrad_{i}"
     )
 
     pv_Peakleistung = st.number_input(
@@ -804,7 +806,7 @@ for i in range(PVAnlagen):
 
     pv_anlagen_daten.append({
         "Anlage": i + 1,
-        "PVart": PVart,
+        "PV_Wirkungsgrad": PV_Wirkungsgrad,
         "pv_Peakleistung": pv_Peakleistung,
         "Dachneigung": Dachneigung,
         "Dachausrichtung": Dachausrichtung
