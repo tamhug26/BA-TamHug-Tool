@@ -607,37 +607,37 @@ Stromnutzung = st.segmented_control(
 )
 if Stromnutzung == "Standartprofil":
     def add_heating_profile(df, heizwaermebedarf_jahr):
-    df = df.copy()
-    # Heizanteile pro Monat (typisches Schweizer EFH)
-    monatsanteile = {
-        1: 0.17,
-        2: 0.15,
-        3: 0.12,
-        4: 0.08,
-        5: 0.04,
-        6: 0.01,
-        7: 0.00,
-        8: 0.01,
-        9: 0.03,
-        10: 0.09,
-        11: 0.14,
-        12: 0.16
-    }
-    df["heiz_monat"] = df["Monat"].map(monatsanteile)
-    # leichtes Tagesprofil
-    stundenfaktoren = {
-        0:0.9,1:0.85,2:0.8,3:0.8,4:0.85,5:1.0,
-        6:1.1,7:1.2,8:1.1,9:1.0,10:0.95,11:0.95,
-        12:0.9,13:0.9,14:0.9,15:0.95,16:1.0,17:1.1,
-        18:1.2,19:1.25,20:1.2,21:1.1,22:1.0,23:0.95
-    }
-    df["heiz_stunde"] = df["Stunde"].map(stundenfaktoren)
-    df["heiz_faktor"] = df["heiz_monat"] * df["heiz_stunde"]
-    faktor_summe = df["heiz_faktor"].sum()
-    if faktor_summe > 0:
-        df["heizwaerme_kWh"] = df["heiz_faktor"] / faktor_summe * heizwaermebedarf_jahr
-    else:
-        df["heizwaerme_kWh"] = 0
+        df = df.copy()
+        # Heizanteile pro Monat (typisches Schweizer EFH)
+        monatsanteile = {
+            1: 0.17,
+            2: 0.15,
+            3: 0.12,
+            4: 0.08,
+            5: 0.04,
+            6: 0.01,
+            7: 0.00,
+            8: 0.01,
+            9: 0.03,
+            10: 0.09,
+            11: 0.14,
+            12: 0.16
+        }
+        df["heiz_monat"] = df["Monat"].map(monatsanteile)
+        # leichtes Tagesprofil
+        stundenfaktoren = {
+            0:0.9,1:0.85,2:0.8,3:0.8,4:0.85,5:1.0,
+            6:1.1,7:1.2,8:1.1,9:1.0,10:0.95,11:0.95,
+            12:0.9,13:0.9,14:0.9,15:0.95,16:1.0,17:1.1,
+            18:1.2,19:1.25,20:1.2,21:1.1,22:1.0,23:0.95
+        }
+        df["heiz_stunde"] = df["Stunde"].map(stundenfaktoren)
+        df["heiz_faktor"] = df["heiz_monat"] * df["heiz_stunde"]
+        faktor_summe = df["heiz_faktor"].sum()
+        if faktor_summe > 0:
+            df["heizwaerme_kWh"] = df["heiz_faktor"] / faktor_summe * heizwaermebedarf_jahr
+        else:
+            df["heizwaerme_kWh"] = 0
     return df
 elif Stromnutzung == "eigene Daten als csv":
     uploaded_files = st.file_uploader(
