@@ -599,6 +599,13 @@ standort_auswahl = st.selectbox(
     list(Standort.keys())
 ) 
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
+st.write("Standartstromnutzungsprofil oder eigene daten als csv?")
+Stromnutzung = st.segmented_control(
+    f"Stromnutzung",
+    ["Standartprofil", "eigene Daten als csv"],
+    default="Standartprofil",
+    key=f"Stromnutzung"
+)
 
 st.subheader("Heizwärmebedarf ermittlung")
 # aus Baujahr Heizwärmebedarf kWh/m2
