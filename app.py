@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 #st.set_page_config(layout="wide")
 
+df_ts = create_base_dataframe()
 
 st.write("test4")
 
@@ -855,8 +856,6 @@ ergebnis = CO2Emmisionen
 
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
-
-df_ts = create_base_dataframe()
 
 df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
 
