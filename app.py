@@ -606,39 +606,45 @@ Stromnutzung = st.segmented_control(
     key=f"Stromnutzung"
 )
 if Stromnutzung == "Standartprofil":
-    def add_heating_profile(df, heizwaermebedarf_jahr):
+    def add_slp_profile(df, slp_df, jahresstromverbrauch):
         df = df.copy()
-        # Heizanteile pro Monat (typisches Schweizer EFH)
-        monatsanteile = {
-            1: 0.17,
-            2: 0.15,
-            3: 0.12,
-            4: 0.08,
-            5: 0.04,
-            6: 0.01,
-            7: 0.00,
-            8: 0.01,
-            9: 0.03,
-            10: 0.09,
-            11: 0.14,
-            12: 0.16
-        }
-        df["heiz_monat"] = df["Monat"].map(monatsanteile)
-        # leichtes Tagesprofil
-        stundenfaktoren = {
-            0:0.9,1:0.85,2:0.8,3:0.8,4:0.85,5:1.0,
-            6:1.1,7:1.2,8:1.1,9:1.0,10:0.95,11:0.95,
-            12:0.9,13:0.9,14:0.9,15:0.95,16:1.0,17:1.1,
-            18:1.2,19:1.25,20:1.2,21:1.1,22:1.0,23:0.95
-        }
-        df["heiz_stunde"] = df["Stunde"].map(stundenfaktoren)
-        df["heiz_faktor"] = df["heiz_monat"] * df["heiz_stunde"]
-        faktor_summe = df["heiz_faktor"].sum()
-        if faktor_summe > 0:
-            df["heizwaerme_kWh"] = df["heiz_faktor"] / faktor_summe * heizwaermebedarf_jahr
-        else:
-            df["heizwaerme_kWh"] = 0
-    return df
+
+        # Zeitinfos aus dem bestehenden DatetimeIndex
+        df["Tagtyp"] = df.index.map(get_day_type)
+        df["Zeit"] = df.index.strftime("%H:%M")
+
+        # Excel vorbereiten
+        slp_lookup = slp_df.copy()
+        slp_lookup["Monat"] = slp_lookup["Monat"].astype(int)
+        slp_lookup["Zeit"] = slp_lookup["Zeit"].astype(str).str[:5]
+        slp_lookup = slp_lookup.set_index(["Monat", "Zeit"])
+
+        # Werte holen, OHNE den DatetimeIndex zu zerstören
+        df["SA"] = [slp_lookup.loc[(m, z), "SA"] for m, z in zip(df["Monat"], df["Zeit"])]
+        df["FT"] = [slp_lookup.loc[(m, z), "FT"] for m, z in zip(df["Monat"], df["Zeit"])]
+        df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]
+        
+        # richtigen Typtag wählen
+        df["slp_wert"] = np.where(
+            df["Tagtyp"] == "WT", df["WT"],
+            np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
+        )
+
+        t = df["Tag_im_Jahr"].astype("float64")
+        dynamikfaktor = (
+            - 3.92e-10 * t**4
+            + 3.20e-7 * t**3
+            - 7.02e-5 * t**2
+            + 2.10e-3 * t
+            + 1.24
+        )
+        df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
+
+        # auf Jahresverbrauch normieren
+        faktor_summe = df["slp_dyn"].sum()
+        df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
+
+        return df
 elif Stromnutzung == "eigene Daten als csv":
     uploaded_files = st.file_uploader(
         "Upload data", accept_multiple_files=False, type="csv"
