@@ -593,8 +593,6 @@ def load_weather_data(standort_name):
 
 st.header("Dimensionierungstool")
 
-df_ts = create_base_dataframe()
-
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 standort_auswahl = st.selectbox(
     "Standort wählen",
@@ -608,9 +606,7 @@ Stromnutzung = st.segmented_control(
     key="Stromnutzung"
 )
 uploaded_file = None
-if Stromnutzung == "Standartprofil":
-    df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
-elif Stromnutzung == "eigene Daten als csv":
+if Stromnutzung == "eigene Daten als csv":
     uploaded_file = st.file_uploader(
         "Upload data", accept_multiple_files=False, type="csv"
     )
@@ -621,11 +617,6 @@ elif Stromnutzung == "eigene Daten als csv":
     2025-01-01 00:15,0.38
     2025-01-01 00:30,0.35
     """)
-    if uploaded_file is not None:
-        df_csv = pd.read_csv(uploaded_file)
-    else: 
-        st.warning("Bitte eine CSV-Datei hochladen.")
-        st.stop()
 
 st.write("-----------------------")
 st.subheader("Heizwärmebedarf ermittlung")
@@ -855,256 +846,182 @@ CO2Emmisionen_input = st.number_input(
 )
 ergebnis = CO2Emmisionen
 
+
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
+run_simulation = st.button("Simulation starten")
 
-# Heizwärmebedarf übernehmen (oder Testwert)
-if "Heizwaermebedarf_input" in locals():
-    heizwaerme_jahr = Heizwaermebedarf_input
-else:
-    heizwaerme_jahr = 12000
+if run_simulation:
 
-df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
+    df_ts = create_base_dataframe()
 
-if heizsystem == "Wärmepumpe":
-    df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
-else:
-    df_ts = add_heatpump_consumption(df_ts, heizsystem)
-df_ts = add_pv_profile(df_ts, pv_Peakleistung)
-df_ts = simulate_battery(
-    df_ts,
-    batteriekapazität,
-    maxLadeleistungBatterie,
-    maxEntladeleistungBatterie,
-    minSoC,
-    maxSoC,
-    EinspeisegrenzekW,
-    Bezugsgrenze
-)
-df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
+    # Stromprofil
+    if Stromnutzung == "Standartprofil":
+        df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
+    elif Stromnutzung == "eigene Daten als csv":
+        if uploaded_file is not None:
+            df_csv = pd.read_csv(uploaded_file)
+            st.write(df_csv.head())  # nur zum Test
+            # später: df_ts = add_csv_profile(df_ts, df_csv)
+        else:
+            st.warning("Bitte eine CSV-Datei hochladen.")
+            st.stop()
 
-#Kennzahlenblock
-#st.write("Anzahl Stunden im Jahr:", len(df_ts))
-#st.write("Summe Haushaltsstrom [kWh/a]:", round(df_ts["hauslast_kWh"].sum(), 2))
-#st.write("Summe Heizwärme [kWh/a]:", round(df_ts["heizwaerme_kWh"].sum(), 2))
-#st.write("Summe Wärmepumpenstrom [kWh/a]:", round(df_ts["wp_strom_kWh"].sum(), 2))
-#st.write("Summe Gesamtlast [kWh/a]:", round(df_ts["gesamtlast_kWh"].sum(), 2))
-#st.write("Summe PV-Produktion [kWh/a]:", round(df_ts["pv_kWh"].sum(), 2))
-#st.write("Summe Netzbezug [kWh/a]:", round(df_ts["netzbezug_kWh"].sum(), 2))
-#st.write("Summe Netzeinspeisung [kWh/a]:", round(df_ts["netzeinspeisung_kWh"].sum(), 2))
-#st.write("Summe Abregelung [kWh/a]:", round(df_ts["abregelung_kWh"].sum(), 2))
-#st.write("Summe Unterdeckung [kWh/a]:", round(df_ts["unterdeckung_kWh"].sum(), 2))
+    # Heizwärmebedarf übernehmen (oder Testwert)
+    if "Heizwaermebedarf_input" in locals():
+        heizwaerme_jahr = Heizwaermebedarf_input
+    else:
+        heizwaerme_jahr = 12000
 
-#Tabelle
-# st.write("Erste 24 Stunden:")
-# st.dataframe(
-#     df_ts[[
-#         "Monat",
-#         "Stunde",
-#         "gesamtlast_kWh",
-#         "pv_kWh",
-#         "batterie_ladung_kWh",
-#         "batterie_entladung_kWh",
-#         "soc_kWh",
-#         "netzbezug_kWh",
-#         "netzeinspeisung_kWh",
-#         "abregelung_kWh",
-#         "unterdeckung_kWh"
-#     ]].head(24)
-# )
+    df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
 
-#Plots
-# st.write("Last, PV und Batterie über 24 Stunden:")
-# st.line_chart(
-#     df_ts[[
-#         "gesamtlast_kWh",
-#         "pv_kWh",
-#         "netzbezug_kWh",
-#         "netzeinspeisung_kWh"
-#     ]].head(24)
-# )
-
-# st.write("Last, PV und Batterie über 7 Tage:")
-# st.line_chart(
-#     df_ts[[
-#         "gesamtlast_kWh",
-#         "pv_kWh",
-#         "netzbezug_kWh",
-#         "netzeinspeisung_kWh"
-#     ]].head(168)
-# )
-
-#st.write("Abregelung und Unterdeckung über 7 Tage:")
-#st.line_chart(
-    #df_ts[[
-        #"abregelung_kWh",
-        #"unterdeckung_kWh"
-    #]].head(168)
-#)
-
-st.write("------------------------------")
-st.subheader("Jahreskennzahlen")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
-    st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
-
-with col2:
-    st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
-    st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
-
-st.write("------------------------------")
-st.subheader("Monatsbilanz")
-
-st.dataframe(monatsbilanz.round(1))
-
-st.write("Monatsbilanz:")
-st.bar_chart(monatsbilanz)
-
-st.write("Monatlicher Netzbezug und Einspeisung:")
-st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
-
-st.write("Monatliche Produktion und Eigenverbrauch:")
-st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
-
-
-
-st.write("--------------------------------")
-# st.write("--------------------------------")
-# st.subheader("Test: Gesamtlast – 1 Woche")
-
-# df_woche = df_ts.loc["2025-01-06":"2025-01-12 23:45"].copy()
-# df_woche["Zeitstempel"] = pd.to_datetime(df_woche.index)
-
-# fig_week = go.Figure()
-# fig_week.add_trace(go.Scatter(
-#     x=df_woche["Zeitstempel"],
-#     y=df_woche["gesamtlast_kWh"],
-#     mode="lines",
-#     name="Gesamtlast"
-# ))
-
-# fig_week.update_layout(
-#     title="Gesamtlast einer Woche",
-#     xaxis_title="Wochentag / Datum",
-#     yaxis_title="Energie [kWh pro 15 min]",
-#     height=450
-# )
-
-# fig_week.update_xaxes(
-#     type="date",
-#     tickformat="%a<br>%d.%m",
-#     dtick=24 * 60 * 60 * 1000
-# )
-
-# # Senkrechte Linien für jeden Tagesanfang
-# for tag in pd.date_range(df_woche.index.min().normalize(),
-#                          df_woche.index.max().normalize(),
-#                          freq="D"):
-
-#     fig_week.add_vline(
-#         x=tag,
-#         line_width=1,
-#         line_dash="dot",
-#         line_color="lightgrey",
-#         opacity= 0.5,
-#         layer="below"
-#     )
-# st.plotly_chart(fig_week, use_container_width=True)
-
-st.subheader("Test: Gesamtlast über das Jahr")
-
-df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
-df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
-fig_year = go.Figure()
-fig_year.add_trace(go.Scatter(
-    x=df_year_plot.index,
-    y=df_year_plot["monatslast_kWh"],
-    mode="lines+markers",
-    name="Gesamtlast"
-))
-fig_year.update_layout(
-    title="Gesamtlast im Jahresverlauf",
-    xaxis_title="Monat",
-    yaxis_title="Energie [kWh pro Monat]",
-    height=450
-)
-fig_year.update_xaxes(
-    tickformat="%b",
-    dtick="M1"
-)
-fig_year.update_yaxes(rangemode="tozero")
-
-st.plotly_chart(fig_year, use_container_width=True)
-
-st.write("------------------------------")
-st.subheader("Graphik 1 – Zeitverlauf")
-
-zeitraum = st.selectbox(
-    "Zeitraum wählen",
-    ["Tag", "Woche", "Monat", "Jahr"]
-)
-
-if zeitraum in ["Tag", "Woche"]:
-    start_datum = st.date_input(
-        "Startdatum wählen",
-        value=df_ts.index.min().date(),
-        min_value=df_ts.index.min().date(),
-        max_value=df_ts.index.max().date()
+    if heizsystem == "Wärmepumpe":
+        df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
+    else:
+        df_ts = add_heatpump_consumption(df_ts, heizsystem)
+    df_ts = add_pv_profile(df_ts, pv_Peakleistung)
+    df_ts = simulate_battery(
+        df_ts,
+        batteriekapazität,
+        maxLadeleistungBatterie,
+        maxEntladeleistungBatterie,
+        minSoC,
+        maxSoC,
+        EinspeisegrenzekW,
+        Bezugsgrenze
     )
-    df_plot = get_display_dataframe(df_ts, zeitraum, start_datum=start_datum)
+    df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
+    st.success("Simulation abgeschlossen ✅")
 
-elif zeitraum == "Monat":
-    monat_namen = {
-        1: "Januar", 2: "Februar", 3: "März", 4: "April",
-        5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
-        9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
-    }
+    st.session_state["df_ts"] = df_ts
+    st.session_state["monatsbilanz"] = monatsbilanz
+    st.session_state["jahreskennzahlen"] = jahreskennzahlen
 
-    start_monat = st.selectbox(
-        "Monat wählen",
-        list(monat_namen.keys()),
-        format_func=lambda x: monat_namen[x]
+if "df_ts" in st.session_state:
+
+    df_ts = st.session_state["df_ts"]
+    monatsbilanz = st.session_state["monatsbilanz"]
+    jahreskennzahlen = st.session_state["jahreskennzahlen"]
+
+    st.write("------------------------------")
+    st.subheader("Jahreskennzahlen")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
+        st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
+
+    with col2:
+        st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
+        st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
+
+    st.write("------------------------------")
+    st.subheader("Monatsbilanz")
+
+    st.dataframe(monatsbilanz.round(1))
+
+    st.write("Monatsbilanz:")
+    st.bar_chart(monatsbilanz)
+
+    st.write("Monatlicher Netzbezug und Einspeisung:")
+    st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
+
+    st.write("Monatliche Produktion und Eigenverbrauch:")
+    st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
+
+    st.write("---------------------")
+    st.subheader("Test: Gesamtlast über das Jahr")
+
+    df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
+    df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
+    fig_year = go.Figure()
+    fig_year.add_trace(go.Scatter(
+        x=df_year_plot.index,
+        y=df_year_plot["monatslast_kWh"],
+        mode="lines+markers",
+        name="Gesamtlast"
+    ))
+    fig_year.update_layout(
+        title="Gesamtlast im Jahresverlauf",
+        xaxis_title="Monat",
+        yaxis_title="Energie [kWh pro Monat]",
+        height=450
     )
-    df_plot = get_display_dataframe(df_ts, zeitraum, start_monat=start_monat)
-
-else:
-    df_plot = get_display_dataframe(df_ts, zeitraum)
-
-st.write("Ausgewählter Zeitraum:")
-st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
-
-fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
-st.plotly_chart(fig, use_container_width=True)
-
-st.write("Zusammenfassung für den ausgewählten Zeitraum:")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("PV-Produktion", f"{df_plot['pv_kWh'].sum():.1f} kWh")
-    st.metric("Gesamtlast", f"{df_plot['gesamtlast_kWh'].sum():.1f} kWh")
-
-with col2:
-    st.metric("Netzbezug", f"{df_plot['netzbezug_kWh'].sum():.1f} kWh")
-    st.metric("Netzeinspeisung", f"{df_plot['netzeinspeisung_kWh'].sum():.1f} kWh")
-
-with col3:
-    st.metric("Abregelung", f"{df_plot['abregelung_kWh'].sum():.1f} kWh")
-    st.metric("Unterdeckung", f"{df_plot['unterdeckung_kWh'].sum():.1f} kWh")
-
-with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
-    st.dataframe(
-        df_plot[[
-            "gesamtlast_kWh",
-            "pv_kWh",
-            "soc_kWh",
-            "netzbezug_kWh",
-            "netzeinspeisung_kWh",
-            "abregelung_kWh",
-            "unterdeckung_kWh"
-        ]].round(3)
+    fig_year.update_xaxes(
+        tickformat="%b",
+        dtick="M1"
     )
+    fig_year.update_yaxes(rangemode="tozero")
+
+    st.plotly_chart(fig_year, use_container_width=True)
+
+    st.write("------------------------------")
+    st.subheader("Graphik 1 – Zeitverlauf")
+
+    zeitraum = st.selectbox(
+        "Zeitraum wählen",
+        ["Tag", "Woche", "Monat", "Jahr"]
+    )
+
+    if zeitraum in ["Tag", "Woche"]:
+        start_datum = st.date_input(
+            "Startdatum wählen",
+            value=df_ts.index.min().date(),
+            min_value=df_ts.index.min().date(),
+            max_value=df_ts.index.max().date()
+        )
+        df_plot = get_display_dataframe(df_ts, zeitraum, start_datum=start_datum)
+
+    elif zeitraum == "Monat":
+        monat_namen = {
+            1: "Januar", 2: "Februar", 3: "März", 4: "April",
+            5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+            9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
+        }
+
+        start_monat = st.selectbox(
+            "Monat wählen",
+            list(monat_namen.keys()),
+            format_func=lambda x: monat_namen[x]
+        )
+        df_plot = get_display_dataframe(df_ts, zeitraum, start_monat=start_monat)
+
+    else:
+        df_plot = get_display_dataframe(df_ts, zeitraum)
+
+    st.write("Ausgewählter Zeitraum:")
+    st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
+
+    fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.write("Zusammenfassung für den ausgewählten Zeitraum:")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("PV-Produktion", f"{df_plot['pv_kWh'].sum():.1f} kWh")
+        st.metric("Gesamtlast", f"{df_plot['gesamtlast_kWh'].sum():.1f} kWh")
+
+    with col2:
+        st.metric("Netzbezug", f"{df_plot['netzbezug_kWh'].sum():.1f} kWh")
+        st.metric("Netzeinspeisung", f"{df_plot['netzeinspeisung_kWh'].sum():.1f} kWh")
+
+    with col3:
+        st.metric("Abregelung", f"{df_plot['abregelung_kWh'].sum():.1f} kWh")
+        st.metric("Unterdeckung", f"{df_plot['unterdeckung_kWh'].sum():.1f} kWh")
+
+    with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
+        st.dataframe(
+            df_plot[[
+                "gesamtlast_kWh",
+                "pv_kWh",
+                "soc_kWh",
+                "netzbezug_kWh",
+                "netzeinspeisung_kWh",
+                "abregelung_kWh",
+                "unterdeckung_kWh"
+            ]].round(3)
+        )
 
