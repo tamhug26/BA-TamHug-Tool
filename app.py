@@ -1011,7 +1011,7 @@ fig_year.update_xaxes(
     tickformat="%b",
     dtick="M1"
 )
-fig_year.update_yaxes(range=[0, 550])
+fig_year.update_yaxes(rangemode="tozero")
 
 st.plotly_chart(fig_year, use_container_width=True)
 
