@@ -97,7 +97,6 @@ standort_dateien = {
     "Zürich-Kloten": "KLO_2023_DRY.csv",
     "Zürich-MeteoSchweiz": "ZUESTA_2023_DRY.csv"
 }  
-
 df_Bautyp_Heizwaermebedarf = pd.DataFrame({
     "Bautyp" : list(range(1901, 2016)) + ["Minergie", "Minergie-P"],
     "Heizwaermebedarf" : (
@@ -115,7 +114,6 @@ df_Bautyp_Heizwaermebedarf = pd.DataFrame({
     [30]
     )
 })
-
 EVU = {
     "IWB": 12.88, #industrielle Werke Basel
     "EBL": 50.1, #Elektra Baselland
@@ -130,7 +128,6 @@ EVU = {
     "Romande Energie": 11.3,
     "Schweiz": 59
 }
-
 GEAK_Klassen = {
     "A": 25, 
     "B": 50, 
@@ -140,7 +137,6 @@ GEAK_Klassen = {
     "F": 150,
     "G": 175
 }
-
 reduktionen = {
                 "Dämmung Dach": 0.15,
                 "neue Fenster": 0.15,
@@ -813,8 +809,6 @@ for i in range(PVAnlagen):
         "Dachneigung": Dachneigung,
         "Dachausrichtung": Dachausrichtung
     })
-
-
 
 st.write("------------------------------")
 st.subheader("Batterie")
