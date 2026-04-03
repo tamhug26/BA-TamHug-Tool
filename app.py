@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import pvlib
 #st.set_page_config(layout="wide")
 
 st.write("test5")
@@ -585,7 +586,141 @@ def load_weather_data(standort_name):
 
     df_weather = df_weather.set_index("timestamp")
     return df_weather
+def load_weather_data(standort_name):
+    dateiname = standort_dateien[standort_name]
+    dateipfad = f"{basis_pfad_weather}/{dateiname}"
 
+    df_weather = pd.read_csv(dateipfad)
+
+    df_weather["timestamp"] = pd.to_datetime(
+        dict(
+            year=df_weather["time.yy"],
+            month=df_weather["time.mm"],
+            day=df_weather["time.dd"],
+            hour=df_weather["time.hh"]
+        )
+    )
+
+    df_weather = df_weather.set_index("timestamp").sort_index()
+    return df_weather
+def load_station_metadata(metadata_path="SIA4028_metadata_2023.csv"):
+    df_meta = pd.read_csv(metadata_path, sep=";")
+    df_meta.columns = df_meta.columns.str.strip()
+    return df_meta
+def get_station_info(meta_df, standort_name, standort_dateien):
+    dateiname = standort_dateien[standort_name]
+    abbr = dateiname.split("_")[0]
+
+    row = meta_df.loc[meta_df["Abbr."].astype(str).str.strip() == abbr]
+    if row.empty:
+        raise ValueError(f"Keine Metadaten für {standort_name} / {abbr} gefunden.")
+
+    row = row.iloc[0]
+
+    return {
+        "abbr": abbr,
+        "latitude": float(row["Latitude"]),
+        "longitude": float(row["Longitude"]),
+        "altitude": float(row["Station Height"])
+    }
+def user_azimuth_to_pvlib(dachausrichtung):
+    return (180 + dachausrichtung) % 360
+def add_pv_profile_weather_based(
+    df_base,
+    df_weather,
+    latitude,
+    longitude,
+    altitude,
+    dachneigung,
+    dachausrichtung,
+    pv_peakleistung_kwp,
+    performance_ratio=0.85,
+    gamma_pdc=-0.004,
+    noct=45
+):
+    df = df_base.copy()
+    weather = df_weather.copy()
+
+    # Wetterdaten stündlich auf 15 min interpolieren
+    weather_15min = weather.resample("15min").interpolate("time")
+
+    # Index auf Simulationsjahr mappen
+    target_year = df.index[0].year
+    weather_15min = weather_15min.copy()
+    weather_15min["month"] = weather_15min.index.month
+    weather_15min["day"] = weather_15min.index.day
+    weather_15min["hour"] = weather_15min.index.hour
+    weather_15min["minute"] = weather_15min.index.minute
+
+    weather_15min.index = pd.to_datetime({
+        "year": target_year,
+        "month": weather_15min["month"],
+        "day": weather_15min["day"],
+        "hour": weather_15min["hour"],
+        "minute": weather_15min["minute"]
+    })
+
+    weather_15min = weather_15min[~weather_15min.index.duplicated(keep="first")]
+
+    cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
+    available_cols = [c for c in cols if c in weather_15min.columns]
+
+    df = df.join(weather_15min[available_cols], how="left")
+
+    df["temp"] = df["temp"].interpolate().bfill().ffill()
+    df["windmean"] = df["windmean"].interpolate().bfill().ffill() if "windmean" in df.columns else 1.0
+    df["rad.global"] = df["rad.global"].clip(lower=0).fillna(0)
+    df["rad.direct"] = df["rad.direct"].clip(lower=0).fillna(0)
+    df["rad.diffus"] = df["rad.diffus"].clip(lower=0).fillna(0)
+
+    if "albedo" in df.columns:
+        df["albedo_use"] = np.where(df["albedo"] > 1, df["albedo"] / 100, df["albedo"])
+        df["albedo_use"] = df["albedo_use"].fillna(0.2)
+    else:
+        df["albedo_use"] = 0.2
+
+    location = pvlib.location.Location(
+        latitude=latitude,
+        longitude=longitude,
+        tz="Europe/Zurich",
+        altitude=altitude
+    )
+
+    solar_position = location.get_solarposition(df.index)
+
+    surface_azimuth = user_azimuth_to_pvlib(dachausrichtung)
+
+    poa = pvlib.irradiance.get_total_irradiance(
+        surface_tilt=dachneigung,
+        surface_azimuth=surface_azimuth,
+        solar_zenith=solar_position["apparent_zenith"],
+        solar_azimuth=solar_position["azimuth"],
+        dni=df["rad.direct"],
+        ghi=df["rad.global"],
+        dhi=df["rad.diffus"],
+        albedo=df["albedo_use"],
+        model="haydavies"
+    )
+
+    df["poa_global"] = poa["poa_global"].clip(lower=0)
+
+    # einfache Zelltemperatur-Näherung
+    df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)
+
+    temp_factor = 1 + gamma_pdc * (df["temp_cell"] - 25)
+    temp_factor = temp_factor.clip(lower=0)
+
+    df["pv_power_kW"] = (
+        pv_peakleistung_kwp
+        * (df["poa_global"] / 1000.0)
+        * temp_factor
+        * performance_ratio
+    ).clip(lower=0)
+
+    # 15 min Energie
+    df["pv_kWh"] = df["pv_power_kW"] * 0.25
+
+    return df
 
 st.header("Dimensionierungstool")
 
@@ -875,7 +1010,30 @@ if run_simulation:
         df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
     else:
         df_ts = add_heatpump_consumption(df_ts, heizsystem)
-    df_ts = add_pv_profile(df_ts, pv_Peakleistung)
+
+    meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
+    station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
+    df_weather = load_weather_data(standort_auswahl)
+
+    df_ts["pv_kWh"] = 0.0
+    df_ts["pv_power_kW"] = 0.0
+
+    for anlage in pv_anlagen_daten:
+        df_tmp = add_pv_profile_weather_based(
+            df_base=df_ts[[]].copy(),
+            df_weather=df_weather,
+            latitude=station_info["latitude"],
+            longitude=station_info["longitude"],
+            altitude=station_info["altitude"],
+            dachneigung=anlage["Dachneigung"],
+            dachausrichtung=anlage["Dachausrichtung"],
+            pv_peakleistung_kwp=anlage["pv_Peakleistung"],
+            performance_ratio=0.85
+        )
+
+        df_ts["pv_kWh"] += df_tmp["pv_kWh"]
+        df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
+
     df_ts = simulate_battery(
         df_ts,
         batteriekapazität,
