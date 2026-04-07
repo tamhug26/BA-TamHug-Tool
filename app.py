@@ -872,6 +872,7 @@ standort_auswahl = st.selectbox(
     "Standort wählen",
     list(standort_dateien.keys())
 )
+Höhenmeter_standort = st.number_input("Höhenmeter am standort", 50, 5000, 200)
 PVAnlagen = st.number_input(
     "Anzahl PV-Anlagen",
     min_value=1,
