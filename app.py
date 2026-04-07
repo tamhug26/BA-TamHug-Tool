@@ -250,66 +250,66 @@ def add_heatpump_consumption(df, heizsystem, jaz=None):
         df["wp_strom_kWh"] = 0.0
     df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
     return df
-def add_pv_profile(df, pv_peakleistung):
-    df = df.copy()
-    # Monatsfaktoren: Sommer höher, Winter tiefer
-    pv_monatsfaktoren = {
-        1: 0.35,
-        2: 0.50,
-        3: 0.80,
-        4: 1.00,
-        5: 1.15,
-        6: 1.20,
-        7: 1.20,
-        8: 1.05,
-        9: 0.85,
-        10: 0.60,
-        11: 0.35,
-        12: 0.25
-    }
-    df["pv_monat"] = df["Monat"].map(pv_monatsfaktoren)
-    # Einfaches Tagesprofil: nachts 0, mittags Peak
-    def pv_stundenfaktor(stunde):
-        if 0 <= stunde <= 5:
-            return 0.0
-        elif stunde == 6:
-            return 0.08
-        elif stunde == 7:
-            return 0.20
-        elif stunde == 8:
-            return 0.40
-        elif stunde == 9:
-            return 0.60
-        elif stunde == 10:
-            return 0.78
-        elif stunde == 11:
-            return 0.92
-        elif stunde == 12:
-            return 1.00
-        elif stunde == 13:
-            return 0.95
-        elif stunde == 14:
-            return 0.82
-        elif stunde == 15:
-            return 0.62
-        elif stunde == 16:
-            return 0.42
-        elif stunde == 17:
-            return 0.22
-        elif stunde == 18:
-            return 0.08
-        else:
-            return 0.0
-    df["pv_stunde"] = df["Stunde"].apply(pv_stundenfaktor)
-    df["pv_faktor"] = df["pv_monat"] * df["pv_stunde"]
-    # grobe Annahme: 1 kWp ≈ 1000 kWh/a
-    pv_jahresertrag = pv_peakleistung * 1000
-    faktor_summe = df["pv_faktor"].sum()
-    if faktor_summe > 0:
-        df["pv_kWh"] = df["pv_faktor"] / faktor_summe * pv_jahresertrag
-    else:
-        df["pv_kWh"] = 0.0
-    return df
+# def add_pv_profile(df, pv_peakleistung):
+#     df = df.copy()
+#     # Monatsfaktoren: Sommer höher, Winter tiefer
+#     pv_monatsfaktoren = {
+#         1: 0.35,
+#         2: 0.50,
+#         3: 0.80,
+#         4: 1.00,
+#         5: 1.15,
+#         6: 1.20,
+#         7: 1.20,
+#         8: 1.05,
+#         9: 0.85,
+#         10: 0.60,
+#         11: 0.35,
+#         12: 0.25
+#     }
+#     df["pv_monat"] = df["Monat"].map(pv_monatsfaktoren)
+#     # Einfaches Tagesprofil: nachts 0, mittags Peak
+#     def pv_stundenfaktor(stunde):
+#         if 0 <= stunde <= 5:
+#             return 0.0
+#         elif stunde == 6:
+#             return 0.08
+#         elif stunde == 7:
+#             return 0.20
+#         elif stunde == 8:
+#             return 0.40
+#         elif stunde == 9:
+#             return 0.60
+#         elif stunde == 10:
+#             return 0.78
+#         elif stunde == 11:
+#             return 0.92
+#         elif stunde == 12:
+#             return 1.00
+#         elif stunde == 13:
+#             return 0.95
+#         elif stunde == 14:
+#             return 0.82
+#         elif stunde == 15:
+#             return 0.62
+#         elif stunde == 16:
+#             return 0.42
+#         elif stunde == 17:
+#             return 0.22
+#         elif stunde == 18:
+#             return 0.08
+#         else:
+#             return 0.0
+#     df["pv_stunde"] = df["Stunde"].apply(pv_stundenfaktor)
+#     df["pv_faktor"] = df["pv_monat"] * df["pv_stunde"]
+#     # grobe Annahme: 1 kWp ≈ 1000 kWh/a
+#     pv_jahresertrag = pv_peakleistung * 1000
+#     faktor_summe = df["pv_faktor"].sum()
+#     if faktor_summe > 0:
+#         df["pv_kWh"] = df["pv_faktor"] / faktor_summe * pv_jahresertrag
+#     else:
+#         df["pv_kWh"] = 0.0
+#     return df
 def simulate_battery(
     df,
     batteriekapazitaet,
@@ -572,7 +572,6 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw):
 def load_weather_data(standort_name):
     dateiname = standort_dateien[standort_name]
     dateipfad = f"{basis_pfad_weather}/{dateiname}"
-
     df_weather = pd.read_csv(dateipfad)
 
     df_weather["timestamp"] = pd.to_datetime(
@@ -704,6 +703,7 @@ def add_pv_profile_weather_based(
     df["pv_kWh"] = df["pv_power_kW"] * 0.25
 
     return df
+
 
 st.header("Dimensionierungstool")
 
@@ -1001,8 +1001,13 @@ if run_simulation:
     station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
     df_weather = load_weather_data(standort_auswahl)
 
+    st.write("Wetterdaten Start:", df_weather.index.min())
+    st.write("Wetterdaten Ende:", df_weather.index.max())
+    st.write("Anzahl Wetter-Zeilen:", len(df_weather))
+
     df_ts["pv_kWh"] = 0.0
     df_ts["pv_power_kW"] = 0.0
+    df_ts["poa_global"] = 0.0
 
     for anlage in pv_anlagen_daten:
         df_tmp = add_pv_profile_weather_based(
@@ -1010,15 +1015,20 @@ if run_simulation:
             df_weather=df_weather,
             latitude=station_info["latitude"],
             longitude=station_info["longitude"],
-            altitude=station_info["altitude"],
+            altitude=Höhenmeter_standort,
             dachneigung=anlage["Dachneigung"],
             dachausrichtung=anlage["Dachausrichtung"],
             pv_peakleistung_kwp=anlage["pv_Peakleistung"],
+            wirkungsgrad_prozent=anlage["PV_Wirkungsgrad"],
             performance_ratio=0.85
         )
 
+        st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
+        st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+
         df_ts["pv_kWh"] += df_tmp["pv_kWh"]
         df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
+        df_ts["poa_global"] += df_tmp["poa_global"]
 
     df_ts = simulate_battery(
         df_ts,
@@ -1135,6 +1145,13 @@ if "df_ts" in st.session_state:
 
     fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
     st.plotly_chart(fig, use_container_width=True)
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["pv_power_kW"],
+        mode="lines",
+        name="PV-Leistung [kW]",
+        line=dict(width=2, dash="dot")
+    ))
 
     st.write("Zusammenfassung für den ausgewählten Zeitraum:")
 
@@ -1164,4 +1181,5 @@ if "df_ts" in st.session_state:
                 "unterdeckung_kWh"
             ]].round(3)
         )
+
 
