@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import pvlib
+import pvlib as pylib
 #st.set_page_config(layout="wide")
 
 st.write("test5")
@@ -584,23 +584,6 @@ def load_weather_data(standort_name):
         )
     )
 
-    df_weather = df_weather.set_index("timestamp")
-    return df_weather
-def load_weather_data(standort_name):
-    dateiname = standort_dateien[standort_name]
-    dateipfad = f"{basis_pfad_weather}/{dateiname}"
-
-    df_weather = pd.read_csv(dateipfad)
-
-    df_weather["timestamp"] = pd.to_datetime(
-        dict(
-            year=df_weather["time.yy"],
-            month=df_weather["time.mm"],
-            day=df_weather["time.dd"],
-            hour=df_weather["time.hh"]
-        )
-    )
-
     df_weather = df_weather.set_index("timestamp").sort_index()
     return df_weather
 def load_station_metadata(metadata_path="SIA4028_metadata_2023.csv"):
@@ -725,10 +708,10 @@ def add_pv_profile_weather_based(
 st.header("Dimensionierungstool")
 
 EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
-standort_auswahl = st.selectbox(
-    "Standort wählen",
-    list(Standort.keys())
-) 
+# standort_auswahl = st.selectbox(
+#     "Standort wählen",
+#     list(Standort.keys())
+# ) 
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 Stromnutzung = st.segmented_control(
     "Standartstromnutzungsprofil oder eigene daten als csv?",
@@ -984,7 +967,9 @@ run_simulation = st.button("Simulation starten")
 
 if run_simulation:
 
-    df_ts = create_base_dataframe()
+    df_weather = load_weather_data(standort_auswahl)
+    simulationsjahr = int(df_weather.index[0].year)
+    df_ts = create_base_dataframe(simulationsjahr)
 
     # Stromprofil
     if Stromnutzung == "Standartprofil":
@@ -1020,7 +1005,7 @@ if run_simulation:
 
     for anlage in pv_anlagen_daten:
         df_tmp = add_pv_profile_weather_based(
-            df_base=df_ts[[]].copy(),
+            df_base=pd.DataFrame(index=df_ts.index),
             df_weather=df_weather,
             latitude=station_info["latitude"],
             longitude=station_info["longitude"],
