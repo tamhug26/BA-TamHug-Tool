@@ -635,15 +635,20 @@ def add_pv_profile_weather_based(
     noct=45
 ):
     df = df_base.copy()
-    weather = df_weather.copy()
+
+    cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
+    available_cols = [c for c in cols if c in df_weather.columns]
+
+    weather = df_weather[available_cols].copy()
+
+    # sicherheitshalber alles numerisch machen
+    for col in available_cols:
+        weather[col] = pd.to_numeric(weather[col], errors="coerce")
 
     # Wetterdaten stündlich auf 15 min interpolieren
     weather_15min = weather.resample("15min").interpolate("time")
 
-    cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
-    available_cols = [c for c in cols if c in weather_15min.columns]
-
-    df = df.join(weather_15min[available_cols], how="left")
+    df = df.join(weather_15min, how="left")
 
     df["temp"] = df["temp"].interpolate().bfill().ffill()
 
@@ -1066,8 +1071,8 @@ if run_simulation:
         df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
         df_ts["poa_global"] += df_tmp["poa_global"]
 
-        st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
-        st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+    st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
+    st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
 
     df_ts = simulate_battery(
         df_ts,
