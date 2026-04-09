@@ -585,6 +585,19 @@ def load_weather_data(standort_name):
 
     df_weather = df_weather.set_index("timestamp").sort_index()
     return df_weather
+def prepare_weather_for_simulation(df_weather, target_year):
+    df = df_weather.copy().reset_index(drop=True)
+
+    # Wir ignorieren die originalen Datumswerte der Datei
+    # und ordnen die 8760 Stunden als künstliches Simulationsjahr neu zu
+    new_index = pd.date_range(
+        start=f"{target_year}-01-01 00:00",
+        periods=len(df),
+        freq="1h"
+    )
+
+    df.index = new_index
+    return df
 def load_station_metadata(metadata_path="SIA4028_metadata_2023.csv"):
     df_meta = pd.read_csv(metadata_path, sep=";")
     df_meta.columns = df_meta.columns.str.strip()
@@ -703,6 +716,26 @@ def add_pv_profile_weather_based(
     df["pv_kWh"] = df["pv_power_kW"] * 0.25
 
     return df
+
+
+
+#Was nicht direkt 1:1 aus dem Bericht stammt, ist:
+	# •	die konkrete zeitaufgelöste Leistungsformel in deinem Code,
+	# •	der konkrete Wert 0.85,
+	# •	und das pvlib-basierte Rechenmodell.
+# Aus dem Bericht stammen methodisch:
+# 	•	Strahlungsdaten als Eingangsdaten
+# 	•	stündliche Verarbeitung
+# 	•	Umrechnung auf geneigte Fläche
+# 	•	Verwendung eines anisotropen Modells
+# 	•	Berücksichtigung von Modulwirkungsgrad und Performance Ratio als Einflussgrößen auf den PV-Ertrag
+# Für dein Tool habe ich konkret modelliert:
+# 	•	pvlib für Sonnenstand und Transposition
+# 	•	15-min-Interpolation
+# 	•	Zelltemperaturmodell
+# 	•	Leistungsformel für jeden Zeitschritt
+# 	•	aus Peakleistung und Wirkungsgrad abgeleitete Modulfläche
+
 
 
 st.header("Dimensionierungstool")
@@ -968,9 +1001,11 @@ run_simulation = st.button("Simulation starten")
 
 if run_simulation:
 
-    df_weather = load_weather_data(standort_auswahl)
-    simulationsjahr = int(df_weather.index[0].year)
+    simulationsjahr = 2025
     df_ts = create_base_dataframe(simulationsjahr)
+
+    df_weather_raw = load_weather_data(standort_auswahl)
+    df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
     # Stromprofil
     if Stromnutzung == "Standartprofil":
@@ -1001,9 +1036,12 @@ if run_simulation:
     station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
     df_weather = load_weather_data(standort_auswahl)
 
-    st.write("Wetterdaten Start:", df_weather.index.min())
-    st.write("Wetterdaten Ende:", df_weather.index.max())
-    st.write("Anzahl Wetter-Zeilen:", len(df_weather))
+    st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
+    st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
+    st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
+
+    st.write("Simulations-Wetterdaten Start:", df_weather.index.min())
+    st.write("Simulations-Wetterdaten Ende:", df_weather.index.max())
 
     df_ts["pv_kWh"] = 0.0
     df_ts["pv_power_kW"] = 0.0
