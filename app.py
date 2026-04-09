@@ -678,6 +678,8 @@ def add_pv_profile_weather_based(
 
     surface_azimuth = user_azimuth_to_pvlib(dachausrichtung)
 
+    dni_extra = pvlib.irradiance.get_extra_radiation(df.index)
+
     poa = pvlib.irradiance.get_total_irradiance(
         surface_tilt=dachneigung,
         surface_azimuth=surface_azimuth,
@@ -689,6 +691,8 @@ def add_pv_profile_weather_based(
         albedo=df["albedo_use"],
         model="haydavies"
     )
+
+    dni_extra=dni_extra
 
     df["poa_global"] = poa["poa_global"].clip(lower=0)
 
