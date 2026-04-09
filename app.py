@@ -688,11 +688,10 @@ def add_pv_profile_weather_based(
         dni=df["rad.direct"],
         ghi=df["rad.global"],
         dhi=df["rad.diffus"],
+        dni_extra=dni_extra,
         albedo=df["albedo_use"],
         model="haydavies"
     )
-
-    dni_extra=dni_extra
 
     df["poa_global"] = poa["poa_global"].clip(lower=0)
 
