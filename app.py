@@ -629,6 +629,7 @@ def add_pv_profile_weather_based(
     dachneigung,
     dachausrichtung,
     pv_peakleistung_kwp,
+    wirkungsgrad_prozent,
     performance_ratio=0.85,
     gamma_pdc=-0.004,
     noct=45
@@ -639,31 +640,18 @@ def add_pv_profile_weather_based(
     # Wetterdaten stündlich auf 15 min interpolieren
     weather_15min = weather.resample("15min").interpolate("time")
 
-    # Index auf Simulationsjahr mappen
-    target_year = df.index[0].year
-    weather_15min = weather_15min.copy()
-    weather_15min["month"] = weather_15min.index.month
-    weather_15min["day"] = weather_15min.index.day
-    weather_15min["hour"] = weather_15min.index.hour
-    weather_15min["minute"] = weather_15min.index.minute
-
-    weather_15min.index = pd.to_datetime({
-        "year": target_year,
-        "month": weather_15min["month"],
-        "day": weather_15min["day"],
-        "hour": weather_15min["hour"],
-        "minute": weather_15min["minute"]
-    })
-
-    weather_15min = weather_15min[~weather_15min.index.duplicated(keep="first")]
-
     cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
     available_cols = [c for c in cols if c in weather_15min.columns]
 
     df = df.join(weather_15min[available_cols], how="left")
 
     df["temp"] = df["temp"].interpolate().bfill().ffill()
-    df["windmean"] = df["windmean"].interpolate().bfill().ffill() if "windmean" in df.columns else 1.0
+
+    if "windmean" in df.columns:
+        df["windmean"] = df["windmean"].interpolate().bfill().ffill()
+    else:
+        df["windmean"] = 1.0
+
     df["rad.global"] = df["rad.global"].clip(lower=0).fillna(0)
     df["rad.direct"] = df["rad.direct"].clip(lower=0).fillna(0)
     df["rad.diffus"] = df["rad.diffus"].clip(lower=0).fillna(0)
@@ -699,20 +687,34 @@ def add_pv_profile_weather_based(
 
     df["poa_global"] = poa["poa_global"].clip(lower=0)
 
-    # einfache Zelltemperatur-Näherung
+    # Zelltemperatur
     df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)
 
     temp_factor = 1 + gamma_pdc * (df["temp_cell"] - 25)
-    temp_factor = temp_factor.clip(lower=0)
+    df["temp_factor"] = temp_factor.clip(lower=0)
 
+    # Wirkungsgrad von % auf Dezimalzahl
+    eta_modul = wirkungsgrad_prozent / 100.0
+
+    # Modulfläche aus Peakleistung und Wirkungsgrad unter STC:
+    # P_stc = A * eta * 1000 W/m²
+    if eta_modul > 0:
+        modulflaeche_m2 = pv_peakleistung_kwp / eta_modul
+    else:
+        modulflaeche_m2 = 0.0
+
+    df["modulflaeche_m2"] = modulflaeche_m2
+
+    # Leistung
     df["pv_power_kW"] = (
-        pv_peakleistung_kwp
-        * (df["poa_global"] / 1000.0)
-        * temp_factor
+        (df["poa_global"] / 1000.0)
+        * modulflaeche_m2
+        * eta_modul
+        * df["temp_factor"]
         * performance_ratio
     ).clip(lower=0)
 
-    # 15 min Energie
+    # Energie pro 15 min
     df["pv_kWh"] = df["pv_power_kW"] * 0.25
 
     return df
@@ -1034,7 +1036,6 @@ if run_simulation:
 
     meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
     station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
-    df_weather = load_weather_data(standort_auswahl)
 
     st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
     st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
@@ -1061,12 +1062,12 @@ if run_simulation:
             performance_ratio=0.85
         )
 
-        st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
-        st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
-
         df_ts["pv_kWh"] += df_tmp["pv_kWh"]
         df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
         df_ts["poa_global"] += df_tmp["poa_global"]
+
+        st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
+        st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
 
     df_ts = simulate_battery(
         df_ts,
@@ -1182,7 +1183,6 @@ if "df_ts" in st.session_state:
     st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
 
     fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
-    st.plotly_chart(fig, use_container_width=True)
     fig.add_trace(go.Scatter(
         x=df_plot.index,
         y=df_plot["pv_power_kW"],
@@ -1191,6 +1191,7 @@ if "df_ts" in st.session_state:
         line=dict(width=2, dash="dot")
     ))
 
+    st.plotly_chart(fig, use_container_width=True)
     st.write("Zusammenfassung für den ausgewählten Zeitraum:")
 
     col1, col2, col3 = st.columns(3)
