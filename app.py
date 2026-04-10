@@ -1014,223 +1014,224 @@ st.subheader("Test Zeitreihe")
 run_simulation = st.button("Simulation starten")
 
 if run_simulation:
+    with st.spinner("Simulation läuft... bitte warten"):
 
-    simulationsjahr = 2025
-    df_ts = create_base_dataframe(simulationsjahr)
+        simulationsjahr = 2025
+        df_ts = create_base_dataframe(simulationsjahr)
 
-    df_weather_raw = load_weather_data(standort_auswahl)
-    df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
+        df_weather_raw = load_weather_data(standort_auswahl)
+        df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
-    # Stromprofil
-    if Stromnutzung == "Standartprofil":
-        df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
-    elif Stromnutzung == "eigene Daten als csv":
-        if uploaded_file is not None:
-            df_csv = pd.read_csv(uploaded_file)
-            st.write(df_csv.head())  # nur zum Test
-            # später: df_ts = add_csv_profile(df_ts, df_csv)
+        # Stromprofil
+        if Stromnutzung == "Standartprofil":
+            df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
+        elif Stromnutzung == "eigene Daten als csv":
+            if uploaded_file is not None:
+                df_csv = pd.read_csv(uploaded_file)
+                st.write(df_csv.head())  # nur zum Test
+                # später: df_ts = add_csv_profile(df_ts, df_csv)
+            else:
+                st.warning("Bitte eine CSV-Datei hochladen.")
+                st.stop()
+
+        # Heizwärmebedarf übernehmen (oder Testwert)
+        if "Heizwaermebedarf_input" in locals():
+            heizwaerme_jahr = Heizwaermebedarf_input
         else:
-            st.warning("Bitte eine CSV-Datei hochladen.")
-            st.stop()
+            heizwaerme_jahr = 12000
 
-    # Heizwärmebedarf übernehmen (oder Testwert)
-    if "Heizwaermebedarf_input" in locals():
-        heizwaerme_jahr = Heizwaermebedarf_input
-    else:
-        heizwaerme_jahr = 12000
+        df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
 
-    df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
+        if heizsystem == "Wärmepumpe":
+            df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
+        else:
+            df_ts = add_heatpump_consumption(df_ts, heizsystem)
 
-    if heizsystem == "Wärmepumpe":
-        df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
-    else:
-        df_ts = add_heatpump_consumption(df_ts, heizsystem)
+        meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
+        station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
 
-    meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
-    station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
+        st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
+        st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
+        st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
 
-    st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
-    st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
-    st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
+        st.write("Simulations-Wetterdaten Start:", df_weather.index.min())
+        st.write("Simulations-Wetterdaten Ende:", df_weather.index.max())
 
-    st.write("Simulations-Wetterdaten Start:", df_weather.index.min())
-    st.write("Simulations-Wetterdaten Ende:", df_weather.index.max())
+        df_ts["pv_kWh"] = 0.0
+        df_ts["pv_power_kW"] = 0.0
+        df_ts["poa_global"] = 0.0
 
-    df_ts["pv_kWh"] = 0.0
-    df_ts["pv_power_kW"] = 0.0
-    df_ts["poa_global"] = 0.0
+        for anlage in pv_anlagen_daten:
+            df_tmp = add_pv_profile_weather_based(
+                df_base=pd.DataFrame(index=df_ts.index),
+                df_weather=df_weather,
+                latitude=station_info["latitude"],
+                longitude=station_info["longitude"],
+                altitude=Höhenmeter_standort,
+                dachneigung=anlage["Dachneigung"],
+                dachausrichtung=anlage["Dachausrichtung"],
+                pv_peakleistung_kwp=anlage["pv_Peakleistung"],
+                wirkungsgrad_prozent=anlage["PV_Wirkungsgrad"],
+                performance_ratio=0.85
+            )
 
-    for anlage in pv_anlagen_daten:
-        df_tmp = add_pv_profile_weather_based(
-            df_base=pd.DataFrame(index=df_ts.index),
-            df_weather=df_weather,
-            latitude=station_info["latitude"],
-            longitude=station_info["longitude"],
-            altitude=Höhenmeter_standort,
-            dachneigung=anlage["Dachneigung"],
-            dachausrichtung=anlage["Dachausrichtung"],
-            pv_peakleistung_kwp=anlage["pv_Peakleistung"],
-            wirkungsgrad_prozent=anlage["PV_Wirkungsgrad"],
-            performance_ratio=0.85
+            df_ts["pv_kWh"] += df_tmp["pv_kWh"]
+            df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
+            df_ts["poa_global"] += df_tmp["poa_global"]
+
+        st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
+        st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+
+        df_ts = simulate_battery(
+            df_ts,
+            batteriekapazität,
+            maxLadeleistungBatterie,
+            maxEntladeleistungBatterie,
+            minSoC,
+            maxSoC,
+            EinspeisegrenzekW,
+            Bezugsgrenze
+        )
+        df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
+        st.success("Simulation abgeschlossen ✅")
+
+        st.session_state["df_ts"] = df_ts
+        st.session_state["monatsbilanz"] = monatsbilanz
+        st.session_state["jahreskennzahlen"] = jahreskennzahlen
+
+    if "df_ts" in st.session_state:
+
+        df_ts = st.session_state["df_ts"]
+        monatsbilanz = st.session_state["monatsbilanz"]
+        jahreskennzahlen = st.session_state["jahreskennzahlen"]
+
+        st.write("------------------------------")
+        st.subheader("Jahreskennzahlen")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
+            st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
+
+        with col2:
+            st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
+            st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
+
+        st.write("------------------------------")
+        st.subheader("Monatsbilanz")
+
+        st.dataframe(monatsbilanz.round(1))
+
+        st.write("Monatsbilanz:")
+        st.bar_chart(monatsbilanz)
+
+        st.write("Monatlicher Netzbezug und Einspeisung:")
+        st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
+
+        st.write("Monatliche Produktion und Eigenverbrauch:")
+        st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
+
+        st.write("---------------------")
+        st.subheader("Test: Gesamtlast über das Jahr")
+
+        df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
+        df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
+        fig_year = go.Figure()
+        fig_year.add_trace(go.Scatter(
+            x=df_year_plot.index,
+            y=df_year_plot["monatslast_kWh"],
+            mode="lines+markers",
+            name="Gesamtlast"
+        ))
+        fig_year.update_layout(
+            title="Gesamtlast im Jahresverlauf",
+            xaxis_title="Monat",
+            yaxis_title="Energie [kWh pro Monat]",
+            height=450
+        )
+        fig_year.update_xaxes(
+            tickformat="%b",
+            dtick="M1"
+        )
+        fig_year.update_yaxes(rangemode="tozero")
+
+        st.plotly_chart(fig_year, use_container_width=True)
+
+        st.write("------------------------------")
+        st.subheader("Graphik 1 – Zeitverlauf")
+
+        zeitraum = st.selectbox(
+            "Zeitraum wählen",
+            ["Tag", "Woche", "Monat", "Jahr"]
         )
 
-        df_ts["pv_kWh"] += df_tmp["pv_kWh"]
-        df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
-        df_ts["poa_global"] += df_tmp["poa_global"]
+        if zeitraum in ["Tag", "Woche"]:
+            start_datum = st.date_input(
+                "Startdatum wählen",
+                value=df_ts.index.min().date(),
+                min_value=df_ts.index.min().date(),
+                max_value=df_ts.index.max().date()
+            )
+            df_plot = get_display_dataframe(df_ts, zeitraum, start_datum=start_datum)
 
-    st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
-    st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+        elif zeitraum == "Monat":
+            monat_namen = {
+                1: "Januar", 2: "Februar", 3: "März", 4: "April",
+                5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+                9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
+            }
 
-    df_ts = simulate_battery(
-        df_ts,
-        batteriekapazität,
-        maxLadeleistungBatterie,
-        maxEntladeleistungBatterie,
-        minSoC,
-        maxSoC,
-        EinspeisegrenzekW,
-        Bezugsgrenze
-    )
-    df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
-    st.success("Simulation abgeschlossen ✅")
+            start_monat = st.selectbox(
+                "Monat wählen",
+                list(monat_namen.keys()),
+                format_func=lambda x: monat_namen[x]
+            )
+            df_plot = get_display_dataframe(df_ts, zeitraum, start_monat=start_monat)
 
-    st.session_state["df_ts"] = df_ts
-    st.session_state["monatsbilanz"] = monatsbilanz
-    st.session_state["jahreskennzahlen"] = jahreskennzahlen
+        else:
+            df_plot = get_display_dataframe(df_ts, zeitraum)
 
-if "df_ts" in st.session_state:
+        st.write("Ausgewählter Zeitraum:")
+        st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
 
-    df_ts = st.session_state["df_ts"]
-    monatsbilanz = st.session_state["monatsbilanz"]
-    jahreskennzahlen = st.session_state["jahreskennzahlen"]
+        fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
+        fig.add_trace(go.Scatter(
+            x=df_plot.index,
+            y=df_plot["pv_power_kW"],
+            mode="lines",
+            name="PV-Leistung [kW]",
+            line=dict(width=2, dash="dot")
+        ))
 
-    st.write("------------------------------")
-    st.subheader("Jahreskennzahlen")
+        st.plotly_chart(fig, use_container_width=True)
+        st.write("Zusammenfassung für den ausgewählten Zeitraum:")
 
-    col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
-    with col1:
-        st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
-        st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
+        with col1:
+            st.metric("PV-Produktion", f"{df_plot['pv_kWh'].sum():.1f} kWh")
+            st.metric("Gesamtlast", f"{df_plot['gesamtlast_kWh'].sum():.1f} kWh")
 
-    with col2:
-        st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
-        st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
+        with col2:
+            st.metric("Netzbezug", f"{df_plot['netzbezug_kWh'].sum():.1f} kWh")
+            st.metric("Netzeinspeisung", f"{df_plot['netzeinspeisung_kWh'].sum():.1f} kWh")
 
-    st.write("------------------------------")
-    st.subheader("Monatsbilanz")
+        with col3:
+            st.metric("Abregelung", f"{df_plot['abregelung_kWh'].sum():.1f} kWh")
+            st.metric("Unterdeckung", f"{df_plot['unterdeckung_kWh'].sum():.1f} kWh")
 
-    st.dataframe(monatsbilanz.round(1))
-
-    st.write("Monatsbilanz:")
-    st.bar_chart(monatsbilanz)
-
-    st.write("Monatlicher Netzbezug und Einspeisung:")
-    st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
-
-    st.write("Monatliche Produktion und Eigenverbrauch:")
-    st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
-
-    st.write("---------------------")
-    st.subheader("Test: Gesamtlast über das Jahr")
-
-    df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
-    df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
-    fig_year = go.Figure()
-    fig_year.add_trace(go.Scatter(
-        x=df_year_plot.index,
-        y=df_year_plot["monatslast_kWh"],
-        mode="lines+markers",
-        name="Gesamtlast"
-    ))
-    fig_year.update_layout(
-        title="Gesamtlast im Jahresverlauf",
-        xaxis_title="Monat",
-        yaxis_title="Energie [kWh pro Monat]",
-        height=450
-    )
-    fig_year.update_xaxes(
-        tickformat="%b",
-        dtick="M1"
-    )
-    fig_year.update_yaxes(rangemode="tozero")
-
-    st.plotly_chart(fig_year, use_container_width=True)
-
-    st.write("------------------------------")
-    st.subheader("Graphik 1 – Zeitverlauf")
-
-    zeitraum = st.selectbox(
-        "Zeitraum wählen",
-        ["Tag", "Woche", "Monat", "Jahr"]
-    )
-
-    if zeitraum in ["Tag", "Woche"]:
-        start_datum = st.date_input(
-            "Startdatum wählen",
-            value=df_ts.index.min().date(),
-            min_value=df_ts.index.min().date(),
-            max_value=df_ts.index.max().date()
-        )
-        df_plot = get_display_dataframe(df_ts, zeitraum, start_datum=start_datum)
-
-    elif zeitraum == "Monat":
-        monat_namen = {
-            1: "Januar", 2: "Februar", 3: "März", 4: "April",
-            5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
-            9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
-        }
-
-        start_monat = st.selectbox(
-            "Monat wählen",
-            list(monat_namen.keys()),
-            format_func=lambda x: monat_namen[x]
-        )
-        df_plot = get_display_dataframe(df_ts, zeitraum, start_monat=start_monat)
-
-    else:
-        df_plot = get_display_dataframe(df_ts, zeitraum)
-
-    st.write("Ausgewählter Zeitraum:")
-    st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
-
-    fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
-    fig.add_trace(go.Scatter(
-        x=df_plot.index,
-        y=df_plot["pv_power_kW"],
-        mode="lines",
-        name="PV-Leistung [kW]",
-        line=dict(width=2, dash="dot")
-    ))
-
-    st.plotly_chart(fig, use_container_width=True)
-    st.write("Zusammenfassung für den ausgewählten Zeitraum:")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric("PV-Produktion", f"{df_plot['pv_kWh'].sum():.1f} kWh")
-        st.metric("Gesamtlast", f"{df_plot['gesamtlast_kWh'].sum():.1f} kWh")
-
-    with col2:
-        st.metric("Netzbezug", f"{df_plot['netzbezug_kWh'].sum():.1f} kWh")
-        st.metric("Netzeinspeisung", f"{df_plot['netzeinspeisung_kWh'].sum():.1f} kWh")
-
-    with col3:
-        st.metric("Abregelung", f"{df_plot['abregelung_kWh'].sum():.1f} kWh")
-        st.metric("Unterdeckung", f"{df_plot['unterdeckung_kWh'].sum():.1f} kWh")
-
-    with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
-        st.dataframe(
-            df_plot[[
-                "gesamtlast_kWh",
-                "pv_kWh",
-                "soc_kWh",
-                "netzbezug_kWh",
-                "netzeinspeisung_kWh",
-                "abregelung_kWh",
-                "unterdeckung_kWh"
-            ]].round(3)
-        )
+        with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
+            st.dataframe(
+                df_plot[[
+                    "gesamtlast_kWh",
+                    "pv_kWh",
+                    "soc_kWh",
+                    "netzbezug_kWh",
+                    "netzeinspeisung_kWh",
+                    "abregelung_kWh",
+                    "unterdeckung_kWh"
+                ]].round(3)
+            )
 
 
