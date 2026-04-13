@@ -983,12 +983,12 @@ if run_simulation:
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
 
-        st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
-        st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
-        st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
+        # st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
+        # st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
+        # st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
 
-        st.write("Simulations-Wetterdaten Start:", df_weather.index.min())
-        st.write("Simulations-Wetterdaten Ende:", df_weather.index.max())
+        # st.write("Simulations-Wetterdaten Start:", df_weather.index.min())
+        # st.write("Simulations-Wetterdaten Ende:", df_weather.index.max())
 
         df_ts["pv_kWh"] = 0.0
         df_ts["pv_power_kW"] = 0.0
@@ -1012,8 +1012,8 @@ if run_simulation:
             df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
             df_ts["poa_global"] += df_tmp["poa_global"]
 
-        st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
-        st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+        # st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
+        # st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
 
         df_ts = simulate_battery(
             df_ts,
