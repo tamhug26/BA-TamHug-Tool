@@ -250,66 +250,6 @@ def add_heatpump_consumption(df, heizsystem, jaz=None):
         df["wp_strom_kWh"] = 0.0
     df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
     return df
-# def add_pv_profile(df, pv_peakleistung):
-#     df = df.copy()
-#     # Monatsfaktoren: Sommer höher, Winter tiefer
-#     pv_monatsfaktoren = {
-#         1: 0.35,
-#         2: 0.50,
-#         3: 0.80,
-#         4: 1.00,
-#         5: 1.15,
-#         6: 1.20,
-#         7: 1.20,
-#         8: 1.05,
-#         9: 0.85,
-#         10: 0.60,
-#         11: 0.35,
-#         12: 0.25
-#     }
-#     df["pv_monat"] = df["Monat"].map(pv_monatsfaktoren)
-#     # Einfaches Tagesprofil: nachts 0, mittags Peak
-#     def pv_stundenfaktor(stunde):
-#         if 0 <= stunde <= 5:
-#             return 0.0
-#         elif stunde == 6:
-#             return 0.08
-#         elif stunde == 7:
-#             return 0.20
-#         elif stunde == 8:
-#             return 0.40
-#         elif stunde == 9:
-#             return 0.60
-#         elif stunde == 10:
-#             return 0.78
-#         elif stunde == 11:
-#             return 0.92
-#         elif stunde == 12:
-#             return 1.00
-#         elif stunde == 13:
-#             return 0.95
-#         elif stunde == 14:
-#             return 0.82
-#         elif stunde == 15:
-#             return 0.62
-#         elif stunde == 16:
-#             return 0.42
-#         elif stunde == 17:
-#             return 0.22
-#         elif stunde == 18:
-#             return 0.08
-#         else:
-#             return 0.0
-#     df["pv_stunde"] = df["Stunde"].apply(pv_stundenfaktor)
-#     df["pv_faktor"] = df["pv_monat"] * df["pv_stunde"]
-#     # grobe Annahme: 1 kWp ≈ 1000 kWh/a
-#     pv_jahresertrag = pv_peakleistung * 1000
-#     faktor_summe = df["pv_faktor"].sum()
-#     if faktor_summe > 0:
-#         df["pv_kWh"] = df["pv_faktor"] / faktor_summe * pv_jahresertrag
-#     else:
-#         df["pv_kWh"] = 0.0
-#     return df
 def simulate_battery(
     df,
     batteriekapazitaet,
@@ -569,11 +509,11 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw):
     )
 
     return fig
+#Pv ertragsrechnung:
 def load_weather_data(standort_name):
     dateiname = standort_dateien[standort_name]
     dateipfad = f"{basis_pfad_weather}/{dateiname}"
     df_weather = pd.read_csv(dateipfad)
-
     df_weather["timestamp"] = pd.to_datetime(
         dict(
             year=df_weather["time.yy"],
@@ -582,36 +522,28 @@ def load_weather_data(standort_name):
             hour=df_weather["time.hh"]
         )
     )
-
-    df_weather = df_weather.set_index("timestamp").sort_index()
+    df_weather = df_weather.set_index("timestamp").sort_index()#Zeitstempel wird zu index in einem Dataframe
     return df_weather
 def prepare_weather_for_simulation(df_weather, target_year):
-    df = df_weather.copy().reset_index(drop=True)
-
-    # Wir ignorieren die originalen Datumswerte der Datei
-    # und ordnen die 8760 Stunden als künstliches Simulationsjahr neu zu
+    df = df_weather.copy().reset_index(drop=True) #copy vom original wetterindex und ignoriert dass die Wetterdaten aus verschiedenen Jahren sind
     new_index = pd.date_range(
         start=f"{target_year}-01-01 00:00",
         periods=len(df),
         freq="1h"
-    )
-
+    ) # neuer Index also einfach ein Jahr im Stundenabstand
     df.index = new_index
     return df
 def load_station_metadata(metadata_path="SIA4028_metadata_2023.csv"):
-    df_meta = pd.read_csv(metadata_path, sep=";")
-    df_meta.columns = df_meta.columns.str.strip()
+    df_meta = pd.read_csv(metadata_path, sep=";") #neue Spalte in der Tabelle bei ; 
+    df_meta.columns = df_meta.columns.str.strip() # alle Leerzeichen in Spaltennamen sind weggelöscht 
     return df_meta
 def get_station_info(meta_df, standort_name, standort_dateien):
     dateiname = standort_dateien[standort_name]
     abbr = dateiname.split("_")[0]
-
-    row = meta_df.loc[meta_df["Abbr."].astype(str).str.strip() == abbr]
+    row = meta_df.loc[meta_df["Abbr."].astype(str).str.strip() == abbr]#man sucht nach dem Stationskürzel, ob es überhaupt des gibt was eingegeben ist
     if row.empty:
         raise ValueError(f"Keine Metadaten für {standort_name} / {abbr} gefunden.")
-
     row = row.iloc[0]
-
     return {
         "abbr": abbr,
         "latitude": float(row["Latitude"]),
@@ -619,7 +551,7 @@ def get_station_info(meta_df, standort_name, standort_dateien):
         "altitude": float(row["Station Height"])
     }
 def user_azimuth_to_pvlib(dachausrichtung):
-    return (180 + dachausrichtung) % 360
+    return (180 + dachausrichtung) % 360 #pvlib benutzt eine andere Azimut-Konvention
 def add_pv_profile_weather_based(
     df_base,
     df_weather,
@@ -630,42 +562,42 @@ def add_pv_profile_weather_based(
     dachausrichtung,
     pv_peakleistung_kwp,
     wirkungsgrad_prozent,
-    performance_ratio=0.85,
+    performance_ratio=0.85, # vlt sind diese Werte im Datenblatt von einer Pv anlage --> umändern input möglichkeit
     gamma_pdc=-0.004,
     noct=45
 ):
     df = df_base.copy()
 
     cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
-    available_cols = [c for c in cols if c in df_weather.columns]
+    available_cols = [c for c in cols if c in df_weather.columns] #nimmt nur spalten die wirklich da sind
 
     weather = df_weather[available_cols].copy()
 
-    # sicherheitshalber alles numerisch machen
+    # alles numerisch machen
     for col in available_cols:
         weather[col] = pd.to_numeric(weather[col], errors="coerce")
 
     # Wetterdaten stündlich auf 15 min interpolieren
-    weather_15min = weather.resample("15min").interpolate("time")
-
+    weather_15min = weather.resample("15min").interpolate("time") # wenn 12uhr 400 ist und 13 uhr 600 dann erstellt er 12:15, 12:30 und 12:45 zu 450, 500 und 550
     df = df.join(weather_15min, how="left")
 
-    df["temp"] = df["temp"].interpolate().bfill().ffill()
-
+    df["temp"] = df["temp"].interpolate().bfill().ffill()# füllt Lücken zwischen vorhandenen Werten, bfill: von hinten, ffill von vorne
     if "windmean" in df.columns:
         df["windmean"] = df["windmean"].interpolate().bfill().ffill()
     else:
-        df["windmean"] = 1.0
+        df["windmean"] = 1.0 #idk about this
 
-    df["rad.global"] = df["rad.global"].clip(lower=0).fillna(0)
+    df["rad.global"] = df["rad.global"].clip(lower=0).fillna(0) #negativ werte auf null und fehlende werte zu 0
     df["rad.direct"] = df["rad.direct"].clip(lower=0).fillna(0)
     df["rad.diffus"] = df["rad.diffus"].clip(lower=0).fillna(0)
 
-    if "albedo" in df.columns:
+    if "albedo" in df.columns: #Reflexionsgrad des Bodens
         df["albedo_use"] = np.where(df["albedo"] > 1, df["albedo"] / 100, df["albedo"])
         df["albedo_use"] = df["albedo_use"].fillna(0.2)
     else:
-        df["albedo_use"] = 0.2
+        df["albedo_use"] = 0.2 
+
+    #schauen ob alle Datensätze windmean und albedo haben dann  keine if schleife und ob überhaupt iwo lücken sind dann keine pauschalwert
 
     location = pvlib.location.Location(
         latitude=latitude,
@@ -682,24 +614,25 @@ def add_pv_profile_weather_based(
 
     poa = pvlib.irradiance.get_total_irradiance(
         surface_tilt=dachneigung,
-        surface_azimuth=surface_azimuth,
-        solar_zenith=solar_position["apparent_zenith"],
-        solar_azimuth=solar_position["azimuth"],
-        dni=df["rad.direct"],
-        ghi=df["rad.global"],
-        dhi=df["rad.diffus"],
-        dni_extra=dni_extra,
-        albedo=df["albedo_use"],
-        model="haydavies"
-    )
-
-    df["poa_global"] = poa["poa_global"].clip(lower=0)
+        surface_azimuth=surface_azimuth, #modulausrichtung
+        solar_zenith=solar_position["apparent_zenith"], #sonnenstand
+        solar_azimuth=solar_position["azimuth"], #sonnenstand
+        dni=df["rad.direct"], #Direktstrahlung
+        ghi=df["rad.global"], #Globalstrahlung horizontal
+        dhi=df["rad.diffus"], #Diffusstrahlung horizontal
+        dni_extra=dni_extra, #extraterestrische Einstrahlung
+        albedo=df["albedo_use"], #bodenreflexion
+        model="haydavies" #anisotropes Diffusmodell
+    )# hier genau verstehen
+    # mit get_total_irradiance() wird aus den horizontal gemessenen Wetterdaten die wirksame Einstrahlung auf die geneigte und ausgerichtete PV-Fläche berechnet
+    
+    df["poa_global"] = poa["poa_global"].clip(lower=0) #plane of array irradiance, Negative Werte werden auf 0 gesetzt
 
     # Zelltemperatur
-    df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)
+    df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)# quelle formel
 
-    temp_factor = 1 + gamma_pdc * (df["temp_cell"] - 25)
-    df["temp_factor"] = temp_factor.clip(lower=0)
+    temp_factor = 1 + gamma_pdc * (df["temp_cell"] - 25) #formel quelle , hier kommt ein wert in dez raus und in % sagt es quasi wie "nur noch 90% Leistung" wenn es so heiss ist
+    df["temp_factor"] = temp_factor.clip(lower=0) #nicht unter null
 
     # Wirkungsgrad von % auf Dezimalzahl
     eta_modul = wirkungsgrad_prozent / 100.0
@@ -720,15 +653,15 @@ def add_pv_profile_weather_based(
         * eta_modul
         * df["temp_factor"]
         * performance_ratio
-    ).clip(lower=0)
+    ).clip(lower=0)#keine below 0 werte
+    # mit SIA 2056 nohcmal genau vergleichen Seite 82
 
     # Energie pro 15 min
-    df["pv_kWh"] = df["pv_power_kW"] * 0.25
+    df["pv_kWh"] = df["pv_power_kW"] * 0.25 #E[kWh] = P [kW] * t[h]
 
     return df
 
-
-
+#Unterschied in der Graphik Pv produktion und Pv Leitung, was ist PvLib in 2 Sätzen
 #Was nicht direkt 1:1 aus dem Bericht stammt, ist:
 	# •	die konkrete zeitaufgelöste Leistungsformel in deinem Code,
 	# •	der konkrete Wert 0.85, nopeeeeee
