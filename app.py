@@ -1032,8 +1032,7 @@ if run_simulation:
         st.session_state["monatsbilanz"] = monatsbilanz
         st.session_state["jahreskennzahlen"] = jahreskennzahlen
 
-    if "df_ts" in st.session_state:
-
+if "df_ts" in st.session_state:
         df_ts = st.session_state["df_ts"]
         monatsbilanz = st.session_state["monatsbilanz"]
         jahreskennzahlen = st.session_state["jahreskennzahlen"]
@@ -1128,14 +1127,17 @@ if run_simulation:
         st.write("Ausgewählter Zeitraum:")
         st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
 
+        # fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
+        # fig.add_trace(go.Scatter(
+        #     x=df_plot.index,
+        #     y=df_plot["pv_power_kW"],
+        #     mode="lines",
+        #     name="PV-Leistung [kW]",
+        #     line=dict(width=2, dash="dot")
+        # ))
+
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
-        fig.add_trace(go.Scatter(
-            x=df_plot.index,
-            y=df_plot["pv_power_kW"],
-            mode="lines",
-            name="PV-Leistung [kW]",
-            line=dict(width=2, dash="dot")
-        ))
+        st.plotly_chart(fig, use_container_width=True)
 
         st.plotly_chart(fig, use_container_width=True)
         st.write("Zusammenfassung für den ausgewählten Zeitraum:")
