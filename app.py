@@ -914,7 +914,8 @@ st.write("------------------------------")
 st.subheader("Einspeisen")
 # regel einbauen minSoC muss < sein als maxSoC
 Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
-EinspeisegrenzekW = (Einspeisegrenze/100)* pv_Peakleistung
+gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
+EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
 st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
 
 st.write("------------------------------")
@@ -1157,3 +1158,9 @@ if "df_ts" in st.session_state:
                     "unterdeckung_kWh"
                 ]].round(3)
             )
+        st.write("PV-Produktion Jahreswert [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
+        st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+        st.write("Netzeinspeisung Jahreswert [kWh]:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
+        st.write("Gesamtlast Jahreswert [kWh]:", round(df_ts["gesamtlast_kWh"].sum(), 1))
+        pv_monat = df_ts["pv_kWh"].resample("MS").sum()
+        st.line_chart(pv_monat)
