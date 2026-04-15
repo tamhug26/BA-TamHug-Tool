@@ -522,7 +522,7 @@ def load_weather_data(standort_name):
             hour=df_weather["time.hh"]
         )
     )
-    df_weather = df_weather.set_index("timestamp").sort_index()#Zeitstempel wird zu index in einem Dataframe
+    df_weather = df_weather.set_index("timestamp")
     return df_weather
 def prepare_weather_for_simulation(df_weather, target_year):
     df = df_weather.copy().reset_index(drop=True) #copy vom original wetterindex und ignoriert dass die Wetterdaten aus verschiedenen Jahren sind
