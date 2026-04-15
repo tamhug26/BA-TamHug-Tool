@@ -567,6 +567,7 @@ def add_pv_profile_weather_based(
     noct=45
 ):
     #schon vorhin auf 15min bestimmt
+    df = df_base.copy() 
 
     cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
     available_cols = [c for c in cols if c in df_weather.columns] #nimmt nur spalten die wirklich da sind in df weather
@@ -606,15 +607,15 @@ def add_pv_profile_weather_based(
     location = pvlib.location.Location(
         latitude=latitude,
         longitude=longitude,
-        tz="Europe/Zurich",
+        tz="Europe/Zurich", #zeitzone
         altitude=altitude
     )
 
-    solar_position = location.get_solarposition(df.index)
+    solar_position = location.get_solarposition(df.index) #eine pvlib-Methode. Laut pvlib verwendet sie intern pvlib.solarposition.get_solarposition(), um Solarzenit, Solarazimut usw. zu berechnen
 
     surface_azimuth = user_azimuth_to_pvlib(dachausrichtung)
 
-    dni_extra = pvlib.irradiance.get_extra_radiation(df.index)
+    dni_extra = pvlib.irradiance.get_extra_radiation(df.index) #Das ist kein Messdatensatz deiner Station, sondern ein berechneter astronomischer Wert für die extraterrestrische Strahlung, also die Sonnenstrahlung außerhalb der Atmosphäre. pvlib berechnet ihn aus Datum bzw. Tageszahl mit hinterlegten Formeln/Methoden wie standardmäßig spencer.
 
     poa = pvlib.irradiance.get_total_irradiance(
         surface_tilt=dachneigung,
@@ -626,14 +627,14 @@ def add_pv_profile_weather_based(
         dhi=df["rad.diffus"], #Diffusstrahlung horizontal
         dni_extra=dni_extra, #extraterestrische Einstrahlung
         albedo=df["albedo_use"], #bodenreflexion
-        model="haydavies" #anisotropes Diffusmodell
+        model="haydavies" #anisotropes Diffusmodell von pvlib
     )# hier genau verstehen
     # mit get_total_irradiance() wird aus den horizontal gemessenen Wetterdaten die wirksame Einstrahlung auf die geneigte und ausgerichtete PV-Fläche berechnet
     
     df["poa_global"] = poa["poa_global"].clip(lower=0) #plane of array irradiance, Negative Werte werden auf 0 gesetzt
 
     # Zelltemperatur
-    df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)# quelle formel
+    df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)# quelle formel 20°C = Referenzbedingungen/Umgebungstemp
 
     temp_factor = 1 + gamma_pdc * (df["temp_cell"] - 25) #formel quelle , hier kommt ein wert in dez raus und in % sagt es quasi wie "nur noch 90% Leistung" wenn es so heiss ist
     df["temp_factor"] = temp_factor.clip(lower=0) #nicht unter null
@@ -643,10 +644,7 @@ def add_pv_profile_weather_based(
 
     # Modulfläche aus Peakleistung und Wirkungsgrad unter STC:
     # P_stc = A * eta * 1000 W/m²
-    if eta_modul > 0:
-        modulflaeche_m2 = pv_peakleistung_kwp / eta_modul
-    else:
-        modulflaeche_m2 = 0.0
+    modulflaeche_m2 = pv_peakleistung_kwp / eta_modul
 
     df["modulflaeche_m2"] = modulflaeche_m2
 
@@ -870,7 +868,7 @@ for i in range(PVAnlagen):
 
     PV_Wirkungsgrad = st.number_input(
         f"PV Wirkungsgrad",
-        min_value=0.0,
+        min_value=0.1,
         max_value=100.0,
         value=10.0,
         step=0.1,
@@ -1143,7 +1141,6 @@ if "df_ts" in st.session_state:
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
         st.plotly_chart(fig, use_container_width=True)
 
-        st.plotly_chart(fig, use_container_width=True)
         st.write("Zusammenfassung für den ausgewählten Zeitraum:")
 
         col1, col2, col3 = st.columns(3)
@@ -1173,16 +1170,17 @@ if "df_ts" in st.session_state:
                 ]].round(3)
             )
 
+#überprüfen ob es überall windmean und albedo gibt:
 for standort, datei in standort_dateien.items():
     pfad = f"{basis_pfad_weather}/{datei}"
     df = pd.read_csv(pfad)
 
-    print(f"\n{standort} ({datei})")
-    print("windmean vorhanden:", "windmean" in df.columns)
-    print("albedo vorhanden:", "albedo" in df.columns)
+    st.write(f"\n{standort} ({datei})")
+    st.write("windmean vorhanden:", "windmean" in df.columns)
+    st.write("albedo vorhanden:", "albedo" in df.columns)
 
     if "windmean" in df.columns:
-        print("windmean fehlend:", df["windmean"].isna().sum())
+        st.write("windmean fehlend:", df["windmean"].isna().sum())
 
     if "albedo" in df.columns:
-        print("albedo fehlend:", df["albedo"].isna().sum())
+        st.write("albedo fehlend:", df["albedo"].isna().sum())
