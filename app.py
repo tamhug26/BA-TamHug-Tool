@@ -399,13 +399,20 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df[df.index.month == start_monat]
 
     elif zeitraum == "Jahr":
-        df_anzeige = df.copy()
+        df_anzeige = df[[
+            "gesamtlast_kWh",
+            "pv_kWh",
+            "netzbezug_kWh",
+            "netzeinspeisung_kWh",
+            "abregelung_kWh",
+            "unterdeckung_kWh"
+        ]].resample("MS").sum()
 
     else:
         df_anzeige = df.copy()
 
     return df_anzeige
-def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw):
+def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     fig = go.Figure()
 
     # PV-Produktion
@@ -494,10 +501,15 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw):
             marker=dict(color="darkred", size=8, symbol="circle-open")
         ))
 
+    if zeitraum == "Jahr":
+        y_title = "Energie [kWh pro Monat]"
+    else:
+        y_title = "Energie [kWh pro 15 min]"
+
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
         xaxis_title="Zeit",
-        yaxis_title="Energie [kWh pro 15 min]",
+        yaxis_title=y_title,
         # yaxis2=dict(
         #     title="SoC Batterie [kWh]",
         #     overlaying="y",
