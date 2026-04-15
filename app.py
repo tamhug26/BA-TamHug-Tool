@@ -156,7 +156,7 @@ def create_base_dataframe(year=2025):
     zeitindex = pd.date_range(
         start=f"{year}-01-01 00:00",
         end=f"{year}-12-31 23:45",
-        freq="15min"
+        freq="15min" #auf 15 min
     )
     df = pd.DataFrame(index=zeitindex)
     df["Monat"] = df.index.month
@@ -566,10 +566,10 @@ def add_pv_profile_weather_based(
     gamma_pdc=-0.004,
     noct=45
 ):
-    df = df_base.copy()
+    #schon vorhin auf 15min bestimmt
 
     cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
-    available_cols = [c for c in cols if c in df_weather.columns] #nimmt nur spalten die wirklich da sind
+    available_cols = [c for c in cols if c in df_weather.columns] #nimmt nur spalten die wirklich da sind in df weather
 
     weather = df_weather[available_cols].copy()
 
@@ -578,12 +578,16 @@ def add_pv_profile_weather_based(
         weather[col] = pd.to_numeric(weather[col], errors="coerce")
 
     # Wetterdaten stündlich auf 15 min interpolieren
-    weather_15min = weather.resample("15min").interpolate("time") # wenn 12uhr 400 ist und 13 uhr 600 dann erstellt er 12:15, 12:30 und 12:45 zu 450, 500 und 550
+    weather_15min = weather.resample("15min").interpolate("time") 
+    # wenn 12uhr 400 ist und 13 uhr 600 dann erstellt er 12:15, 12:30 und 12:45 zu 450, 500 und 550
+    # falls ich hier obendran auf 30 min will dann müsste ich hier 30 min schreiben und oben wo die databasis frame gebautr wird auch 30 min bei freq machen & energieumrechnung anpassen
     df = df.join(weather_15min, how="left")
 
     df["temp"] = df["temp"].interpolate().bfill().ffill()# füllt Lücken zwischen vorhandenen Werten, bfill: von hinten, ffill von vorne
     if "windmean" in df.columns:
         df["windmean"] = df["windmean"].interpolate().bfill().ffill()
+        #Weil interpolate() nur Lücken zwischen zwei vorhandenen Werten füllen kann.
+        #
     else:
         df["windmean"] = 1.0 #idk about this
 
@@ -1169,4 +1173,16 @@ if "df_ts" in st.session_state:
                 ]].round(3)
             )
 
+for standort, datei in standort_dateien.items():
+    pfad = f"{basis_pfad_weather}/{datei}"
+    df = pd.read_csv(pfad)
 
+    print(f"\n{standort} ({datei})")
+    print("windmean vorhanden:", "windmean" in df.columns)
+    print("albedo vorhanden:", "albedo" in df.columns)
+
+    if "windmean" in df.columns:
+        print("windmean fehlend:", df["windmean"].isna().sum())
+
+    if "albedo" in df.columns:
+        print("albedo fehlend:", df["albedo"].isna().sum())
