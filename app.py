@@ -1164,3 +1164,4 @@ if "df_ts" in st.session_state:
         st.write("Gesamtlast Jahreswert [kWh]:", round(df_ts["gesamtlast_kWh"].sum(), 1))
         pv_monat = df_ts["pv_kWh"].resample("MS").sum()
         st.line_chart(pv_monat)
+        
