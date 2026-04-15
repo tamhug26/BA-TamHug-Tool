@@ -1139,7 +1139,7 @@ if "df_ts" in st.session_state:
         #     line=dict(width=2, dash="dot")
         # ))
 
-        fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
+        fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze, zeitraum)
         st.plotly_chart(fig, use_container_width=True)
 
         st.write("Zusammenfassung für den ausgewählten Zeitraum:")
