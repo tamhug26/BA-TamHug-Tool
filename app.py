@@ -570,12 +570,11 @@ def add_pv_profile_weather_based(
     df = df_base.copy() 
 
     cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
-    available_cols = [c for c in cols if c in df_weather.columns] #nimmt nur spalten die wirklich da sind in df weather
-
-    weather = df_weather[available_cols].copy()
+    
+    weather = df_weather[cols].copy()
 
     # alles numerisch machen
-    for col in available_cols:
+    for col in cols:
         weather[col] = pd.to_numeric(weather[col], errors="coerce")
 
     # Wetterdaten stündlich auf 15 min interpolieren
@@ -584,25 +583,14 @@ def add_pv_profile_weather_based(
     # falls ich hier obendran auf 30 min will dann müsste ich hier 30 min schreiben und oben wo die databasis frame gebautr wird auch 30 min bei freq machen & energieumrechnung anpassen
     df = df.join(weather_15min, how="left")
 
-    df["temp"] = df["temp"].interpolate().bfill().ffill()# füllt Lücken zwischen vorhandenen Werten, bfill: von hinten, ffill von vorne
-    if "windmean" in df.columns:
-        df["windmean"] = df["windmean"].interpolate().bfill().ffill()
-        #Weil interpolate() nur Lücken zwischen zwei vorhandenen Werten füllen kann.
-        #
-    else:
-        df["windmean"] = 1.0 #idk about this
+    df["temp"] = df["temp"].interpolate("time")
+    df["windmean"] = df["windmean"].interpolate("time")
 
     df["rad.global"] = df["rad.global"].clip(lower=0).fillna(0) #negativ werte auf null und fehlende werte zu 0
     df["rad.direct"] = df["rad.direct"].clip(lower=0).fillna(0)
     df["rad.diffus"] = df["rad.diffus"].clip(lower=0).fillna(0)
 
-    if "albedo" in df.columns: #Reflexionsgrad des Bodens
-        df["albedo_use"] = np.where(df["albedo"] > 1, df["albedo"] / 100, df["albedo"])
-        df["albedo_use"] = df["albedo_use"].fillna(0.2)
-    else:
-        df["albedo_use"] = 0.2 
-
-    #schauen ob alle Datensätze windmean und albedo haben dann  keine if schleife und ob überhaupt iwo lücken sind dann keine pauschalwert
+    df["albedo_use"] = df["albedo"] / 100.0
 
     location = pvlib.location.Location(
         latitude=latitude,
@@ -1169,18 +1157,3 @@ if "df_ts" in st.session_state:
                     "unterdeckung_kWh"
                 ]].round(3)
             )
-
-#überprüfen ob es überall windmean und albedo gibt:
-for standort, datei in standort_dateien.items():
-    pfad = f"{basis_pfad_weather}/{datei}"
-    df = pd.read_csv(pfad)
-
-    st.write(f"\n{standort} ({datei})")
-    st.write("windmean vorhanden:", "windmean" in df.columns)
-    st.write("albedo vorhanden:", "albedo" in df.columns)
-
-    if "windmean" in df.columns:
-        st.write("windmean fehlend:", df["windmean"].isna().sum())
-
-    if "albedo" in df.columns:
-        st.write("albedo fehlend:", df["albedo"].isna().sum())
