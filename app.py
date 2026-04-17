@@ -522,6 +522,9 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
 
     return fig
 #Pv ertragsrechnung:
+def get_station_abbr(standort_name):
+    dateiname = standort_dateien[standort_name]
+    return dateiname.split("_")[0]
 def load_weather_data(standort_name):
     dateiname = standort_dateien[standort_name]
     dateipfad = f"{basis_pfad_weather}/{dateiname}"
@@ -550,8 +553,7 @@ def load_station_metadata(metadata_path="SIA4028_metadata_2023.csv"):
     df_meta.columns = df_meta.columns.str.strip() # alle Leerzeichen in Spaltennamen sind weggelöscht 
     return df_meta
 def get_station_info(meta_df, standort_name, standort_dateien):
-    dateiname = standort_dateien[standort_name]
-    abbr = dateiname.split("_")[0]
+    abbr = get_station_abbr(standort_name)
     row = meta_df.loc[meta_df["Abbr."].astype(str).str.strip() == abbr]#man sucht nach dem Stationskürzel, ob es überhaupt des gibt was eingegeben ist
     if row.empty:
         raise ValueError(f"Keine Metadaten für {standort_name} / {abbr} gefunden.")
@@ -562,8 +564,6 @@ def get_station_info(meta_df, standort_name, standort_dateien):
         "longitude": float(row["Longitude"]),
         "altitude": float(row["Station Height"])
     }
-def user_azimuth_to_pvlib(dachausrichtung):
-    return (180 + dachausrichtung) % 360 #pvlib benutzt eine andere Azimut-Konvention
 def add_pv_profile_weather_based(
     df_base,
     df_weather,
@@ -613,7 +613,7 @@ def add_pv_profile_weather_based(
 
     solar_position = location.get_solarposition(df.index) #eine pvlib-Methode. Laut pvlib verwendet sie intern pvlib.solarposition.get_solarposition(), um Solarzenit, Solarazimut usw. zu berechnen
 
-    surface_azimuth = user_azimuth_to_pvlib(dachausrichtung)
+    surface_azimuth = dachausrichtung
 
     dni_extra = pvlib.irradiance.get_extra_radiation(df.index) #Das ist kein Messdatensatz deiner Station, sondern ein berechneter astronomischer Wert für die extraterrestrische Strahlung, also die Sonnenstrahlung außerhalb der Atmosphäre. pvlib berechnet ihn aus Datum bzw. Tageszahl mit hinterlegten Formeln/Methoden wie standardmäßig spencer.
 
@@ -894,16 +894,16 @@ for i in range(PVAnlagen):
     )
 
     Dachausrichtung = st.number_input(
-        f"Dachausrichtung (°)",
-        min_value=-180,
-        max_value=180,
-        value=0,
+        f"Dachausrichtung/Azimuth (°)",
+        min_value=0,
+        max_value=380,
+        value=180,
         step=1,
         key=f"ausrichtung_{i}"
     )
 
     st.caption("Neigung: 0 = Flachdach, 90 = Fassade")
-    st.caption("Ausrichtung: 0 = Süd, -90 = Ost, +90 = West, -180 / +180 = Nord")
+    st.caption("Azimut: 0 = Nord, 90 = Ost, 180 = Süd, 270 = West")
 
     pv_anlagen_daten.append({
         "Anlage": i + 1,
