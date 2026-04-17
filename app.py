@@ -575,7 +575,7 @@ def add_pv_profile_weather_based(
     pv_peakleistung_kwp,
     wirkungsgrad_prozent,
     performance_ratio=0.85, # vlt sind diese Werte im Datenblatt von einer Pv anlage --> umändern input möglichkeit
-    gamma_pdc=-0.004,
+    gamma_pdc=-0.004, #default falls es keine andere eingabe gibt
     noct=45
 ):
     #schon vorhin auf 15min bestimmt
@@ -884,6 +884,25 @@ for i in range(PVAnlagen):
         key=f"peakleistung_{i}"
     )
 
+    gamma_pdc_input = st.number_input(
+        f"Temperaturkoeffizient Pmax [1/°C]",
+        min_value=-0.02,
+        max_value=0.0,
+        value=-0.0040,
+        step=0.0001,
+        format="%.4f",
+        key=f"gamma_pdc_{i}"
+    )
+
+    nmot_input = st.number_input(
+        f"NMOT / NOCT [°C]",
+        min_value=20.0,
+        max_value=80.0,
+        value=45.0,
+        step=0.5,
+        key=f"nmot_{i}"
+    )
+
     Dachneigung = st.number_input(
         f"Dachneigung (°)",
         min_value=0,
@@ -910,7 +929,9 @@ for i in range(PVAnlagen):
         "PV_Wirkungsgrad": PV_Wirkungsgrad,
         "pv_Peakleistung": pv_Peakleistung,
         "Dachneigung": Dachneigung,
-        "Dachausrichtung": Dachausrichtung
+        "Dachausrichtung": Dachausrichtung,
+        "gamma_pdc": gamma_pdc_input,
+        "nmot": nmot_input
     })
 
 st.write("------------------------------")
@@ -1008,7 +1029,9 @@ if run_simulation:
                 dachausrichtung=anlage["Dachausrichtung"],
                 pv_peakleistung_kwp=anlage["pv_Peakleistung"],
                 wirkungsgrad_prozent=anlage["PV_Wirkungsgrad"],
-                performance_ratio=0.85
+                performance_ratio=0.85,
+                gamma_pdc=anlage["gamma_pdc"],
+                noct=anlage["nmot"]
             )
 
             df_ts["pv_kWh"] += df_tmp["pv_kWh"]
