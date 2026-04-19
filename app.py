@@ -668,7 +668,49 @@ def add_pv_profile_weather_based(
     df["pv_kWh"] = df["pv_power_kW"] * 0.25 #E[kWh] = P [kW] * t[h]
 
     return df
+#Warmwasser:
+def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww_strategie):
+    df = df.copy()
+    df["ww_kWh"] = 0.0
 
+    if not ww_aktiv or ww_bedarf_kWh_tag <= 0 or ww_ladeleistung_kw <= 0:
+        return df
+
+    max_ww_kWh_pro_schritt = ww_ladeleistung_kw * 0.25
+
+    if ww_strategie == "Morgens":
+        start_hour, end_hour = 5, 7
+    elif ww_strategie == "Mittag / PV-optimiert":
+        start_hour, end_hour = 11, 15
+    elif ww_strategie == "Abends":
+        start_hour, end_hour = 17, 20
+    else:
+        start_hour, end_hour = 11, 15
+
+    tage = pd.to_datetime(df.index.date).unique()
+
+    for tag in tage:
+        mask = (
+            (df.index.date == tag.date()) &
+            (df.index.hour >= start_hour) &
+            (df.index.hour < end_hour)
+        )
+
+        idx = df.index[mask]
+        if len(idx) == 0:
+            continue
+
+        energie_pro_schritt = min(ww_bedarf_kWh_tag / len(idx), max_ww_kWh_pro_schritt)
+        verbleibend = ww_bedarf_kWh_tag
+
+        for ts in idx:
+            ladung = min(energie_pro_schritt, verbleibend, max_ww_kWh_pro_schritt)
+            df.at[ts, "ww_kWh"] = ladung
+            verbleibend -= ladung
+            if verbleibend <= 0:
+                break
+
+    return df
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
@@ -850,6 +892,22 @@ elif heizsystem == "Wärmepumpe":
     )
     ergebnis = stromverbrauch
     
+st.write("------------------------------")
+st.subheader("Warmwasser")
+
+ww_aktiv = st.checkbox("Warmwasser elektrisch steuerbar", value=False)
+
+if ww_aktiv:
+    ww_bedarf_kWh_tag = st.number_input("WW-Bedarf [kWh/Tag]", min_value=0.0, max_value=30.0, value=6.0, step=0.5)
+    ww_ladeleistung_kw = st.number_input("WW-Ladeleistung [kW]", min_value=0.1, max_value=20.0, value=3.0, step=0.1)
+    ww_strategie = st.selectbox(
+        "WW-Strategie",
+        ["Morgens", "Mittag / PV-optimiert", "Abends"]
+    )
+else:
+    ww_bedarf_kWh_tag = 0.0
+    ww_ladeleistung_kw = 0.0
+    ww_strategie = "Mittag / PV-optimiert"
 
 st.write("------------------------------")
 
@@ -1002,6 +1060,15 @@ if run_simulation:
             heizwaerme_jahr = 12000
 
         df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
+        df_ts = add_hotwater_profile(
+            df_ts,
+            ww_aktiv,
+            ww_bedarf_kWh_tag,
+            ww_ladeleistung_kw,
+            ww_strategie
+        )
+        if "ww_kWh" in df_ts.columns:
+            df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
 
         if heizsystem == "Wärmepumpe":
             df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
@@ -1011,6 +1078,8 @@ if run_simulation:
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
 
+
+        st.write("WW-Jahresverbrauch [kWh]:", round(df_ts["ww_kWh"].sum(), 1))
         # st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
         # st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
         # st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
