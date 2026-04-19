@@ -302,7 +302,7 @@ def simulate_battery(
         rest_pv_nach_batterie = pv_ueberschuss - batterie_ladung
 
         # 3) Einspeisen bis Grenze, Rest abregeln
-        netzeinspeisung = min(rest_pv_nach_batterie, einspeisegrenze_kwh)
+        netzeinspeisung = min(rest_pv_nach_batterie, einspeisegrenze_kWh)
         abregelung = max(0.0, rest_pv_nach_batterie - netzeinspeisung)
 
         # 4) Batterie entladen bei Restlast
@@ -313,7 +313,7 @@ def simulate_battery(
         restlast_nach_batterie = restlast - batterie_entladung
 
         # 5) Netzbezug bis Grenze, Rest = Unterdeckung
-        netzbezug = min(restlast_nach_batterie, bezugsgrenze_kwh)
+        netzbezug = min(restlast_nach_batterie, bezugsgrenze_kWh)
         unterdeckung = max(0.0, restlast_nach_batterie - netzbezug)
 
         # speichern
