@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import pvlib
 #st.set_page_config(layout="wide")
 
-st.write("test5")
+st.write("test")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
@@ -663,11 +663,7 @@ def add_pv_profile_weather_based(
 
     return df
 
-#Unterschied in der Graphik Pv produktion und Pv Leitung, was ist PvLib in 2 Sätzen
-#Was nicht direkt 1:1 aus dem Bericht stammt, ist:
-	# •	die konkrete zeitaufgelöste Leistungsformel in deinem Code,
-	# •	der konkrete Wert 0.85, nopeeeeee
-	# •	und das pvlib-basierte Rechenmodell.
+
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
 # 	•	stündliche Verarbeitung
@@ -682,9 +678,8 @@ def add_pv_profile_weather_based(
 # 	•	aus Peakleistung und Wirkungsgrad abgeleitete Modulfläche
 # Der Wirkungsgrad-Eingabewert beeinflusst den Ertrag praktisch nicht.
 # Die Batteriesimulation mischt kW und kWh.
-# Die PV-Leistung [kW] wird im gleichen Plot wie kWh pro 15 min gezeigt.
-# Die Höhenmeter-Eingabe wählt noch keine bessere Wetterstation aus.
-# Du nutzt vermutlich rad.direct als DNI, ohne sicher zu wissen, ob die Datei das wirklich so meint.
+
+
 
 
 st.header("Dimensionierungstool")
