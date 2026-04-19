@@ -847,7 +847,7 @@ elif heizsystem == "Wärmepumpe":
 
 st.write("------------------------------")
 
-st.subheader("Photovoltaikanlage")xsx
+st.subheader("Photovoltaikanlage")
 standort_auswahl = st.selectbox(
     "Standort wählen",
     list(standort_dateien.keys())
