@@ -826,6 +826,8 @@ elif heizsystem == "Wärmepumpe":
         ],
         horizontal=True
     )
+    Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
+    Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
     if wp_typ == "Luft/Wasser Wärmepumpe":
         jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
     elif wp_typ == "Sole/Wasser Wärmepumpe":
@@ -841,8 +843,6 @@ elif heizsystem == "Wärmepumpe":
         value=int(stromverbrauch)
     )
     ergebnis = stromverbrauch
-    Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
-    Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
     
 
 st.write("------------------------------")
