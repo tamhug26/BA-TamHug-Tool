@@ -841,10 +841,13 @@ elif heizsystem == "Wärmepumpe":
         value=int(stromverbrauch)
     )
     ergebnis = stromverbrauch
+    Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
+    Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
+    
 
 st.write("------------------------------")
 
-st.subheader("Photovoltaikanlage")
+st.subheader("Photovoltaikanlage")xsx
 standort_auswahl = st.selectbox(
     "Standort wählen",
     list(standort_dateien.keys())
