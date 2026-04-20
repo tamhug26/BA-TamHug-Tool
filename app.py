@@ -796,6 +796,11 @@ if bau_typ == "Baujahr":
             "Heizwärmebedarf kWh/a",
             value=int(Heizwaermebedarf_total)
         )
+        ww_waermebedarf_kWh = 15 * m2
+        raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
+
+        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
+        st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
@@ -807,6 +812,11 @@ elif bau_typ == "Minergie":
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
         )
+        ww_waermebedarf_kWh = 15 * m2
+        raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
+
+        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
+        st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
@@ -818,9 +828,17 @@ elif bau_typ == "Minergie-P":
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
         )
+        ww_waermebedarf_kWh = 15 * m2
+        raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
+
+        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
+        st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
+st.write(f"Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
+st.write(f"Raumheizungs-Wärmebedarf [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+
 
 st.subheader("Heizsystem")
 
@@ -897,9 +915,23 @@ st.subheader("Warmwasser")
 
 ww_aktiv = st.checkbox("Warmwasser elektrisch steuerbar", value=False)
 
+ww_aktiv = st.checkbox("Warmwasser elektrisch steuerbar", value=False)
+
 if ww_aktiv:
-    ww_bedarf_kWh_tag = st.number_input("WW-Bedarf [kWh/Tag]", min_value=0.0, max_value=30.0, value=6.0, step=0.5)
-    ww_ladeleistung_kw = st.number_input("WW-Ladeleistung [kW]", min_value=0.1, max_value=20.0, value=3.0, step=0.1)
+    ww_bedarf_kWh_tag = st.number_input(
+        "WW-Bedarf [kWh/Tag]",
+        min_value=0.0,
+        max_value=30.0,
+        value=float(round(ww_waermebedarf_kWh / 365, 2)),
+        step=0.1
+    )
+    ww_ladeleistung_kw = st.number_input(
+        "WW-Ladeleistung [kW]",
+        min_value=0.1,
+        max_value=20.0,
+        value=3.0,
+        step=0.1
+    )
     ww_strategie = st.selectbox(
         "WW-Strategie",
         ["Morgens", "Mittag / PV-optimiert", "Abends"]
@@ -1053,13 +1085,19 @@ if run_simulation:
                 st.warning("Bitte eine CSV-Datei hochladen.")
                 st.stop()
 
-        # Heizwärmebedarf übernehmen (oder Testwert)
-        if "Heizwaermebedarf_input" in locals():
-            heizwaerme_jahr = Heizwaermebedarf_input
+        # Raumheizung übernehmen (ohne Warmwasser)
+        if "raumheizung_waermebedarf_kWh" in locals():
+            heizwaerme_jahr = raumheizung_waermebedarf_kWh
         else:
             heizwaerme_jahr = 12000
 
         df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
+
+        if heizsystem == "Wärmepumpe":
+            df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
+        else:
+            df_ts = add_heatpump_consumption(df_ts, heizsystem)
+
         df_ts = add_hotwater_profile(
             df_ts,
             ww_aktiv,
@@ -1069,11 +1107,6 @@ if run_simulation:
         )
         if "ww_kWh" in df_ts.columns:
             df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
-
-        if heizsystem == "Wärmepumpe":
-            df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
-        else:
-            df_ts = add_heatpump_consumption(df_ts, heizsystem)
 
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
