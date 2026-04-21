@@ -836,8 +836,9 @@ elif bau_typ == "Minergie-P":
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-st.write(f"Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
-st.write(f"Raumheizungs-Wärmebedarf [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+if "ww_waermebedarf_kWh" in locals() and "raumheizung_waermebedarf_kWh" in locals():
+    st.write(f"Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
+    st.write(f"Raumheizungs-Wärmebedarf [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
 
 
 st.subheader("Heizsystem")
@@ -912,8 +913,6 @@ elif heizsystem == "Wärmepumpe":
     
 st.write("------------------------------")
 st.subheader("Warmwasser")
-
-ww_aktiv = st.checkbox("Warmwasser elektrisch steuerbar", value=False)
 
 ww_aktiv = st.checkbox("Warmwasser elektrisch steuerbar", value=False)
 
