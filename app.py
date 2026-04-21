@@ -1269,7 +1269,6 @@ if run_simulation:
 
         else:
             df_ts = add_heatpump_consumption(df_ts, heizsystem)
-            df_ts = create_base_dataframe(simulationsjahr)
             df_ts["ww_kWh"] = 0.0
             df_ts["ev_kWh"] = 0.0
 
@@ -1316,6 +1315,16 @@ if run_simulation:
         )
         if "ww_kWh" in df_ts.columns:
             df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
+
+        df_ts = add_ev_profile(
+            df_ts,
+            ev_aktiv,
+            ev_bedarf_kWh_tag,
+            ev_ladeleistung_kw,
+            ev_strategie
+        )
+        if "ev_kWh" in df_ts.columns:
+            df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ev_kWh"]
 
         st.write("WW-Jahresverbrauch [kWh]:", round(df_ts["ww_kWh"].sum(), 1))
         st.write("EV-Jahresverbrauch [kWh]:", round(df_ts["ev_kWh"].sum(), 1))
