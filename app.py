@@ -676,23 +676,20 @@ def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww
     if not ww_aktiv or ww_bedarf_kWh_tag <= 0 or ww_ladeleistung_kw <= 0:
         return df
 
-    delta_t = 0.25  # 15 min
+    delta_t = 0.25
     max_ww_kWh_pro_schritt = ww_ladeleistung_kw * delta_t
-
     tage = pd.to_datetime(df.index.date).unique()
 
     for tag in tage:
         verbleibend = ww_bedarf_kWh_tag
 
-        # Hilfsfunktion zum Verteilen auf ein Zeitfenster
-        def verteile_energie(mask, ziel_kWh):
+        def verteile_gleichmaessig(mask, ziel_kWh):
             nonlocal verbleibend
             idx = df.index[mask]
             if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
                 return
 
             ziel_kWh = min(ziel_kWh, verbleibend)
-
             energie_pro_schritt = min(ziel_kWh / len(idx), max_ww_kWh_pro_schritt)
             noch_offen = ziel_kWh
 
@@ -705,49 +702,58 @@ def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww
                 if noch_offen <= 0 or verbleibend <= 0:
                     break
 
+        def verteile_pv_optimiert(mask, ziel_kWh):
+            nonlocal verbleibend
+            idx = df.index[mask]
+            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
+                return
+
+            ziel_kWh = min(ziel_kWh, verbleibend)
+
+            # nach höchster PV sortieren
+            pv_sortiert = df.loc[idx, "pv_kWh"].sort_values(ascending=False)
+
+            noch_offen = ziel_kWh
+            for ts in pv_sortiert.index:
+                ladung = min(max_ww_kWh_pro_schritt, noch_offen)
+                df.at[ts, "ww_kWh"] += ladung
+                noch_offen -= ladung
+                verbleibend -= ladung
+
+                if noch_offen <= 0 or verbleibend <= 0:
+                    break
+
+        mask_morgen = (
+            (df.index.date == tag.date()) &
+            (df.index.hour >= 5) &
+            (df.index.hour < 7)
+        )
+        mask_mittag = (
+            (df.index.date == tag.date()) &
+            (df.index.hour >= 11) &
+            (df.index.hour < 15)
+        )
+        mask_abend = (
+            (df.index.date == tag.date()) &
+            (df.index.hour >= 17) &
+            (df.index.hour < 20)
+        )
+
         if ww_strategie == "Morgens":
-            mask_morgen = (
-                (df.index.date == tag.date()) &
-                (df.index.hour >= 5) &
-                (df.index.hour < 7)
-            )
-            verteile_energie(mask_morgen, ww_bedarf_kWh_tag)
+            verteile_gleichmaessig(mask_morgen, ww_bedarf_kWh_tag)
 
         elif ww_strategie == "Mittag / PV-optimiert":
-            mask_mittag = (
-                (df.index.date == tag.date()) &
-                (df.index.hour >= 11) &
-                (df.index.hour < 15)
-            )
-            verteile_energie(mask_mittag, ww_bedarf_kWh_tag)
+            verteile_pv_optimiert(mask_mittag, ww_bedarf_kWh_tag)
 
         elif ww_strategie == "Abends":
-            mask_abend = (
-                (df.index.date == tag.date()) &
-                (df.index.hour >= 17) &
-                (df.index.hour < 20)
-            )
-            verteile_energie(mask_abend, ww_bedarf_kWh_tag)
+            verteile_gleichmaessig(mask_abend, ww_bedarf_kWh_tag)
 
         elif ww_strategie == "Kombiniert (morgens + mittags)":
-            mask_morgen = (
-                (df.index.date == tag.date()) &
-                (df.index.hour >= 5) &
-                (df.index.hour < 7)
-            )
-            mask_mittag = (
-                (df.index.date == tag.date()) &
-                (df.index.hour >= 11) &
-                (df.index.hour < 15)
-            )
+            verteile_gleichmaessig(mask_morgen, ww_bedarf_kWh_tag * 0.4)
+            verteile_pv_optimiert(mask_mittag, ww_bedarf_kWh_tag * 0.6)
 
-            # 40% morgens, 60% mittags
-            verteile_energie(mask_morgen, ww_bedarf_kWh_tag * 0.4)
-            verteile_energie(mask_mittag, ww_bedarf_kWh_tag * 0.6)
-
-            # Falls wegen Leistungsgrenze noch etwas übrig bleibt:
             if verbleibend > 0:
-                verteile_energie(mask_mittag, verbleibend)
+                verteile_pv_optimiert(mask_mittag, verbleibend)
 
     return df
 
@@ -1141,17 +1147,6 @@ if run_simulation:
         if heizsystem == "Wärmepumpe":
             df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
 
-            df_ts = add_hotwater_profile(
-                df_ts,
-                ww_aktiv,
-                ww_bedarf_kWh_tag,
-                ww_ladeleistung_kw,
-                ww_strategie
-            )
-
-            if "ww_kWh" in df_ts.columns:
-                df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
-
         else:
             df_ts = add_heatpump_consumption(df_ts, heizsystem)
             df_ts["ww_kWh"] = 0.0
@@ -1191,6 +1186,16 @@ if run_simulation:
             df_ts["pv_kWh"] += df_tmp["pv_kWh"]
             df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
             df_ts["poa_global"] += df_tmp["poa_global"]
+
+        df_ts = add_hotwater_profile(
+            df_ts,
+            ww_aktiv,
+            ww_bedarf_kWh_tag,
+            ww_ladeleistung_kw,
+            ww_strategie
+        )
+        if "ww_kWh" in df_ts.columns:
+            df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
 
         # st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
         # st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
