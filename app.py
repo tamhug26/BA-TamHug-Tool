@@ -756,6 +756,91 @@ def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww
                 verteile_pv_optimiert(mask_mittag, verbleibend)
 
     return df
+def add_ev_profile(df, ev_aktiv, ev_bedarf_kWh_tag, ev_ladeleistung_kw, ev_strategie):
+    df = df.copy()
+    df["ev_kWh"] = 0.0
+
+    if not ev_aktiv or ev_bedarf_kWh_tag <= 0 or ev_ladeleistung_kw <= 0:
+        return df
+
+    delta_t = 0.25
+    max_ev_kWh_pro_schritt = ev_ladeleistung_kw * delta_t
+    tage = pd.to_datetime(df.index.date).unique()
+
+    for tag in tage:
+        verbleibend = ev_bedarf_kWh_tag
+
+        def verteile_gleichmaessig(mask, ziel_kWh):
+            nonlocal verbleibend
+            idx = df.index[mask]
+            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
+                return
+
+            ziel_kWh = min(ziel_kWh, verbleibend)
+            energie_pro_schritt = min(ziel_kWh / len(idx), max_ev_kWh_pro_schritt)
+            noch_offen = ziel_kWh
+
+            for ts in idx:
+                ladung = min(energie_pro_schritt, noch_offen, max_ev_kWh_pro_schritt)
+                df.at[ts, "ev_kWh"] += ladung
+                noch_offen -= ladung
+                verbleibend -= ladung
+
+                if noch_offen <= 0 or verbleibend <= 0:
+                    break
+
+        def verteile_pv_optimiert(mask, ziel_kWh):
+            nonlocal verbleibend
+            idx = df.index[mask]
+            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
+                return
+
+            ziel_kWh = min(ziel_kWh, verbleibend)
+            pv_sortiert = df.loc[idx, "pv_kWh"].sort_values(ascending=False)
+
+            noch_offen = ziel_kWh
+            for ts in pv_sortiert.index:
+                ladung = min(max_ev_kWh_pro_schritt, noch_offen)
+                df.at[ts, "ev_kWh"] += ladung
+                noch_offen -= ladung
+                verbleibend -= ladung
+
+                if noch_offen <= 0 or verbleibend <= 0:
+                    break
+
+        mask_morgen = (
+            (df.index.date == tag.date()) &
+            (df.index.hour >= 5) &
+            (df.index.hour < 8)
+        )
+        mask_mittag = (
+            (df.index.date == tag.date()) &
+            (df.index.hour >= 11) &
+            (df.index.hour < 15)
+        )
+        mask_abend = (
+            (df.index.date == tag.date()) &
+            (df.index.hour >= 17) &
+            (df.index.hour < 22)
+        )
+
+        if ev_strategie == "Morgens":
+            verteile_gleichmaessig(mask_morgen, ev_bedarf_kWh_tag)
+
+        elif ev_strategie == "Mittag / PV-optimiert":
+            verteile_pv_optimiert(mask_mittag, ev_bedarf_kWh_tag)
+
+        elif ev_strategie == "Abends":
+            verteile_gleichmaessig(mask_abend, ev_bedarf_kWh_tag)
+
+        elif ev_strategie == "Kombiniert (mittags + abends)":
+            verteile_pv_optimiert(mask_mittag, ev_bedarf_kWh_tag * 0.6)
+            verteile_gleichmaessig(mask_abend, ev_bedarf_kWh_tag * 0.4)
+
+            if verbleibend > 0:
+                verteile_gleichmaessig(mask_abend, verbleibend)
+
+    return df
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
@@ -992,6 +1077,41 @@ if heizsystem == "Wärmepumpe":
         )
 else:
     st.info("Warmwasser wird bei Fossil & Holz aktuell nicht als elektrische Last simuliert.")    
+
+st.write("------------------------------")
+st.subheader("E-Auto")
+
+ev_aktiv = st.checkbox("E-Auto steuerbar", value=False)
+
+if ev_aktiv:
+    ev_bedarf_kWh_tag = st.number_input(
+        "E-Auto Bedarf [kWh/Tag]",
+        min_value=0.0,
+        max_value=100.0,
+        value=8.0,
+        step=0.5
+    )
+    ev_ladeleistung_kw = st.number_input(
+        "E-Auto Ladeleistung [kW]",
+        min_value=0.1,
+        max_value=22.0,
+        value=3.7,
+        step=0.1
+    )
+    ev_strategie = st.selectbox(
+        "E-Auto Strategie",
+        [
+            "Morgens",
+            "Mittag / PV-optimiert",
+            "Abends",
+            "Kombiniert (mittags + abends)"
+        ]
+    )
+else:
+    ev_bedarf_kWh_tag = 0.0
+    ev_ladeleistung_kw = 0.0
+    ev_strategie = "Abends"
+
 st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
@@ -1149,7 +1269,9 @@ if run_simulation:
 
         else:
             df_ts = add_heatpump_consumption(df_ts, heizsystem)
+            df_ts = create_base_dataframe(simulationsjahr)
             df_ts["ww_kWh"] = 0.0
+            df_ts["ev_kWh"] = 0.0
 
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
@@ -1196,6 +1318,7 @@ if run_simulation:
             df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
 
         st.write("WW-Jahresverbrauch [kWh]:", round(df_ts["ww_kWh"].sum(), 1))
+        st.write("EV-Jahresverbrauch [kWh]:", round(df_ts["ev_kWh"].sum(), 1))
 
         # st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
         # st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
@@ -1345,6 +1468,8 @@ if "df_ts" in st.session_state:
                 df_plot[[
                     "gesamtlast_kWh",
                     "pv_kWh",
+                    "ww_kWh",
+                    "ev_kWh",
                     "soc_kWh",
                     "netzbezug_kWh",
                     "netzeinspeisung_kWh",
