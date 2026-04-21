@@ -676,39 +676,78 @@ def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww
     if not ww_aktiv or ww_bedarf_kWh_tag <= 0 or ww_ladeleistung_kw <= 0:
         return df
 
-    max_ww_kWh_pro_schritt = ww_ladeleistung_kw * 0.25
-
-    if ww_strategie == "Morgens":
-        start_hour, end_hour = 5, 7
-    elif ww_strategie == "Mittag / PV-optimiert":
-        start_hour, end_hour = 11, 15
-    elif ww_strategie == "Abends":
-        start_hour, end_hour = 17, 20
-    else:
-        start_hour, end_hour = 11, 15
+    delta_t = 0.25  # 15 min
+    max_ww_kWh_pro_schritt = ww_ladeleistung_kw * delta_t
 
     tage = pd.to_datetime(df.index.date).unique()
 
     for tag in tage:
-        mask = (
-            (df.index.date == tag.date()) &
-            (df.index.hour >= start_hour) &
-            (df.index.hour < end_hour)
-        )
-
-        idx = df.index[mask]
-        if len(idx) == 0:
-            continue
-
-        energie_pro_schritt = min(ww_bedarf_kWh_tag / len(idx), max_ww_kWh_pro_schritt)
         verbleibend = ww_bedarf_kWh_tag
 
-        for ts in idx:
-            ladung = min(energie_pro_schritt, verbleibend, max_ww_kWh_pro_schritt)
-            df.at[ts, "ww_kWh"] = ladung
-            verbleibend -= ladung
-            if verbleibend <= 0:
-                break
+        # Hilfsfunktion zum Verteilen auf ein Zeitfenster
+        def verteile_energie(mask, ziel_kWh):
+            nonlocal verbleibend
+            idx = df.index[mask]
+            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
+                return
+
+            ziel_kWh = min(ziel_kWh, verbleibend)
+
+            energie_pro_schritt = min(ziel_kWh / len(idx), max_ww_kWh_pro_schritt)
+            noch_offen = ziel_kWh
+
+            for ts in idx:
+                ladung = min(energie_pro_schritt, noch_offen, max_ww_kWh_pro_schritt)
+                df.at[ts, "ww_kWh"] += ladung
+                noch_offen -= ladung
+                verbleibend -= ladung
+
+                if noch_offen <= 0 or verbleibend <= 0:
+                    break
+
+        if ww_strategie == "Morgens":
+            mask_morgen = (
+                (df.index.date == tag.date()) &
+                (df.index.hour >= 5) &
+                (df.index.hour < 7)
+            )
+            verteile_energie(mask_morgen, ww_bedarf_kWh_tag)
+
+        elif ww_strategie == "Mittag / PV-optimiert":
+            mask_mittag = (
+                (df.index.date == tag.date()) &
+                (df.index.hour >= 11) &
+                (df.index.hour < 15)
+            )
+            verteile_energie(mask_mittag, ww_bedarf_kWh_tag)
+
+        elif ww_strategie == "Abends":
+            mask_abend = (
+                (df.index.date == tag.date()) &
+                (df.index.hour >= 17) &
+                (df.index.hour < 20)
+            )
+            verteile_energie(mask_abend, ww_bedarf_kWh_tag)
+
+        elif ww_strategie == "Kombiniert (morgens + mittags)":
+            mask_morgen = (
+                (df.index.date == tag.date()) &
+                (df.index.hour >= 5) &
+                (df.index.hour < 7)
+            )
+            mask_mittag = (
+                (df.index.date == tag.date()) &
+                (df.index.hour >= 11) &
+                (df.index.hour < 15)
+            )
+
+            # 40% morgens, 60% mittags
+            verteile_energie(mask_morgen, ww_bedarf_kWh_tag * 0.4)
+            verteile_energie(mask_mittag, ww_bedarf_kWh_tag * 0.6)
+
+            # Falls wegen Leistungsgrenze noch etwas übrig bleibt:
+            if verbleibend > 0:
+                verteile_energie(mask_mittag, verbleibend)
 
     return df
 
@@ -938,7 +977,12 @@ if heizsystem == "Wärmepumpe":
         )
         ww_strategie = st.selectbox(
             "WW-Strategie",
-            ["Morgens", "Mittag / PV-optimiert", "Abends"]
+            [
+                "Morgens",
+                "Mittag / PV-optimiert",
+                "Abends",
+                "Kombiniert (morgens + mittags)"
+            ]
         )
 else:
     st.info("Warmwasser wird bei Fossil & Holz aktuell nicht als elektrische Last simuliert.")    
