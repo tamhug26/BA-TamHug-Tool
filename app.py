@@ -861,6 +861,58 @@ def add_ev_profile(df, ev_aktiv, ev_bedarf_kWh_tag, ev_ladeleistung_kw, ev_strat
                 verteile_gleichmaessig(mask_abend, verbleibend)
 
     return df
+def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
+    df = df.copy()
+
+    df["ww_kWh"] = 0.0
+    df["ev_kWh"] = 0.0
+
+    delta_t = 0.25
+
+    # Tagesbedarf initialisieren
+    ww_rest = 0.0
+    ev_rest = 0.0
+
+    current_day = None
+
+    for i in df.index:
+
+        # neuer Tag → Bedarf zurücksetzen
+        if current_day != i.date():
+            current_day = i.date()
+            ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
+            ev_rest = ev_config["bedarf_tag"] if ev_config["aktiv"] else 0.0
+
+        pv = df.at[i, "pv_kWh"]
+        last = df.at[i, "hauslast_kWh"]
+
+        pv_rest = max(0, pv - last)
+
+        # 👉 Prioritäten anwenden
+        for verbraucher in prioritaeten:
+
+            if verbraucher == "Warmwasser" and ww_rest > 0:
+
+                max_step = ww_config["leistung_kw"] * delta_t
+
+                ladung = min(pv_rest, max_step, ww_rest)
+
+                df.at[i, "ww_kWh"] += ladung
+                pv_rest -= ladung
+                ww_rest -= ladung
+
+            elif verbraucher == "E-Auto" and ev_rest > 0:
+
+                max_step = ev_config["leistung_kw"] * delta_t
+
+                ladung = min(pv_rest, max_step, ev_rest)
+
+                df.at[i, "ev_kWh"] += ladung
+                pv_rest -= ladung
+                ev_rest -= ladung
+
+    return df
+
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
@@ -877,7 +929,10 @@ def add_ev_profile(df, ev_aktiv, ev_bedarf_kWh_tag, ev_ladeleistung_kw, ev_strat
 # Der Wirkungsgrad-Eingabewert beeinflusst den Ertrag praktisch nicht.
 # Die Batteriesimulation mischt kW und kWh.
 
-
+# noch ändern
+# EV nicht jeden Tag laden
+# WW schwankt
+# Wochenendverhalten anders
 
 
 st.header("Dimensionierungstool")
@@ -1133,6 +1188,13 @@ else:
     ev_strategie = "Abends"
 
 st.write("------------------------------")
+st.subheader("EMS")
+prioritaeten = st.multiselect(
+    "Priorität (oben = zuerst)",
+    ["Warmwasser", "E-Auto"],
+    default=["Warmwasser", "E-Auto"]
+)
+st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
 standort_auswahl = st.selectbox(
@@ -1326,25 +1388,48 @@ if run_simulation:
             df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
             df_ts["poa_global"] += df_tmp["poa_global"]
 
-        df_ts = add_hotwater_profile(
-            df_ts,
-            ww_aktiv,
-            ww_bedarf_kWh_tag,
-            ww_ladeleistung_kw,
-            ww_strategie
-        )
-        if "ww_kWh" in df_ts.columns:
-            df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
+        # df_ts = add_hotwater_profile(
+        #     df_ts,
+        #     ww_aktiv,
+        #     ww_bedarf_kWh_tag,
+        #     ww_ladeleistung_kw,
+        #     ww_strategie
+        # )
+        # if "ww_kWh" in df_ts.columns:
+        #     df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
 
-        df_ts = add_ev_profile(
+        # df_ts = add_ev_profile(
+        #     df_ts,
+        #     ev_aktiv,
+        #     ev_bedarf_kWh_tag,
+        #     ev_ladeleistung_kw,
+        #     ev_strategie
+        # )
+        # if "ev_kWh" in df_ts.columns:
+        #     df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ev_kWh"]
+
+        ww_config = {
+            "aktiv": ww_aktiv,
+            "bedarf_tag": ww_bedarf_kWh_tag,
+            "leistung_kw": ww_ladeleistung_kw
+        }
+
+        ev_config = {
+            "aktiv": ev_aktiv,
+            "bedarf_tag": ev_bedarf_kWh_tag,
+            "leistung_kw": ev_ladeleistung_kw
+        }
+
+        prioritaeten = ["Warmwasser", "E-Auto"]
+
+        df_ts = allocate_flexible_loads(
             df_ts,
-            ev_aktiv,
-            ev_bedarf_kWh_tag,
-            ev_ladeleistung_kw,
-            ev_strategie
+            prioritaeten,
+            ww_config,
+            ev_config
         )
-        if "ev_kWh" in df_ts.columns:
-            df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ev_kWh"]
+
+        df_ts["gesamtlast_kWh"] += df_ts["ww_kWh"] + df_ts["ev_kWh"]
 
         st.write("WW-Jahresverbrauch [kWh]:", round(df_ts["ww_kWh"].sum(), 1))
         st.write("EV-Jahresverbrauch [kWh]:", round(df_ts["ev_kWh"].sum(), 1))
