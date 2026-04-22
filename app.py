@@ -457,6 +457,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             mode="lines",
             name="E-Auto",
             line=dict(color="green", width=2, dash="dot")
+        ))
 
     # SoC
     # fig.add_trace(go.Scatter(
