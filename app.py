@@ -439,6 +439,25 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         line=dict(color="blue", width=2)
     ))
 
+    # Warmwasser
+    if "ww_kWh" in df_plot.columns:
+        fig.add_trace(go.Scatter(
+            x=df_plot.index,
+            y=df_plot["ww_kWh"],
+            mode="lines",
+            name="Warmwasser",
+            line=dict(color="red", width=2, dash="dot")
+        ))
+
+    # E-Auto
+    if "ev_kWh" in df_plot.columns:
+        fig.add_trace(go.Scatter(
+            x=df_plot.index,
+            y=df_plot["ev_kWh"],
+            mode="lines",
+            name="E-Auto",
+            line=dict(color="green", width=2, dash="dot")
+
     # SoC
     # fig.add_trace(go.Scatter(
     #     x=df_plot.index,
