@@ -688,8 +688,9 @@ def add_pv_profile_weather_based(
     df["pv_kWh"] = df["pv_power_kW"] * 0.25 #E[kWh] = P [kW] * t[h]
 
     return df
+
 #Warmwasser:
-def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww_strategie):
+# def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww_strategie):
     df = df.copy()
     df["ww_kWh"] = 0.0
 
@@ -776,7 +777,7 @@ def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww
                 verteile_pv_optimiert(mask_mittag, verbleibend)
 
     return df
-def add_ev_profile(df, ev_aktiv, ev_bedarf_kWh_tag, ev_ladeleistung_kw, ev_strategie):
+# def add_ev_profile(df, ev_aktiv, ev_bedarf_kWh_tag, ev_ladeleistung_kw, ev_strategie):
     df = df.copy()
     df["ev_kWh"] = 0.0
 
@@ -868,48 +869,66 @@ def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
     df["ev_kWh"] = 0.0
 
     delta_t = 0.25
-
-    # Tagesbedarf initialisieren
+    current_day = None
     ww_rest = 0.0
     ev_rest = 0.0
 
-    current_day = None
+    def ist_im_zeitfenster(timestamp, strategie, verbraucher):
+        h = timestamp.hour
+
+        if verbraucher == "Warmwasser":
+            if strategie == "Morgens":
+                return 5 <= h < 7
+            elif strategie == "Mittag / PV-optimiert":
+                return 11 <= h < 15
+            elif strategie == "Abends":
+                return 17 <= h < 20
+            elif strategie == "Kombiniert (morgens + mittags)":
+                return (5 <= h < 7) or (11 <= h < 15)
+
+        if verbraucher == "E-Auto":
+            if strategie == "Morgens":
+                return 5 <= h < 8
+            elif strategie == "Mittag / PV-optimiert":
+                return 11 <= h < 15
+            elif strategie == "Abends":
+                return 17 <= h < 22
+            elif strategie == "Kombiniert (mittags + abends)":
+                return (11 <= h < 15) or (17 <= h < 22)
+
+        return False
 
     for i in df.index:
 
-        # neuer Tag → Bedarf zurücksetzen
         if current_day != i.date():
             current_day = i.date()
             ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
             ev_rest = ev_config["bedarf_tag"] if ev_config["aktiv"] else 0.0
 
         pv = df.at[i, "pv_kWh"]
-        last = df.at[i, "hauslast_kWh"]
+        last = df.at[i, "gesamtlast_kWh"]
 
         pv_rest = max(0, pv - last)
 
-        # 👉 Prioritäten anwenden
         for verbraucher in prioritaeten:
 
             if verbraucher == "Warmwasser" and ww_rest > 0:
+                if ist_im_zeitfenster(i, ww_config["strategie"], "Warmwasser"):
+                    max_step = ww_config["leistung_kw"] * delta_t
+                    ladung = min(pv_rest, max_step, ww_rest)
 
-                max_step = ww_config["leistung_kw"] * delta_t
-
-                ladung = min(pv_rest, max_step, ww_rest)
-
-                df.at[i, "ww_kWh"] += ladung
-                pv_rest -= ladung
-                ww_rest -= ladung
+                    df.at[i, "ww_kWh"] += ladung
+                    pv_rest -= ladung
+                    ww_rest -= ladung
 
             elif verbraucher == "E-Auto" and ev_rest > 0:
+                if ist_im_zeitfenster(i, ev_config["strategie"], "E-Auto"):
+                    max_step = ev_config["leistung_kw"] * delta_t
+                    ladung = min(pv_rest, max_step, ev_rest)
 
-                max_step = ev_config["leistung_kw"] * delta_t
-
-                ladung = min(pv_rest, max_step, ev_rest)
-
-                df.at[i, "ev_kWh"] += ladung
-                pv_rest -= ladung
-                ev_rest -= ladung
+                    df.at[i, "ev_kWh"] += ladung
+                    pv_rest -= ladung
+                    ev_rest -= ladung
 
     return df
 
@@ -1411,16 +1430,16 @@ if run_simulation:
         ww_config = {
             "aktiv": ww_aktiv,
             "bedarf_tag": ww_bedarf_kWh_tag,
-            "leistung_kw": ww_ladeleistung_kw
+            "leistung_kw": ww_ladeleistung_kw,
+            "strategie": ww_strategie
         }
 
         ev_config = {
             "aktiv": ev_aktiv,
             "bedarf_tag": ev_bedarf_kWh_tag,
-            "leistung_kw": ev_ladeleistung_kw
+            "leistung_kw": ev_ladeleistung_kw,
+            "strategie": ev_strategie
         }
-
-        prioritaeten = ["Warmwasser", "E-Auto"]
 
         df_ts = allocate_flexible_loads(
             df_ts,
