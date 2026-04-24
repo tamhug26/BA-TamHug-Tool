@@ -915,19 +915,19 @@ def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
             if verbraucher == "Warmwasser" and ww_rest > 0:
                 if ist_im_zeitfenster(i, ww_config["strategie"], "Warmwasser"):
                     max_step = ww_config["leistung_kw"] * delta_t
-                    ladung = min(pv_rest, max_step, ww_rest)
+                    ladung = min(max_step, ww_rest)
 
                     df.at[i, "ww_kWh"] += ladung
-                    pv_rest -= ladung
+                    pv_rest = max(0, pv_rest - ladung)
                     ww_rest -= ladung
 
             elif verbraucher == "E-Auto" and ev_rest > 0:
                 if ist_im_zeitfenster(i, ev_config["strategie"], "E-Auto"):
                     max_step = ev_config["leistung_kw"] * delta_t
-                    ladung = min(pv_rest, max_step, ev_rest)
+                    ladung = min(max_step, ev_rest)
 
                     df.at[i, "ev_kWh"] += ladung
-                    pv_rest -= ladung
+                    pv_rest = max(0, pv_rest - ladung)
                     ev_rest -= ladung
 
     return df
