@@ -1225,7 +1225,9 @@ if ev_aktiv:
         ]
     )
 else:
-    ev_bedarf_kWh_tag = 0.0
+    ev_verbrauch_kWh_pro_h = 0.0
+    ev_fahrzeit_h_tag = 0.0
+    ev_wochenende_kWh = 0.0
     ev_ladeleistung_kw = 0.0
     ev_strategie = "Abends"
 
@@ -1462,7 +1464,8 @@ if run_simulation:
             "leistung_kw": ev_ladeleistung_kw,
             "verbrauch_pro_h": ev_verbrauch_kWh_pro_h,
             "fahrzeit_tag": ev_fahrzeit_h_tag,
-            "wochenende_kWh": ev_wochenende_kWh
+            "wochenende_kWh": ev_wochenende_kWh,
+            "strategie": ev_strategie
         }
 
         df_ts = allocate_flexible_loads(
