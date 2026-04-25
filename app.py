@@ -903,7 +903,7 @@ def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
         if current_day != i.date():
             current_day = i.date()
             ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
-            ev_rest = ev_config["bedarf_tag"] if ev_config["aktiv"] else 0.0
+            ev_rest = get_ev_tagesbedarf(i, ev_config)
 
         pv = df.at[i, "pv_kWh"]
         last = df.at[i, "gesamtlast_kWh"]
@@ -931,7 +931,14 @@ def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
                     ev_rest -= ladung
 
     return df
+def get_ev_tagesbedarf(timestamp, ev_config):
+    if not ev_config["aktiv"]:
+        return 0.0
 
+    if timestamp.weekday() < 5:  # Mo–Fr
+        return ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
+    else:
+        return ev_config["wochenende_kWh"]
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
@@ -1178,11 +1185,27 @@ st.subheader("E-Auto")
 ev_aktiv = st.checkbox("E-Auto steuerbar", value=False)
 
 if ev_aktiv:
-    ev_bedarf_kWh_tag = st.number_input(
-        "E-Auto Bedarf [kWh/Tag]",
+    ev_verbrauch_kWh_pro_h = st.number_input(
+        "Verbrauch [kWh pro Fahrstunde]",
+        min_value=5.0,
+        max_value=30.0,
+        value=12.0,
+        step=0.5
+    )
+
+    ev_fahrzeit_h_tag = st.number_input(
+        "Fahrzeit pro Werktag [h]",
         min_value=0.0,
-        max_value=100.0,
-        value=8.0,
+        max_value=5.0,
+        value=1.0,  # = 2x30min
+        step=0.25
+    )
+
+    ev_wochenende_kWh = st.number_input(
+        "Verbrauch Wochenende [kWh/Tag]",
+        min_value=0.0,
+        max_value=50.0,
+        value=0.0,
         step=0.5
     )
     ev_ladeleistung_kw = st.number_input(
@@ -1436,9 +1459,10 @@ if run_simulation:
 
         ev_config = {
             "aktiv": ev_aktiv,
-            "bedarf_tag": ev_bedarf_kWh_tag,
             "leistung_kw": ev_ladeleistung_kw,
-            "strategie": ev_strategie
+            "verbrauch_pro_h": ev_verbrauch_kWh_pro_h,
+            "fahrzeit_tag": ev_fahrzeit_h_tag,
+            "wochenende_kWh": ev_wochenende_kWh
         }
 
         df_ts = allocate_flexible_loads(
