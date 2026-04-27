@@ -1330,7 +1330,6 @@ ww_steuerbar = False
 ww_bedarf_kWh_tag = 0.0
 ww_ladeleistung_kw = 0.0
 ww_strategie = "Abends"
-
 if heizsystem == "Wärmepumpe":
     ww_aktiv = True
     st.info("Warmwasser wird bei Wärmepumpe immer als elektrische Last berücksichtigt.")
@@ -1342,7 +1341,6 @@ if heizsystem == "Wärmepumpe":
         value=float(round(ww_waermebedarf_kWh / 365, 2)),
         step=0.1
     )
-
     ww_ladeleistung_kw = st.number_input(
         "WW-Ladeleistung [kW]",
         min_value=0.1,
@@ -1350,7 +1348,6 @@ if heizsystem == "Wärmepumpe":
         value=3.0,
         step=0.1
     )
-
     if ww_steuerbar:
         ww_strategie = st.selectbox(
             "WW-Strategie",
