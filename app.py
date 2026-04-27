@@ -1677,22 +1677,6 @@ if run_simulation:
 
         ww_config = {
             "aktiv": ww_aktiv,
-            "bedarf_tag": ww_bedarf_kWh_tag,
-            "leistung_kw": ww_ladeleistung_kw,
-            "strategie": ww_strategie
-        }
-
-        ev_config = {
-            "aktiv": ev_aktiv,
-            "leistung_kw": ev_ladeleistung_kw,
-            "verbrauch_pro_h": ev_verbrauch_kWh_pro_h,
-            "fahrzeit_tag": ev_fahrzeit_h_tag,
-            "zusatz_nicht_fahrtag": ev_wochenende_kWh,
-            "strategie": ev_strategie
-        }
-
-        ww_config = {
-            "aktiv": ww_aktiv,
             "steuerbar": ww_steuerbar,
             "bedarf_tag": ww_bedarf_kWh_tag,
             "leistung_kw": ww_ladeleistung_kw,
@@ -1704,7 +1688,7 @@ if run_simulation:
             "leistung_kw": ev_ladeleistung_kw,
             "verbrauch_pro_h": ev_verbrauch_kWh_pro_h,
             "fahrzeit_tag": ev_fahrzeit_h_tag,
-            "wochenende_kWh": ev_wochenende_kWh,
+            "zusatz_nicht_fahrtag": ev_wochenende_kWh,
             "strategie": ev_strategie,
             "fahrtage": ev_fahrtage
         }
