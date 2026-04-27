@@ -1157,7 +1157,7 @@ Stromnutzung = st.segmented_control(
     key="Stromnutzung"
 )
 uploaded_file = None
-if Stromnutzung == "eigene Daten als csv":
+if Stromnutzung == "eigene Daten":
     uploaded_file = st.file_uploader(
         "Upload Lastprofil",
         accept_multiple_files=False,
