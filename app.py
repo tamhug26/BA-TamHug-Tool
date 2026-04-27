@@ -1138,7 +1138,6 @@ def add_uploaded_load_profile(df_base, uploaded_file):
 # Die Batteriesimulation mischt kW und kWh.
 
 # noch ändern
-# EV nicht jeden Tag laden
 # WW schwankt
 # Wochenendverhalten anders
 
