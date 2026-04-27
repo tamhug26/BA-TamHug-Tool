@@ -1052,76 +1052,75 @@ def simulate_ems(
     df["gesamtlast_kWh"] = df["gesamtlast_kWh"] + df["ww_kWh"] + df["ev_kWh"]
 
     return df
-# def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
-#     df = df.copy()
+def add_uploaded_load_profile(df_base, uploaded_file):
+    df = df_base.copy()
 
-#     df["ww_kWh"] = 0.0
-#     df["ev_kWh"] = 0.0
+    if uploaded_file.name.endswith(".csv"):
+        df_upload = pd.read_csv(uploaded_file)
+        sheet_name = None
 
-#     delta_t = 0.25
-#     current_day = None
-#     ww_rest = 0.0
-#     ev_rest = 0.0
+    elif uploaded_file.name.endswith(".xlsx"):
+        excel_file = pd.ExcelFile(uploaded_file)
+        sheet_name = st.selectbox(
+            "Excel-Reiter auswählen",
+            excel_file.sheet_names,
+            index=excel_file.sheet_names.index("Rohdaten_Gemeindehaus")
+            if "Rohdaten_Gemeindehaus" in excel_file.sheet_names else 0
+        )
+        df_upload = pd.read_excel(uploaded_file, sheet_name=sheet_name)
 
-#     def ist_im_zeitfenster(timestamp, strategie, verbraucher):
-#         h = timestamp.hour
+    st.write("Vorschau der hochgeladenen Daten:")
+    st.dataframe(df_upload.head())
 
-#         if verbraucher == "Warmwasser":
-#             if strategie == "Morgens":
-#                 return 5 <= h < 7
-#             elif strategie == "Mittag / PV-optimiert":
-#                 return 11 <= h < 15
-#             elif strategie == "Abends":
-#                 return 17 <= h < 20
-#             elif strategie == "Kombiniert (morgens + mittags)":
-#                 return (5 <= h < 7) or (11 <= h < 15)
+    zeitspalte = st.selectbox(
+        "Zeitspalte auswählen",
+        df_upload.columns
+    )
 
-#         if verbraucher == "E-Auto":
-#             if strategie == "Morgens":
-#                 return 5 <= h < 8
-#             elif strategie == "Mittag / PV-optimiert":
-#                 return 11 <= h < 15
-#             elif strategie == "Abends":
-#                 return 17 <= h < 22
-#             elif strategie == "Kombiniert (mittags + abends)":
-#                 return (11 <= h < 15) or (17 <= h < 22)
+    verbrauchsspalte = st.selectbox(
+        "Verbrauchs-/Messwertspalte auswählen",
+        df_upload.columns,
+        index=len(df_upload.columns) - 1
+    )
 
-#         return False
+    durch_4_teilen = st.checkbox(
+        "Messwerte durch 4 teilen",
+        value=True,
+        help="Aktivieren, wenn die 15-min-Werte offenbar als stündliche Werte/Leistungswerte vorliegen."
+    )
 
-#     for i in df.index:
+    df_upload = df_upload[[zeitspalte, verbrauchsspalte]].copy()
+    df_upload.columns = ["timestamp", "verbrauch_roh"]
 
-#         if current_day != i.date():
-#             current_day = i.date()
-#             ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
-#             ev_rest = get_ev_tagesbedarf(i, ev_config)
+    df_upload["timestamp"] = pd.to_datetime(df_upload["timestamp"], errors="coerce")
+    df_upload["verbrauch_roh"] = pd.to_numeric(df_upload["verbrauch_roh"], errors="coerce")
 
-#         pv = df.at[i, "pv_kWh"]
-#         last = df.at[i, "gesamtlast_kWh"]
+    df_upload = df_upload.dropna(subset=["timestamp", "verbrauch_roh"])
+    df_upload = df_upload.set_index("timestamp").sort_index()
 
-#         pv_rest = max(0, pv - last)
+    if durch_4_teilen:
+        df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"] / 4
+    else:
+        df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"]
 
-#         for verbraucher in prioritaeten:
+    df_upload = df_upload[["verbrauch_kWh"]]
 
-#             if verbraucher == "Warmwasser" and ww_rest > 0:
-#                 if ist_im_zeitfenster(i, ww_config["strategie"], "Warmwasser"):
-#                     max_step = ww_config["leistung_kw"] * delta_t
-#                     ladung = min(max_step, ww_rest)
+    # Jahr auf Simulationsjahr übertragen
+    df_upload = df_upload.reset_index()
+    df_upload["timestamp"] = df_upload["timestamp"].apply(
+        lambda x: x.replace(year=df.index[0].year)
+    )
+    df_upload = df_upload.set_index("timestamp")
 
-#                     df.at[i, "ww_kWh"] += ladung
-#                     pv_rest = max(0, pv_rest - ladung)
-#                     ww_rest -= ladung
+    # auf 15-min-Raster bringen
+    df_upload = df_upload.resample("15min").sum()
 
-#             elif verbraucher == "E-Auto" and ev_rest > 0:
-#                 if ist_im_zeitfenster(i, ev_config["strategie"], "E-Auto"):
-#                     max_step = ev_config["leistung_kw"] * delta_t
-#                     ladung = min(max_step, ev_rest)
+    df = df.join(df_upload, how="left")
+    df["hauslast_kWh"] = df["verbrauch_kWh"].fillna(0)
 
-#                     df.at[i, "ev_kWh"] += ladung
-#                     pv_rest = max(0, pv_rest - ladung)
-#                     ev_rest -= ladung
+    st.write("Jahresverbrauch hochgeladenes Profil [kWh]:", round(df["hauslast_kWh"].sum(), 1))
 
-#     return df
-
+    return df
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
@@ -1154,14 +1153,16 @@ EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 Stromnutzung = st.segmented_control(
     "Standartstromnutzungsprofil oder eigene daten als csv?",
-    ["Standartprofil", "eigene Daten als csv"],
+    ["Standartprofil", "eigene Daten"],
     default="Standartprofil",
     key="Stromnutzung"
 )
 uploaded_file = None
 if Stromnutzung == "eigene Daten als csv":
     uploaded_file = st.file_uploader(
-        "Upload data", accept_multiple_files=False, type="csv"
+        "Upload Lastprofil",
+        accept_multiple_files=False,
+        type=["csv", "xlsx"]
     )
     st.info("""
     CSV-Format:
@@ -1612,11 +1613,9 @@ if run_simulation:
             df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
         elif Stromnutzung == "eigene Daten als csv":
             if uploaded_file is not None:
-                df_csv = pd.read_csv(uploaded_file)
-                st.write(df_csv.head())  # nur zum Test
-                # später: df_ts = add_csv_profile(df_ts, df_csv)
+                df_ts = add_uploaded_load_profile(df_ts, uploaded_file)
             else:
-                st.warning("Bitte eine CSV-Datei hochladen.")
+                st.warning("Bitte eine Datei hochladen.")
                 st.stop()
 
         # Raumheizung übernehmen (ohne Warmwasser)
@@ -1668,26 +1667,6 @@ if run_simulation:
             df_ts["pv_kWh"] += df_tmp["pv_kWh"]
             df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
             df_ts["poa_global"] += df_tmp["poa_global"]
-
-        # df_ts = add_hotwater_profile(
-        #     df_ts,
-        #     ww_aktiv,
-        #     ww_bedarf_kWh_tag,
-        #     ww_ladeleistung_kw,
-        #     ww_strategie
-        # )
-        # if "ww_kWh" in df_ts.columns:
-        #     df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ww_kWh"]
-
-        # df_ts = add_ev_profile(
-        #     df_ts,
-        #     ev_aktiv,
-        #     ev_bedarf_kWh_tag,
-        #     ev_ladeleistung_kw,
-        #     ev_strategie
-        # )
-        # if "ev_kWh" in df_ts.columns:
-        #     df_ts["gesamtlast_kWh"] = df_ts["gesamtlast_kWh"] + df_ts["ev_kWh"]
 
         ww_config = {
             "aktiv": ww_aktiv,
@@ -1837,15 +1816,6 @@ if "df_ts" in st.session_state:
 
         st.write("Ausgewählter Zeitraum:")
         st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
-
-        # fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze)
-        # fig.add_trace(go.Scatter(
-        #     x=df_plot.index,
-        #     y=df_plot["pv_power_kW"],
-        #     mode="lines",
-        #     name="PV-Leistung [kW]",
-        #     line=dict(width=2, dash="dot")
-        # ))
 
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze, zeitraum)
         st.plotly_chart(fig, use_container_width=True)
