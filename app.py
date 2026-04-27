@@ -890,18 +890,14 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
             return (11 <= h < 15) or (17 <= h < 22)
 
     return False
-
-
-def get_ev_tagesbedarf(timestamp, ev_config):
+def get_ev_fahrbedarf(timestamp, ev_config):
     if not ev_config["aktiv"]:
         return 0.0
 
     if timestamp.weekday() in ev_config["fahrtage"]:
         return ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
-    else:
-        return ev_config["wochenende_kWh"]
 
-
+    return 0.0
 def simulate_ems(
     df,
     prioritaeten,
@@ -941,7 +937,11 @@ def simulate_ems(
         if current_day != i.date():
             current_day = i.date()
             ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
-            ev_rest = get_ev_tagesbedarf(i, ev_config)
+            ev_rest += ev_config["zusatz_nicht_fahrtag"] if ev_config["aktiv"] and i.weekday() not in ev_config["fahrtage"] else 0.0
+        # E-Auto-Fahrbedarf entsteht erst nach der Fahrt, hier vereinfacht ab 17:00 Uhr
+        if i.hour == 17 and i.minute == 0:
+            ev_rest += get_ev_fahrbedarf(i, ev_config)
+
 
         pv = df.at[i, "pv_kWh"]
         basislast = df.at[i, "gesamtlast_kWh"]
@@ -1098,14 +1098,7 @@ def simulate_ems(
 #                     ev_rest -= ladung
 
 #     return df
-def get_ev_tagesbedarf(timestamp, ev_config):
-    if not ev_config["aktiv"]:
-        return 0.0
 
-    if timestamp.weekday() < 5:  # Mo–Fr
-        return ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
-    else:
-        return ev_config["wochenende_kWh"]
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
@@ -1694,7 +1687,7 @@ if run_simulation:
             "leistung_kw": ev_ladeleistung_kw,
             "verbrauch_pro_h": ev_verbrauch_kWh_pro_h,
             "fahrzeit_tag": ev_fahrzeit_h_tag,
-            "wochenende_kWh": ev_wochenende_kWh,
+            "zusatz_nicht_fahrtag": ev_wochenende_kWh,
             "strategie": ev_strategie
         }
 
