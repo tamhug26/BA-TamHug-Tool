@@ -7,9 +7,6 @@ import pvlib
 
 st.write("test1")
 
-#WW läuft ohne steuerung nicht
-# ev nicht steuerbar= kein auto
-
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
@@ -901,6 +898,7 @@ def get_ev_fahrbedarf(timestamp, ev_config):
 def pruefe_ev_plausibilitaet(ev_config):
     if not ev_config["aktiv"]:
         return None
+    
 
     ladefenster_stunden = {
         "Morgens": 3,                       # 5–8 Uhr
@@ -971,7 +969,7 @@ def simulate_ems(
 
         for element in prioritaeten:
 
-            if element == "Warmwasser" and ww_rest > 0:
+            if element == "Warmwasser" and ww_rest > 0 and ww_config["steuerbar"]:
                 if ist_im_zeitfenster(i, ww_config["strategie"], "Warmwasser"):
                     max_step = ww_config["leistung_kw"] * delta_t
                     ladung = min(max_step, ww_rest)
@@ -1011,19 +1009,24 @@ def simulate_ems(
                 df.at[i, "netzeinspeisung_kWh"] += einspeisung
                 pv_rest -= einspeisung
 
-        if "Batterie" not in prioritaeten and batteriekapazitaet > 0:
-            freie_kapazitaet = soc_max - soc
-            max_ladung = max_ladeleistung * delta_t
-            ladung = min(pv_rest, max_ladung, freie_kapazitaet)
-            soc += ladung
-            pv_rest -= ladung
-            df.at[i, "batterie_ladung_kWh"] += ladung
+        # Nicht steuerbares Warmwasser: feste Abendladung, nicht über EMS priorisiert
+        if ww_config["aktiv"] and not ww_config["steuerbar"] and ww_rest > 0:
+            if ist_im_zeitfenster(i, "Abends", "Warmwasser"):
+                max_step = ww_config["leistung_kw"] * delta_t
+                ladung = min(max_step, ww_rest)
 
-        if "Einspeisung" not in prioritaeten:
-            einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
-            einspeisung = min(pv_rest, einspeisegrenze_kWh)
-            df.at[i, "netzeinspeisung_kWh"] += einspeisung
-            pv_rest -= einspeisung
+                df.at[i, "ww_kWh"] += ladung
+                ww_rest -= ladung
+
+                pv_anteil = min(pv_rest, ladung)
+                pv_rest -= pv_anteil
+                restlast += ladung - pv_anteil
+
+        # Einspeisung ist immer Pflicht: Rest-PV wird bis zur Grenze eingespeist
+        einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
+        einspeisung = min(pv_rest, einspeisegrenze_kWh)
+        df.at[i, "netzeinspeisung_kWh"] += einspeisung
+        pv_rest -= einspeisung
 
         df.at[i, "abregelung_kWh"] = max(0.0, pv_rest)
 
@@ -1035,6 +1038,7 @@ def simulate_ems(
             soc -= entladung
             restlast -= entladung
             df.at[i, "batterie_entladung_kWh"] = entladung
+        #Die Batterie wird entladen, wenn nach PV-Direktverbrauch und flexiblen Lasten noch Restlast übrig bleibt.
 
         bezugsgrenze_kWh = bezugsgrenze_kw * delta_t
         netzbezug = min(restlast, bezugsgrenze_kWh)
@@ -1206,7 +1210,7 @@ if bau_typ == "Baujahr":
             "Heizwärmebedarf kWh/a",
             value=int(Heizwaermebedarf_total)
         )
-        ww_waermebedarf_kWh = 15 * m2
+        ww_waermebedarf_kWh = 15 * m2# 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
         raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
 
         st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
@@ -1222,7 +1226,7 @@ elif bau_typ == "Minergie":
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
         )
-        ww_waermebedarf_kWh = 15 * m2
+        ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
         raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
 
         st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
@@ -1238,7 +1242,7 @@ elif bau_typ == "Minergie-P":
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
         )
-        ww_waermebedarf_kWh = 15 * m2
+        ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
         raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
 
         st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
@@ -1246,9 +1250,6 @@ elif bau_typ == "Minergie-P":
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-if "ww_waermebedarf_kWh" in locals() and "raumheizung_waermebedarf_kWh" in locals():
-    st.write(f"Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
-    st.write(f"Raumheizungs-Wärmebedarf [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
 
 
 st.subheader("Heizsystem")
@@ -1333,9 +1334,7 @@ ww_strategie = "Abends"
 if heizsystem == "Wärmepumpe":
     ww_aktiv = True
     st.info("Warmwasser wird bei Wärmepumpe immer als elektrische Last berücksichtigt.")
-
     ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
-
     ww_bedarf_kWh_tag = st.number_input(
         "WW-Bedarf [kWh/Tag]",
         min_value=0.0,
@@ -1573,16 +1572,15 @@ if ev_aktiv:
 if batterie_aktiv and batteriekapazität > 0:
     ems_optionen.append("Batterie")
 
-ems_optionen.append("Einspeisung")
-
 prioritaeten = st.multiselect(
     "EMS-Priorität auswählen",
     ems_optionen,
     default=ems_optionen
 )
 
-st.caption("Nicht auswählbare Verbraucher sind nicht aktiv oder nicht steuerbar.")
-# Hauslast zuerst dann WW oder ev dann Batterie  dann Einspeisung
+st.caption("Die Einspeisung erfolgt automatisch nach der EMS-Priorität. " \
+"Nicht auswählbare Verbraucher sind nicht aktiv oder nicht steuerbar.")
+# normale Hauslast plus Wärmepumpen-Raumheizung zuerst dann WW oder ev dann Batterie  dann Einspeisung
 
 st.write("------------------------------")
 st.subheader("Ausspeisen")
