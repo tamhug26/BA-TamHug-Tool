@@ -1057,37 +1057,20 @@ def add_uploaded_load_profile(df_base, uploaded_file):
 
     if uploaded_file.name.endswith(".csv"):
         df_upload = pd.read_csv(uploaded_file)
-        sheet_name = None
 
     elif uploaded_file.name.endswith(".xlsx"):
         excel_file = pd.ExcelFile(uploaded_file)
-        sheet_name = st.selectbox(
-            "Excel-Reiter auswählen",
-            excel_file.sheet_names,
-            index=excel_file.sheet_names.index("Rohdaten_Gemeindehaus")
-            if "Rohdaten_Gemeindehaus" in excel_file.sheet_names else 0
-        )
-        df_upload = pd.read_excel(uploaded_file, sheet_name=sheet_name)
 
-    st.write("Vorschau der hochgeladenen Daten:")
-    st.dataframe(df_upload.head())
+        if len(excel_file.sheet_names) != 1:
+            st.error("Bitte lade eine Excel-Datei mit genau einem Tabellenblatt hoch.")
+            st.stop()
 
-    zeitspalte = st.selectbox(
-        "Zeitspalte auswählen",
-        df_upload.columns
-    )
+        df_upload = pd.read_excel(uploaded_file, sheet_name=excel_file.sheet_names[0])
 
-    verbrauchsspalte = st.selectbox(
-        "Verbrauchs-/Messwertspalte auswählen",
-        df_upload.columns,
-        index=len(df_upload.columns) - 1
-    )
+    df_upload.columns = df_upload.columns.str.strip()
 
-    durch_4_teilen = st.checkbox(
-        "Messwerte durch 4 teilen",
-        value=True,
-        help="Aktivieren, wenn die 15-min-Werte offenbar als stündliche Werte/Leistungswerte vorliegen."
-    )
+    zeitspalte = df_upload.columns[0]
+    verbrauchsspalte = df_upload.columns[-1]
 
     df_upload = df_upload[[zeitspalte, verbrauchsspalte]].copy()
     df_upload.columns = ["timestamp", "verbrauch_roh"]
@@ -1098,30 +1081,22 @@ def add_uploaded_load_profile(df_base, uploaded_file):
     df_upload = df_upload.dropna(subset=["timestamp", "verbrauch_roh"])
     df_upload = df_upload.set_index("timestamp").sort_index()
 
-    if durch_4_teilen:
-        df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"] / 4
-    else:
-        df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"]
+    df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"] / 4
 
     df_upload = df_upload[["verbrauch_kWh"]]
 
-    # Jahr auf Simulationsjahr übertragen
     df_upload = df_upload.reset_index()
     df_upload["timestamp"] = df_upload["timestamp"].apply(
         lambda x: x.replace(year=df.index[0].year)
     )
     df_upload = df_upload.set_index("timestamp")
 
-    # auf 15-min-Raster bringen
     df_upload = df_upload.resample("15min").sum()
 
     df = df.join(df_upload, how="left")
     df["hauslast_kWh"] = df["verbrauch_kWh"].fillna(0)
 
-    st.write("Jahresverbrauch hochgeladenes Profil [kWh]:", round(df["hauslast_kWh"].sum(), 1))
-
     return df
-
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
