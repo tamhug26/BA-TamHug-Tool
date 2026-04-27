@@ -898,6 +898,25 @@ def get_ev_fahrbedarf(timestamp, ev_config):
         return ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
 
     return 0.0
+def pruefe_ev_plausibilitaet(ev_config):
+    if not ev_config["aktiv"]:
+        return None
+
+    ladefenster_stunden = {
+        "Morgens": 3,                       # 5–8 Uhr
+        "Mittag / PV-optimiert": 4,          # 11–15 Uhr
+        "Abends": 5,                         # 17–22 Uhr
+        "Kombiniert (mittags + abends)": 9   # 11–15 + 17–22 Uhr
+    }
+
+    fahrbedarf_kWh = ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
+    max_ladung_kWh = ev_config["leistung_kw"] * ladefenster_stunden[ev_config["strategie"]]
+
+    return {
+        "fahrbedarf_kWh": fahrbedarf_kWh,
+        "max_ladung_kWh": max_ladung_kWh,
+        "ok": fahrbedarf_kWh <= max_ladung_kWh
+    }
 def simulate_ems(
     df,
     prioritaeten,
@@ -1692,6 +1711,19 @@ if run_simulation:
             "strategie": ev_strategie,
             "fahrtage": ev_fahrtage
         }
+
+        ev_check = pruefe_ev_plausibilitaet(ev_config)
+
+        if ev_check is not None:
+            st.write("E-Auto Fahrbedarf pro Fahrtag [kWh]:", round(ev_check["fahrbedarf_kWh"], 1))
+            st.write("Maximal mögliche Ladung im gewählten Ladefenster [kWh]:", round(ev_check["max_ladung_kWh"], 1))
+
+            if not ev_check["ok"]:
+                st.warning(
+                    "Achtung: Der Fahrbedarf pro Fahrtag ist höher als die maximal mögliche Ladung "
+                    "im gewählten Ladefenster. Das bedeutet: Der offene Ladebedarf wird über mehrere "
+                    "Tage weitergeladen."
+                )
 
         df_ts = simulate_ems(
             df_ts,
