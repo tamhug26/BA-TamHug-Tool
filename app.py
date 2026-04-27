@@ -7,6 +7,10 @@ import pvlib
 
 st.write("test")
 
+#WW läuft ohne steuerung nicht
+# ev nicht steuerbar= kein auto
+
+
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
 #Tabellen bzw Dataframes
@@ -862,75 +866,238 @@ def add_pv_profile_weather_based(
                 verteile_gleichmaessig(mask_abend, verbleibend)
 
     return df
-def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
+def ist_im_zeitfenster(timestamp, strategie, verbraucher):
+    h = timestamp.hour
+
+    if verbraucher == "Warmwasser":
+        if strategie == "Morgens":
+            return 5 <= h < 7
+        elif strategie == "Mittag / PV-optimiert":
+            return 11 <= h < 15
+        elif strategie == "Abends":
+            return 17 <= h < 20
+        elif strategie == "Kombiniert (morgens + mittags)":
+            return (5 <= h < 7) or (11 <= h < 15)
+
+    if verbraucher == "E-Auto":
+        if strategie == "Morgens":
+            return 5 <= h < 8
+        elif strategie == "Mittag / PV-optimiert":
+            return 11 <= h < 15
+        elif strategie == "Abends":
+            return 17 <= h < 22
+        elif strategie == "Kombiniert (mittags + abends)":
+            return (11 <= h < 15) or (17 <= h < 22)
+
+    return False
+
+
+def get_ev_tagesbedarf(timestamp, ev_config):
+    if not ev_config["aktiv"]:
+        return 0.0
+
+    if timestamp.weekday() in ev_config["fahrtage"]:
+        return ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
+    else:
+        return ev_config["wochenende_kWh"]
+
+
+def simulate_ems(
+    df,
+    prioritaeten,
+    ww_config,
+    ev_config,
+    batteriekapazitaet,
+    max_ladeleistung,
+    max_entladeleistung,
+    min_soc_prozent,
+    max_soc_prozent,
+    einspeisegrenze_kw,
+    bezugsgrenze_kw
+):
     df = df.copy()
+    delta_t = 0.25
 
     df["ww_kWh"] = 0.0
     df["ev_kWh"] = 0.0
+    df["direktverbrauch_pv_kWh"] = 0.0
+    df["batterie_ladung_kWh"] = 0.0
+    df["batterie_entladung_kWh"] = 0.0
+    df["soc_kWh"] = 0.0
+    df["netzbezug_kWh"] = 0.0
+    df["netzeinspeisung_kWh"] = 0.0
+    df["abregelung_kWh"] = 0.0
+    df["unterdeckung_kWh"] = 0.0
 
-    delta_t = 0.25
+    soc_min = batteriekapazitaet * min_soc_prozent / 100
+    soc_max = batteriekapazitaet * max_soc_prozent / 100
+    soc = (soc_min + soc_max) / 2
+
     current_day = None
     ww_rest = 0.0
     ev_rest = 0.0
 
-    def ist_im_zeitfenster(timestamp, strategie, verbraucher):
-        h = timestamp.hour
-
-        if verbraucher == "Warmwasser":
-            if strategie == "Morgens":
-                return 5 <= h < 7
-            elif strategie == "Mittag / PV-optimiert":
-                return 11 <= h < 15
-            elif strategie == "Abends":
-                return 17 <= h < 20
-            elif strategie == "Kombiniert (morgens + mittags)":
-                return (5 <= h < 7) or (11 <= h < 15)
-
-        if verbraucher == "E-Auto":
-            if strategie == "Morgens":
-                return 5 <= h < 8
-            elif strategie == "Mittag / PV-optimiert":
-                return 11 <= h < 15
-            elif strategie == "Abends":
-                return 17 <= h < 22
-            elif strategie == "Kombiniert (mittags + abends)":
-                return (11 <= h < 15) or (17 <= h < 22)
-
-        return False
-
     for i in df.index:
-
         if current_day != i.date():
             current_day = i.date()
             ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
             ev_rest = get_ev_tagesbedarf(i, ev_config)
 
         pv = df.at[i, "pv_kWh"]
-        last = df.at[i, "gesamtlast_kWh"]
+        basislast = df.at[i, "gesamtlast_kWh"]
 
-        pv_rest = max(0, pv - last)
+        direkt = min(pv, basislast)
+        pv_rest = pv - direkt
+        restlast = basislast - direkt
 
-        for verbraucher in prioritaeten:
+        for element in prioritaeten:
 
-            if verbraucher == "Warmwasser" and ww_rest > 0:
+            if element == "Warmwasser" and ww_rest > 0:
                 if ist_im_zeitfenster(i, ww_config["strategie"], "Warmwasser"):
                     max_step = ww_config["leistung_kw"] * delta_t
                     ladung = min(max_step, ww_rest)
 
                     df.at[i, "ww_kWh"] += ladung
-                    pv_rest = max(0, pv_rest - ladung)
                     ww_rest -= ladung
 
-            elif verbraucher == "E-Auto" and ev_rest > 0:
+                    pv_anteil = min(pv_rest, ladung)
+                    pv_rest -= pv_anteil
+                    restlast += ladung - pv_anteil
+
+            elif element == "E-Auto" and ev_rest > 0:
                 if ist_im_zeitfenster(i, ev_config["strategie"], "E-Auto"):
                     max_step = ev_config["leistung_kw"] * delta_t
                     ladung = min(max_step, ev_rest)
 
                     df.at[i, "ev_kWh"] += ladung
-                    pv_rest = max(0, pv_rest - ladung)
                     ev_rest -= ladung
 
+                    pv_anteil = min(pv_rest, ladung)
+                    pv_rest -= pv_anteil
+                    restlast += ladung - pv_anteil
+
+            elif element == "Batterie" and batteriekapazitaet > 0:
+                freie_kapazitaet = soc_max - soc
+                max_ladung = max_ladeleistung * delta_t
+
+                ladung = min(pv_rest, max_ladung, freie_kapazitaet)
+                soc += ladung
+                pv_rest -= ladung
+                df.at[i, "batterie_ladung_kWh"] += ladung
+
+            elif element == "Einspeisung":
+                einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
+                einspeisung = min(pv_rest, einspeisegrenze_kWh)
+
+                df.at[i, "netzeinspeisung_kWh"] += einspeisung
+                pv_rest -= einspeisung
+
+        if "Batterie" not in prioritaeten and batteriekapazitaet > 0:
+            freie_kapazitaet = soc_max - soc
+            max_ladung = max_ladeleistung * delta_t
+            ladung = min(pv_rest, max_ladung, freie_kapazitaet)
+            soc += ladung
+            pv_rest -= ladung
+            df.at[i, "batterie_ladung_kWh"] += ladung
+
+        if "Einspeisung" not in prioritaeten:
+            einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
+            einspeisung = min(pv_rest, einspeisegrenze_kWh)
+            df.at[i, "netzeinspeisung_kWh"] += einspeisung
+            pv_rest -= einspeisung
+
+        df.at[i, "abregelung_kWh"] = max(0.0, pv_rest)
+
+        if batteriekapazitaet > 0 and restlast > 0:
+            verfuegbar = soc - soc_min
+            max_entladung = max_entladeleistung * delta_t
+            entladung = min(restlast, max_entladung, verfuegbar)
+
+            soc -= entladung
+            restlast -= entladung
+            df.at[i, "batterie_entladung_kWh"] = entladung
+
+        bezugsgrenze_kWh = bezugsgrenze_kw * delta_t
+        netzbezug = min(restlast, bezugsgrenze_kWh)
+        unterdeckung = max(0.0, restlast - netzbezug)
+
+        df.at[i, "direktverbrauch_pv_kWh"] = direkt
+        df.at[i, "soc_kWh"] = soc
+        df.at[i, "netzbezug_kWh"] = netzbezug
+        df.at[i, "unterdeckung_kWh"] = unterdeckung
+
+    df["gesamtlast_kWh"] = df["gesamtlast_kWh"] + df["ww_kWh"] + df["ev_kWh"]
+
     return df
+# def allocate_flexible_loads(df, prioritaeten, ww_config, ev_config):
+#     df = df.copy()
+
+#     df["ww_kWh"] = 0.0
+#     df["ev_kWh"] = 0.0
+
+#     delta_t = 0.25
+#     current_day = None
+#     ww_rest = 0.0
+#     ev_rest = 0.0
+
+#     def ist_im_zeitfenster(timestamp, strategie, verbraucher):
+#         h = timestamp.hour
+
+#         if verbraucher == "Warmwasser":
+#             if strategie == "Morgens":
+#                 return 5 <= h < 7
+#             elif strategie == "Mittag / PV-optimiert":
+#                 return 11 <= h < 15
+#             elif strategie == "Abends":
+#                 return 17 <= h < 20
+#             elif strategie == "Kombiniert (morgens + mittags)":
+#                 return (5 <= h < 7) or (11 <= h < 15)
+
+#         if verbraucher == "E-Auto":
+#             if strategie == "Morgens":
+#                 return 5 <= h < 8
+#             elif strategie == "Mittag / PV-optimiert":
+#                 return 11 <= h < 15
+#             elif strategie == "Abends":
+#                 return 17 <= h < 22
+#             elif strategie == "Kombiniert (mittags + abends)":
+#                 return (11 <= h < 15) or (17 <= h < 22)
+
+#         return False
+
+#     for i in df.index:
+
+#         if current_day != i.date():
+#             current_day = i.date()
+#             ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
+#             ev_rest = get_ev_tagesbedarf(i, ev_config)
+
+#         pv = df.at[i, "pv_kWh"]
+#         last = df.at[i, "gesamtlast_kWh"]
+
+#         pv_rest = max(0, pv - last)
+
+#         for verbraucher in prioritaeten:
+
+#             if verbraucher == "Warmwasser" and ww_rest > 0:
+#                 if ist_im_zeitfenster(i, ww_config["strategie"], "Warmwasser"):
+#                     max_step = ww_config["leistung_kw"] * delta_t
+#                     ladung = min(max_step, ww_rest)
+
+#                     df.at[i, "ww_kWh"] += ladung
+#                     pv_rest = max(0, pv_rest - ladung)
+#                     ww_rest -= ladung
+
+#             elif verbraucher == "E-Auto" and ev_rest > 0:
+#                 if ist_im_zeitfenster(i, ev_config["strategie"], "E-Auto"):
+#                     max_step = ev_config["leistung_kw"] * delta_t
+#                     ladung = min(max_step, ev_rest)
+
+#                     df.at[i, "ev_kWh"] += ladung
+#                     pv_rest = max(0, pv_rest - ladung)
+#                     ev_rest -= ladung
+
+#     return df
 def get_ev_tagesbedarf(timestamp, ev_config):
     if not ev_config["aktiv"]:
         return 0.0
@@ -1146,27 +1313,34 @@ st.write("------------------------------")
 st.subheader("Warmwasser")
 
 ww_aktiv = False
+ww_steuerbar = False
 ww_bedarf_kWh_tag = 0.0
 ww_ladeleistung_kw = 0.0
-ww_strategie = "Mittag / PV-optimiert"
-if heizsystem == "Wärmepumpe":
-    ww_aktiv = st.checkbox("Warmwasser elektrisch steuerbar", value=False)
+ww_strategie = "Abends"
 
-    if ww_aktiv:
-        ww_bedarf_kWh_tag = st.number_input(
-            "WW-Bedarf [kWh/Tag]",
-            min_value=0.0,
-            max_value=30.0,
-            value=float(round(ww_waermebedarf_kWh / 365, 2)),
-            step=0.1
-        )
-        ww_ladeleistung_kw = st.number_input(
-            "WW-Ladeleistung [kW]",
-            min_value=0.1,
-            max_value=20.0,
-            value=3.0,
-            step=0.1
-        )
+if heizsystem == "Wärmepumpe":
+    ww_aktiv = True
+    st.info("Warmwasser wird bei Wärmepumpe immer als elektrische Last berücksichtigt.")
+
+    ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
+
+    ww_bedarf_kWh_tag = st.number_input(
+        "WW-Bedarf [kWh/Tag]",
+        min_value=0.0,
+        max_value=30.0,
+        value=float(round(ww_waermebedarf_kWh / 365, 2)),
+        step=0.1
+    )
+
+    ww_ladeleistung_kw = st.number_input(
+        "WW-Ladeleistung [kW]",
+        min_value=0.1,
+        max_value=20.0,
+        value=3.0,
+        step=0.1
+    )
+
+    if ww_steuerbar:
         ww_strategie = st.selectbox(
             "WW-Strategie",
             [
@@ -1176,15 +1350,37 @@ if heizsystem == "Wärmepumpe":
                 "Kombiniert (morgens + mittags)"
             ]
         )
+    else:
+        ww_strategie = "Abends"
+        st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
 else:
-    st.info("Warmwasser wird bei Fossil & Holz aktuell nicht als elektrische Last simuliert.")    
+    st.info("Warmwasser wird bei Fossil & Holz aktuell nicht als elektrische Last simuliert.")
 
+st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")
 st.write("------------------------------")
 st.subheader("E-Auto")
 
-ev_aktiv = st.checkbox("E-Auto steuerbar", value=False)
+ev_aktiv = st.checkbox("E-Auto vorhanden", value=False)
 
 if ev_aktiv:
+    ev_fahrtage_namen = st.multiselect(
+        "Fahrtage auswählen",
+        ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+        default=["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
+    )
+
+    tag_mapping = {
+        "Montag": 0,
+        "Dienstag": 1,
+        "Mittwoch": 2,
+        "Donnerstag": 3,
+        "Freitag": 4,
+        "Samstag": 5,
+        "Sonntag": 6
+    }
+
+    ev_fahrtage = [tag_mapping[tag] for tag in ev_fahrtage_namen]
+
     ev_verbrauch_kWh_pro_h = st.number_input(
         "Verbrauch [kWh pro Fahrstunde]",
         min_value=5.0,
@@ -1194,20 +1390,21 @@ if ev_aktiv:
     )
 
     ev_fahrzeit_h_tag = st.number_input(
-        "Fahrzeit pro Werktag [h]",
+        "Fahrzeit pro Fahrtag [h]",
         min_value=0.0,
         max_value=5.0,
-        value=1.0,  # = 2x30min
+        value=1.0,
         step=0.25
     )
 
     ev_wochenende_kWh = st.number_input(
-        "Verbrauch Wochenende [kWh/Tag]",
+        "Zusatzverbrauch an Nicht-Fahrtagen [kWh/Tag]",
         min_value=0.0,
         max_value=50.0,
         value=0.0,
         step=0.5
     )
+
     ev_ladeleistung_kw = st.number_input(
         "E-Auto Ladeleistung [kW]",
         min_value=0.1,
@@ -1215,29 +1412,26 @@ if ev_aktiv:
         value=3.7,
         step=0.1
     )
+
     ev_strategie = st.selectbox(
-        "E-Auto Strategie",
+        "E-Auto Ladestrategie",
         [
             "Morgens",
             "Mittag / PV-optimiert",
             "Abends",
             "Kombiniert (mittags + abends)"
-        ]
+        ],
+        index=2
     )
 else:
+    ev_fahrtage = []
     ev_verbrauch_kWh_pro_h = 0.0
     ev_fahrzeit_h_tag = 0.0
     ev_wochenende_kWh = 0.0
     ev_ladeleistung_kw = 0.0
     ev_strategie = "Abends"
 
-st.write("------------------------------")
-st.subheader("EMS")
-prioritaeten = st.multiselect(
-    "Priorität (oben = zuerst)",
-    ["Warmwasser", "E-Auto"],
-    default=["Warmwasser", "E-Auto"]
-)
+st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")
 st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
@@ -1325,13 +1519,24 @@ for i in range(PVAnlagen):
         "nmot": nmot_input
     })
 
+
 st.write("------------------------------")
 st.subheader("Batterie")
-batteriekapazität = st.slider("Batteriekapazität (kWh)", 0, 20, 10)
-maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 0, 20, 10)
-maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 0, 20, 10)
-minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
-maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+
+batterie_aktiv = st.checkbox("Batterie vorhanden", value=True)
+
+if batterie_aktiv:
+    batteriekapazität = st.slider("Batteriekapazität (kWh)", 1, 50, 10)
+    maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 1, 20, 10)
+    maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
+    minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
+    maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+else:
+    batteriekapazität = 0
+    maxLadeleistungBatterie = 0
+    maxEntladeleistungBatterie = 0
+    minSoC = 0
+    maxSoC = 100
 
 
 st.write("------------------------------")
@@ -1341,6 +1546,31 @@ Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
 gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
 EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
 st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
+
+st.write("------------------------------")
+st.subheader("EMS")
+
+ems_optionen = []
+
+if ww_aktiv and ww_steuerbar:
+    ems_optionen.append("Warmwasser")
+
+if ev_aktiv:
+    ems_optionen.append("E-Auto")
+
+if batterie_aktiv and batteriekapazität > 0:
+    ems_optionen.append("Batterie")
+
+ems_optionen.append("Einspeisung")
+
+prioritaeten = st.multiselect(
+    "EMS-Priorität auswählen",
+    ems_optionen,
+    default=ems_optionen
+)
+
+st.caption("Nicht auswählbare Verbraucher sind nicht aktiv oder nicht steuerbar.")
+# Hauslast zuerst dann WW oder ev dann Batterie  dann Einspeisung
 
 st.write("------------------------------")
 st.subheader("Ausspeisen")
@@ -1468,23 +1698,29 @@ if run_simulation:
             "strategie": ev_strategie
         }
 
-        df_ts = allocate_flexible_loads(
+        ww_config = {
+            "aktiv": ww_aktiv,
+            "steuerbar": ww_steuerbar,
+            "bedarf_tag": ww_bedarf_kWh_tag,
+            "leistung_kw": ww_ladeleistung_kw,
+            "strategie": ww_strategie
+        }
+
+        ev_config = {
+            "aktiv": ev_aktiv,
+            "leistung_kw": ev_ladeleistung_kw,
+            "verbrauch_pro_h": ev_verbrauch_kWh_pro_h,
+            "fahrzeit_tag": ev_fahrzeit_h_tag,
+            "wochenende_kWh": ev_wochenende_kWh,
+            "strategie": ev_strategie,
+            "fahrtage": ev_fahrtage
+        }
+
+        df_ts = simulate_ems(
             df_ts,
             prioritaeten,
             ww_config,
-            ev_config
-        )
-
-        df_ts["gesamtlast_kWh"] += df_ts["ww_kWh"] + df_ts["ev_kWh"]
-
-        st.write("WW-Jahresverbrauch [kWh]:", round(df_ts["ww_kWh"].sum(), 1))
-        st.write("EV-Jahresverbrauch [kWh]:", round(df_ts["ev_kWh"].sum(), 1))
-
-        # st.write("Jahresertrag PV gesamt [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
-        # st.write("Max. PV-Leistung [kW]:", round(df_ts["pv_power_kW"].max(), 2))
-
-        df_ts = simulate_battery(
-            df_ts,
+            ev_config,
             batteriekapazität,
             maxLadeleistungBatterie,
             maxEntladeleistungBatterie,
@@ -1493,6 +1729,9 @@ if run_simulation:
             EinspeisegrenzekW,
             Bezugsgrenze
         )
+
+        st.write("WW-Jahresverbrauch [kWh]:", round(df_ts["ww_kWh"].sum(), 1))
+        st.write("EV-Jahresverbrauch [kWh]:", round(df_ts["ev_kWh"].sum(), 1))
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
         st.success("Simulation abgeschlossen ✅")
 
