@@ -1121,6 +1121,25 @@ def add_uploaded_load_profile(df_base, uploaded_file):
     st.write("Jahresverbrauch hochgeladenes Profil [kWh]:", round(df["hauslast_kWh"].sum(), 1))
 
     return df
+def add_uploaded_load_profile(df, uploaded_file):
+    df = df.copy()
+
+    if uploaded_file.name.endswith(".csv"):
+        df_load = pd.read_csv(uploaded_file)
+    else:
+        df_load = pd.read_excel(uploaded_file)
+
+    df_load.columns = df_load.columns.str.strip()
+
+    df_load["timestamp"] = pd.to_datetime(df_load["timestamp"])
+    df_load = df_load.set_index("timestamp")
+
+    # auf Simulationsjahr 2025 legen
+    df_load.index = df.index[:len(df_load)]
+
+    df["hauslast_kWh"] = df_load["verbrauch_kWh"].reindex(df.index).fillna(0).values
+
+    return df
 
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
@@ -1610,9 +1629,10 @@ if run_simulation:
         # Stromprofil
         if Stromnutzung == "Standartprofil":
             df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
-        elif Stromnutzung == "eigene Daten als csv":
+        elif Stromnutzung == "eigene Daten":
             if uploaded_file is not None:
                 df_ts = add_uploaded_load_profile(df_ts, uploaded_file)
+                st.write("Hochgeladener Jahresverbrauch [kWh]:", round(df_ts["hauslast_kWh"].sum(), 1))
             else:
                 st.warning("Bitte eine Datei hochladen.")
                 st.stop()
