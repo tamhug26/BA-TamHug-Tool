@@ -1859,5 +1859,28 @@ if "df_ts" in st.session_state:
         st.write("Netzeinspeisung Jahreswert [kWh]:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
         st.write("Gesamtlast Jahreswert [kWh]:", round(df_ts["gesamtlast_kWh"].sum(), 1))
         pv_monat = df_ts["pv_kWh"].resample("MS").sum()
-        st.line_chart(pv_monat)
+
+        fig_pv_monat = go.Figure()
+        fig_pv_monat.add_trace(go.Scatter(
+            x=pv_monat.index,
+            y=pv_monat,
+            mode="lines+markers",
+            name="PV-Produktion"
+        ))
+
+        fig_pv_monat.update_layout(
+            title="Monatliche PV-Produktion",
+            xaxis_title="Monat",
+            yaxis_title="PV-Produktion [kWh pro Monat]",
+            height=450
+        )
+
+        fig_pv_monat.update_xaxes(
+            tickformat="%b",
+            dtick="M1"
+        )
+
+        fig_pv_monat.update_yaxes(rangemode="tozero")
+
+        st.plotly_chart(fig_pv_monat, use_container_width=True)
         
