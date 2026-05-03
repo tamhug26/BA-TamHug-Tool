@@ -386,37 +386,61 @@ def create_energy_summary(df):
 def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
     df = df.copy()
 
+    spalten = [
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "ww_kWh",
+        "ev_kWh",
+        "soc_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh",
+        "abregelung_kWh",
+        "unterdeckung_kWh"
+    ]
+
+    spalten = [s for s in spalten if s in df.columns]
+
     if zeitraum == "Tag":
         if start_datum is None:
             start_datum = df.index.min().date()
+
         start = pd.Timestamp(start_datum)
         ende = start + pd.Timedelta(days=1)
-        df_anzeige = df[(df.index >= start) & (df.index < ende)]
+
+        df_anzeige = df[(df.index >= start) & (df.index < ende)][spalten]
+
+        # Durchschnitt pro Stunde
+        df_anzeige = df_anzeige.resample("h").mean()
 
     elif zeitraum == "Woche":
         if start_datum is None:
             start_datum = df.index.min().date()
+
         start = pd.Timestamp(start_datum)
         ende = start + pd.Timedelta(days=7)
-        df_anzeige = df[(df.index >= start) & (df.index < ende)]
+
+        df_anzeige = df[(df.index >= start) & (df.index < ende)][spalten]
+
+        # Durchschnitt pro Tag
+        df_anzeige = df_anzeige.resample("D").mean()
 
     elif zeitraum == "Monat":
         if start_monat is None:
             start_monat = 1
-        df_anzeige = df[df.index.month == start_monat]
+
+        df_anzeige = df[df.index.month == start_monat][spalten]
+
+        # Durchschnitt pro Tag
+        df_anzeige = df_anzeige.resample("D").mean()
 
     elif zeitraum == "Jahr":
-        df_anzeige = df[[
-            "gesamtlast_kWh",
-            "pv_kWh",
-            "netzbezug_kWh",
-            "netzeinspeisung_kWh",
-            "abregelung_kWh",
-            "unterdeckung_kWh"
-        ]].resample("MS").sum()
+        df_anzeige = df[spalten]
+
+        # Durchschnitt pro Monat
+        df_anzeige = df_anzeige.resample("MS").mean()
 
     else:
-        df_anzeige = df.copy()
+        df_anzeige = df[spalten]
 
     return df_anzeige
 def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
@@ -528,10 +552,14 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             marker=dict(color="darkred", size=8, symbol="circle-open")
         ))
 
-    if zeitraum == "Jahr":
-        y_title = "Energie [kWh pro Monat]"
+    if zeitraum == "Tag":
+        y_title = "Durchschnittliche Energie [kWh pro Stunde]"
+    elif zeitraum in ["Woche", "Monat"]:
+        y_title = "Durchschnittliche Energie [kWh pro Tag]"
+    elif zeitraum == "Jahr":
+        y_title = "Durchschnittliche Energie [kWh pro Monat]"
     else:
-        y_title = "Energie [kWh pro 15 min]"
+        y_title = "Energie [kWh]"
 
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
