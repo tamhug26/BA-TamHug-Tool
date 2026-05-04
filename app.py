@@ -1125,7 +1125,26 @@ def add_uploaded_load_profile(df_base, uploaded_file):
     df["hauslast_kWh"] = df["verbrauch_kWh"].fillna(0)
 
     return df
+def get_raw_period_dataframe(df, zeitraum, start_datum=None, start_monat=None):
+    if zeitraum == "Tag":
+        start = pd.Timestamp(start_datum)
+        ende = start + pd.Timedelta(days=1)
+        return df[(df.index >= start) & (df.index < ende)]
 
+    elif zeitraum == "Woche":
+        start = pd.Timestamp(start_datum)
+        ende = start + pd.Timedelta(days=7)
+        return df[(df.index >= start) & (df.index < ende)]
+
+    elif zeitraum == "Monat":
+        return df[df.index.month == start_monat]
+
+    elif zeitraum == "Jahr":
+        return df.copy()
+
+    else:
+        return df.copy()
+    
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
 # 	•	stündliche Verarbeitung
@@ -1657,8 +1676,6 @@ if run_simulation:
 
         else:
             df_ts = add_heatpump_consumption(df_ts, heizsystem)
-            df_ts["ww_kWh"] = 0.0
-            df_ts["ev_kWh"] = 0.0
 
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
@@ -1846,21 +1863,31 @@ if "df_ts" in st.session_state:
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze, zeitraum)
         st.plotly_chart(fig, use_container_width=True)
 
+        if zeitraum in ["Tag", "Woche"]:
+            df_sum = get_raw_period_dataframe(df_ts, zeitraum, start_datum=start_datum)
+
+        elif zeitraum == "Monat":
+            df_sum = get_raw_period_dataframe(df_ts, zeitraum, start_monat=start_monat)
+
+        else:
+            df_sum = get_raw_period_dataframe(df_ts, zeitraum)
+
+
         st.write("Zusammenfassung für den ausgewählten Zeitraum:")
 
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.metric("PV-Produktion", f"{df_plot['pv_kWh'].sum():.1f} kWh")
-            st.metric("Gesamtlast", f"{df_plot['gesamtlast_kWh'].sum():.1f} kWh")
+            st.metric("PV-Produktion", f"{df_sum['pv_kWh'].sum():.1f} kWh")
+            st.metric("Gesamtlast", f"{df_sum['gesamtlast_kWh'].sum():.1f} kWh")
 
         with col2:
-            st.metric("Netzbezug", f"{df_plot['netzbezug_kWh'].sum():.1f} kWh")
+            st.metric("Netzbezug", f"{df_sum['netzbezug_kWh'].sum():.1f} kWh")
             st.metric("Netzeinspeisung", f"{df_plot['netzeinspeisung_kWh'].sum():.1f} kWh")
 
         with col3:
-            st.metric("Abregelung", f"{df_plot['abregelung_kWh'].sum():.1f} kWh")
-            st.metric("Unterdeckung", f"{df_plot['unterdeckung_kWh'].sum():.1f} kWh")
+            st.metric("Abregelung", f"{df_sum['abregelung_kWh'].sum():.1f} kWh")
+            st.metric("Unterdeckung", f"{df_sum['unterdeckung_kWh'].sum():.1f} kWh")
 
         with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
             st.dataframe(
