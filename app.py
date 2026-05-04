@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import pvlib
-#st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")
 
 st.write("test1")
 
