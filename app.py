@@ -1154,7 +1154,7 @@ EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 #     list(Standort.keys())
 # ) 
 
-personen = st.number_input("Personnen im Haushalt", 1, 10, 4)
+personen = st.number_input("Personen im Haushalt", 1, 10, 4)
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 Stromnutzung = st.segmented_control(
     "Standartstromnutzungsprofil oder eigene daten als csv?",
