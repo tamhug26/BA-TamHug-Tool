@@ -1249,7 +1249,7 @@ elif bau_typ == "Minergie":
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
-
+        )
         raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
 
         st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
