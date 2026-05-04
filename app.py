@@ -1696,40 +1696,40 @@ run_simulation = st.button("Simulation starten")
 if run_simulation:
     with st.spinner("Simulation läuft... bitte warten"):
         
-                st.subheader("Gewählte Eingaben – Kurzüberblick")
+        st.subheader("Gewählte Eingaben – Kurzüberblick")
 
-                col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns(3)
 
-                with col1:
-                    st.write("**Haushalt**")
-                    st.write(f"Personen: {personen}")
-                    st.write(f"Fläche: {m2} m²")
-                    st.write(f"Stromprofil: {Stromnutzung}")
+        with col1:
+            st.write("**Haushalt**")
+            st.write(f"Personen: {personen}")
+            st.write(f"Fläche: {m2} m²")
+            st.write(f"Stromprofil: {Stromnutzung}")
 
-                with col2:
-                    st.write("**Heizung & Warmwasser**")
-                    st.write(f"Heizsystem: {heizsystem}")
-                    if heizsystem == "Fossil & Holz":
-                        st.write(f"Typ: {fossil_typ}")
-                    else:
-                        st.write(f"Wärmepumpe: {wp_typ}")
-                        st.write(f"JAZ: {jaz}")
+        with col2:
+            st.write("**Heizung & Warmwasser**")
+            st.write(f"Heizsystem: {heizsystem}")
+            if heizsystem == "Fossil & Holz":
+                st.write(f"Typ: {fossil_typ}")
+            else:
+                st.write(f"Wärmepumpe: {wp_typ}")
+                st.write(f"JAZ: {jaz}")
 
-                    st.write(f"Warmwasser-System: {ww_system}")
-                    if ww_aktiv:
-                        st.write(f"WW-Bedarf: {ww_bedarf_kWh_tag:.2f} kWh/Tag")
-                        st.write(f"WW-Leistung: {ww_ladeleistung_kw:.1f} kW")
-                        st.write(f"WW-Strategie: {ww_strategie}")
+            st.write(f"Warmwasser-System: {ww_system}")
+            if ww_aktiv:
+                st.write(f"WW-Bedarf: {ww_bedarf_kWh_tag:.2f} kWh/Tag")
+                st.write(f"WW-Leistung: {ww_ladeleistung_kw:.1f} kW")
+                st.write(f"WW-Strategie: {ww_strategie}")
 
-                with col3:
-                    st.write("**PV, Batterie & EMS**")
-                    st.write(f"PV-Anlagen: {PVAnlagen}")
-                    st.write(f"PV-Leistung total: {gesamt_pv_peakleistung:.1f} kWp")
-                    st.write(f"Standort: {standort_auswahl}")
-                    st.write(f"Batterie: {'Ja' if batterie_aktiv else 'Nein'}")
-                    if batterie_aktiv:
-                        st.write(f"Batteriekapazität: {batteriekapazität} kWh")
-                    st.write(f"EMS: {', '.join(prioritaeten) if prioritaeten else 'keine'}")
+        with col3:
+            st.write("**PV, Batterie & EMS**")
+            st.write(f"PV-Anlagen: {PVAnlagen}")
+            st.write(f"PV-Leistung total: {gesamt_pv_peakleistung:.1f} kWp")
+            st.write(f"Standort: {standort_auswahl}")
+            st.write(f"Batterie: {'Ja' if batterie_aktiv else 'Nein'}")
+            if batterie_aktiv:
+                st.write(f"Batteriekapazität: {batteriekapazität} kWh")
+            st.write(f"EMS: {', '.join(prioritaeten) if prioritaeten else 'keine'}")
 
         simulationsjahr = 2025
         df_ts = create_base_dataframe(simulationsjahr)
