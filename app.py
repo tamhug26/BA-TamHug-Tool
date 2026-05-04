@@ -1173,34 +1173,39 @@ def get_raw_period_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
 st.header("Dimensionierungstool")
 
-EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
-# standort_auswahl = st.selectbox(
-#     "Standort wählen",
-#     list(Standort.keys())
-# ) 
+col1, col2, col3, col4 = st.columns(4)
+with col1: 
+    EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
+    # standort_auswahl = st.selectbox(
+    #     "Standort wählen",
+    #     list(Standort.keys())
+    # ) 
 
-personen = st.number_input("Personen im Haushalt", 1, 10, 4)
-jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
-Stromnutzung = st.segmented_control(
-    "Standartstromnutzungsprofil oder eigene daten als csv?",
-    ["Standartprofil", "eigene Daten"],
-    default="Standartprofil",
-    key="Stromnutzung"
-)
-uploaded_file = None
-if Stromnutzung == "eigene Daten":
-    uploaded_file = st.file_uploader(
-        "Upload Lastprofil",
-        accept_multiple_files=False,
-        type=["csv", "xlsx"]
+with col2:
+    personen = st.number_input("Personen im Haushalt", 1, 10, 4)
+with col3:
+    jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
+with col4:
+    Stromnutzung = st.segmented_control(
+        "Standartstromnutzungsprofil oder eigene daten als csv?",
+        ["Standartprofil", "eigene Daten"],
+        default="Standartprofil",
+        key="Stromnutzung"
     )
-    st.info("""
-    CSV-Format:
-    timestamp,verbrauch_kWh
-    2025-01-01 00:00,0.42
-    2025-01-01 00:15,0.38
-    2025-01-01 00:30,0.35
-    """)
+    uploaded_file = None
+    if Stromnutzung == "eigene Daten":
+        uploaded_file = st.file_uploader(
+            "Upload Lastprofil",
+            accept_multiple_files=False,
+            type=["csv", "xlsx"]
+        )
+        st.info("""
+        CSV-Format:
+        timestamp,verbrauch_kWh
+        2025-01-01 00:00,0.42
+        2025-01-01 00:15,0.38
+        2025-01-01 00:30,0.35
+        """)
 
 st.write("-----------------------")
 st.subheader("Heizwärmebedarf ermittlung")
