@@ -1208,151 +1208,153 @@ with col4:
         """)
 
 st.write("-----------------------")
-st.subheader("Heizwärmebedarf ermittlung")
-# aus Baujahr Heizwärmebedarf kWh/m2
-m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
-bau_typ = st.selectbox(
-    "Gebäudestandard",
-    ["Baujahr", "Minergie", "Minergie-P"]
-)
-if bau_typ == "Baujahr":
-    Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
-    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
-    if not treffer.empty:
-        Heizwaermebedarf = treffer.iloc[0] * m2
-        status = st.radio(
-            "Gebäude saniert oder sogar GEAK bekannt?",
-            ["Nein", "Ja", "GEAK Klasse"],
+col1, col2 =st.columns(2)
+with col1:
+    st.subheader("Heizwärmebedarf ermittlung")
+    # aus Baujahr Heizwärmebedarf kWh/m2
+    m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
+    bau_typ = st.selectbox(
+        "Gebäudestandard",
+        ["Baujahr", "Minergie", "Minergie-P"]
+    )
+    if bau_typ == "Baujahr":
+        Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
+        treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
+        if not treffer.empty:
+            Heizwaermebedarf = treffer.iloc[0] * m2
+            status = st.radio(
+                "Gebäude saniert oder sogar GEAK bekannt?",
+                ["Nein", "Ja", "GEAK Klasse"],
+                horizontal=True
+            )
+            reduktion = 0.0
+            if status == "Ja":
+                Sanierungstyp = st.multiselect(
+                    "Sanierungstyp",
+                    list(reduktionen.keys())
+                )
+                reduktion = sum(reduktionen[typ] for typ in Sanierungstyp)
+                Heizwaermebedarf_total = Heizwaermebedarf * (1 - reduktion)
+            elif status == "GEAK Klasse":
+                geak_klasse = st.selectbox(
+                    "GEAK Klasse wählen",
+                    list(GEAK_Klassen.keys())
+                )
+                Heizwaermebedarf_total = GEAK_Klassen[geak_klasse] * m2
+
+            else:
+                Heizwaermebedarf_total = Heizwaermebedarf
+            Heizwaermebedarf_input = st.number_input(
+                "Heizwärmebedarf kWh/a",
+                value=int(Heizwaermebedarf_total)
+            )
+            raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
+
+            st.write(f"Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+            ergebnis = Heizwaermebedarf_input
+        else:
+            st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
+    elif bau_typ == "Minergie":
+        treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == bau_typ, "Heizwaermebedarf"]
+        if not treffer.empty:
+            Heizwaermebedarf = treffer.iloc[0] * m2
+            Heizwaermebedarf_input = st.number_input(
+                "Heizwärmebedarf kWh/m2",
+                value=int(Heizwaermebedarf)
+            )
+            raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
+
+            st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+            ergebnis = Heizwaermebedarf_input
+        else:
+            st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
+    elif bau_typ == "Minergie-P":
+        treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == bau_typ, "Heizwaermebedarf"]
+        if not treffer.empty:
+            Heizwaermebedarf = treffer.iloc[0] * m2
+            Heizwaermebedarf_input = st.number_input(
+                "Heizwärmebedarf kWh/m2",
+                value=int(Heizwaermebedarf)
+            )
+            ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
+            raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
+
+            st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+            ergebnis = Heizwaermebedarf_input
+        else:
+            st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
+
+with col2:
+    st.subheader("Heizsystem")
+
+    heizsystem = st.segmented_control(
+        "Heizsystem wählen", ["Fossil & Holz", "Wärmepumpe"],
+        default="Fossil & Holz"
+    )
+    if heizsystem == "Fossil & Holz":
+        fossil_typ = st.radio(
+            "Fossiles Heizsystem",
+            ["Gas", "Öl", "Pellets"],
             horizontal=True
         )
-        reduktion = 0.0
-        if status == "Ja":
-            Sanierungstyp = st.multiselect(
-                "Sanierungstyp",
-                list(reduktionen.keys())
+        if fossil_typ == "Gas":
+            gas = Heizwaermebedarf / 10
+            Gasverbrauch_input = st.number_input(
+                "Gasverbrauch m³/a",
+                value=int(gas)
             )
-            reduktion = sum(reduktionen[typ] for typ in Sanierungstyp)
-            Heizwaermebedarf_total = Heizwaermebedarf * (1 - reduktion)
-        elif status == "GEAK Klasse":
-            geak_klasse = st.selectbox(
-                "GEAK Klasse wählen",
-                list(GEAK_Klassen.keys())
+            ergebnis = Gasverbrauch_input
+            st.write("Emissionen UBP/a: ")
+            st.write("Emissionen kgCO2/a: ")
+        elif fossil_typ == "Öl":
+            oel = Heizwaermebedarf / 10
+            Oelverbrauch_input = st.number_input(
+                "Ölverbrauch L/a",
+                value=int(oel)
             )
-            Heizwaermebedarf_total = GEAK_Klassen[geak_klasse] * m2
-
+            ergebnis = Oelverbrauch_input
+            st.write("Emissionen UBP/a: ")
+            st.write("Emissionen kgCO2/a: ")
+        elif fossil_typ == "Pellets":
+            pellets = Heizwaermebedarf / 5
+            Pelletsverbrauch_input = st.number_input(
+                "Pelletsverbrauch kg/a",
+                value=int(pellets)
+            )
+            ergebnis = Pelletsverbrauch_input
+            st.write("Emissionen UBP/a: ")
+            st.write("Emissionen kgCO2/a: ")
+        # noch emmisionen draus rechnen
+        # .1f = 1 Nachkommastelle zb st.write(f"Gasverbrauch: {gas:.1f} m³/a")
+        # variablen direkt in text als f-String (formatted string).
+    elif heizsystem == "Wärmepumpe":
+        wp_typ = st.radio(
+            "Wärmepumpenart",
+            [
+                "Luft/Wasser Wärmepumpe",
+                "Sole/Wasser Wärmepumpe",
+                "Wasser/Wasser Wärmepumpe"
+            ],
+            horizontal=True
+        )
+        Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
+        Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
+        if wp_typ == "Luft/Wasser Wärmepumpe":
+            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
+        elif wp_typ == "Sole/Wasser Wärmepumpe":
+            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
         else:
-            Heizwaermebedarf_total = Heizwaermebedarf
-        Heizwaermebedarf_input = st.number_input(
-            "Heizwärmebedarf kWh/a",
-            value=int(Heizwaermebedarf_total)
+            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
+        if "Heizwaermebedarf_input" in locals():
+            stromverbrauch = Heizwaermebedarf_input / jaz
+        else:
+            stromverbrauch = 0.0
+        StromverbrauchWP_input = st.number_input(
+            "Stromverbrauch [kWh/a]",
+            value=int(stromverbrauch)
         )
-        raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
-
-        st.write(f"Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
-        ergebnis = Heizwaermebedarf_input
-    else:
-        st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-elif bau_typ == "Minergie":
-    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == bau_typ, "Heizwaermebedarf"]
-    if not treffer.empty:
-        Heizwaermebedarf = treffer.iloc[0] * m2
-        Heizwaermebedarf_input = st.number_input(
-            "Heizwärmebedarf kWh/m2",
-            value=int(Heizwaermebedarf)
-        )
-        raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
-
-        st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
-        ergebnis = Heizwaermebedarf_input
-    else:
-        st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-elif bau_typ == "Minergie-P":
-    treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == bau_typ, "Heizwaermebedarf"]
-    if not treffer.empty:
-        Heizwaermebedarf = treffer.iloc[0] * m2
-        Heizwaermebedarf_input = st.number_input(
-            "Heizwärmebedarf kWh/m2",
-            value=int(Heizwaermebedarf)
-        )
-        ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
-        raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
-
-        st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
-        ergebnis = Heizwaermebedarf_input
-    else:
-        st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-
-
-st.subheader("Heizsystem")
-
-heizsystem = st.segmented_control(
-    "Heizsystem wählen", ["Fossil & Holz", "Wärmepumpe"],
-    default="Fossil & Holz"
-)
-if heizsystem == "Fossil & Holz":
-    fossil_typ = st.radio(
-        "Fossiles Heizsystem",
-        ["Gas", "Öl", "Pellets"],
-        horizontal=True
-    )
-    if fossil_typ == "Gas":
-        gas = Heizwaermebedarf / 10
-        Gasverbrauch_input = st.number_input(
-            "Gasverbrauch m³/a",
-            value=int(gas)
-        )
-        ergebnis = Gasverbrauch_input
-        st.write("Emissionen UBP/a: ")
-        st.write("Emissionen kgCO2/a: ")
-    elif fossil_typ == "Öl":
-        oel = Heizwaermebedarf / 10
-        Oelverbrauch_input = st.number_input(
-            "Ölverbrauch L/a",
-            value=int(oel)
-        )
-        ergebnis = Oelverbrauch_input
-        st.write("Emissionen UBP/a: ")
-        st.write("Emissionen kgCO2/a: ")
-    elif fossil_typ == "Pellets":
-        pellets = Heizwaermebedarf / 5
-        Pelletsverbrauch_input = st.number_input(
-            "Pelletsverbrauch kg/a",
-            value=int(pellets)
-        )
-        ergebnis = Pelletsverbrauch_input
-        st.write("Emissionen UBP/a: ")
-        st.write("Emissionen kgCO2/a: ")
-    # noch emmisionen draus rechnen
-    # .1f = 1 Nachkommastelle zb st.write(f"Gasverbrauch: {gas:.1f} m³/a")
-    # variablen direkt in text als f-String (formatted string).
-elif heizsystem == "Wärmepumpe":
-    wp_typ = st.radio(
-        "Wärmepumpenart",
-        [
-            "Luft/Wasser Wärmepumpe",
-            "Sole/Wasser Wärmepumpe",
-            "Wasser/Wasser Wärmepumpe"
-        ],
-        horizontal=True
-    )
-    Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
-    Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
-    if wp_typ == "Luft/Wasser Wärmepumpe":
-        jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
-    elif wp_typ == "Sole/Wasser Wärmepumpe":
-        jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
-    else:
-        jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
-    if "Heizwaermebedarf_input" in locals():
-        stromverbrauch = Heizwaermebedarf_input / jaz
-    else:
-        stromverbrauch = 0.0
-    StromverbrauchWP_input = st.number_input(
-        "Stromverbrauch [kWh/a]",
-        value=int(stromverbrauch)
-    )
-    ergebnis = stromverbrauch
-    
+        ergebnis = stromverbrauch
+        
 st.write("------------------------------")
 st.subheader("Warmwasser")
 
