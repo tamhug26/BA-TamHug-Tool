@@ -1891,18 +1891,18 @@ if "df_ts" in st.session_state:
             st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
 
         st.write("------------------------------")
-        st.subheader("Monatsbilanz")
+        # st.subheader("Monatsbilanz")
 
-        st.dataframe(monatsbilanz.round(1))
+        # st.dataframe(monatsbilanz.round(1))
 
-        st.write("Monatsbilanz:")
-        st.bar_chart(monatsbilanz)
+        # st.write("Monatsbilanz:")
+        # st.bar_chart(monatsbilanz)
 
-        st.write("Monatlicher Netzbezug und Einspeisung:")
-        st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
+        # st.write("Monatlicher Netzbezug und Einspeisung:")
+        # st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
 
-        st.write("Monatliche Produktion und Eigenverbrauch:")
-        st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
+        # st.write("Monatliche Produktion und Eigenverbrauch:")
+        # st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
 
         st.write("---------------------")
         st.subheader("Test: Gesamtlast über das Jahr")
