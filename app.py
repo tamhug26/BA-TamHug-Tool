@@ -1154,7 +1154,7 @@ EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 #     list(Standort.keys())
 # ) 
 
-Personnen = st.number_input("Personnen im Haushalt", 1, 10, 4)
+personen = st.number_input("Personnen im Haushalt", 1, 10, 4)
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 Stromnutzung = st.segmented_control(
     "Standartstromnutzungsprofil oder eigene daten als csv?",
@@ -1355,13 +1355,6 @@ elif heizsystem == "Fossil & Holz":
         st.info("Warmwasser wird nicht als elektrische Last simuliert.")
 
 if ww_aktiv:
-    personen = st.number_input(
-        "Anzahl Personen im Haushalt",
-        min_value=1,
-        max_value=20,
-        value=2,
-        step=1
-    )
 
     ww_bedarf_kWh_tag_berechnet = (
         personen * 45 * 0.058 * 7 * 50 + 365 / 2
