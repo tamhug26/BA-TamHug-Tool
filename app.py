@@ -903,6 +903,12 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
             return 17 <= h < 20
         elif strategie == "Kombiniert (morgens + mittags)":
             return (5 <= h < 7) or (11 <= h < 15)
+        elif strategie == "Morgens + Mittag":
+            return (5 <= h < 7) or (11 <= h < 15)
+        elif strategie == "Morgens + Abends":
+            return (5 <= h < 7) or (17 <= h < 20)
+        elif strategie == "Mittag + Abends":
+            return (11 <= h < 15) or (17 <= h < 20)
 
     if verbraucher == "E-Auto":
         if strategie == "Morgens":
@@ -1237,8 +1243,7 @@ if bau_typ == "Baujahr":
         )
         raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
 
-        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
-        st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+        st.write(f"Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         ergebnis = Heizwaermebedarf_input
     else:
         st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
@@ -1346,6 +1351,9 @@ elif heizsystem == "Wärmepumpe":
 st.write("------------------------------")
 st.subheader("Warmwasser")
 
+ww_liter_pro_person_tag = 40
+ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
+
 ww_aktiv = False
 ww_steuerbar = False
 ww_bedarf_kWh_tag = 0.0
@@ -1372,6 +1380,33 @@ elif heizsystem == "Fossil & Holz":
 
 if ww_aktiv:
 
+    # Warmwasserbedarf in Liter pro Tag
+    ww_liter_pro_person_tag = 40
+    ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
+
+    # Speichergrösse abhängig von Personenanzahl
+    speicher_kategorie = st.selectbox(
+        "Warmwasserspeicher-Grösse",
+        ["klein", "mittel", "gross"]
+    )
+
+    if speicher_kategorie == "klein":
+        ww_speicher_liter = ww_tagesbedarf_liter - 20
+    elif speicher_kategorie == "mittel":
+        ww_speicher_liter = ww_tagesbedarf_liter
+    else:
+        ww_speicher_liter = ww_tagesbedarf_liter + 20
+
+    # Mindestgrösse, damit keine unrealistisch kleinen Speicher entstehen
+    ww_speicher_liter = max(60, ww_speicher_liter)
+
+    # Anzahl notwendige Speicherladungen pro Tag
+    ladezyklen_pro_tag = int(np.ceil(ww_tagesbedarf_liter / ww_speicher_liter))
+
+    st.write(f"Geschätzter Tagesbedarf Warmwasser: {ww_tagesbedarf_liter:.0f} Liter/Tag")
+    st.write(f"Gewählter Speicher: {ww_speicher_liter:.0f} Liter")
+    st.write(f"Erforderliche Speicherladung: {ladezyklen_pro_tag}× pro Tag")
+
     # thermischer Warmwasserbedarf aus Personenanzahl
     ww_waermebedarf_kWh_jahr = personen * 45 * 0.058 * 7 * 50
     speicherverlust_kWh_jahr = 365 / 2
@@ -1385,7 +1420,7 @@ if ww_aktiv:
         ww_label = "Elektrischer Warmwasserbedarf Elektroboiler [kWh/Tag]"
 
     elif ww_system == "Wärmepumpe":
-        # Wärmepumpe: elektrischer Bedarf = thermischer Bedarf / JAZ
+        # Wärmepumpe: Strombedarf ≈ thermischer Warmwasserbedarf / JAZ
         ww_bedarf_kWh_tag_berechnet = (
             (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz
         ) / 365
@@ -1411,18 +1446,20 @@ if ww_aktiv:
     ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
 
     if ww_steuerbar:
-        ww_strategie = st.selectbox(
-            "WW-Strategie",
-            [
-                "Morgens",
-                "Mittag / PV-optimiert",
-                "Abends",
-                "Kombiniert (morgens + mittags)"
-            ]
-        )
+        if ladezyklen_pro_tag <= 1:
+            ww_strategie = st.selectbox(
+                "WW-Strategie",
+                ["Morgens", "Mittag / PV-optimiert", "Abends"]
+            )
+        else:
+            ww_strategie = st.selectbox(
+                "WW-Strategie",
+                ["Morgens + Mittag", "Morgens + Abends", "Mittag + Abends"]
+            )
     else:
         ww_strategie = "Abends"
         st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
+
 st.write("------------------------------")
 st.subheader("E-Auto")
 
