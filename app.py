@@ -1235,10 +1235,9 @@ if bau_typ == "Baujahr":
             "Heizwärmebedarf kWh/a",
             value=int(Heizwaermebedarf_total)
         )
-        ww_waermebedarf_kWh = 15 * m2# 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
-        raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
+        raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
 
-        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
+        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         ergebnis = Heizwaermebedarf_input
     else:
@@ -1250,11 +1249,9 @@ elif bau_typ == "Minergie":
         Heizwaermebedarf_input = st.number_input(
             "Heizwärmebedarf kWh/m2",
             value=int(Heizwaermebedarf)
-        )
-        ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
-        raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
 
-        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
+        raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
+
         st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         ergebnis = Heizwaermebedarf_input
     else:
@@ -1268,9 +1265,8 @@ elif bau_typ == "Minergie-P":
             value=int(Heizwaermebedarf)
         )
         ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
-        raumheizung_waermebedarf_kWh = max(0, Heizwaermebedarf_input - ww_waermebedarf_kWh)
+        raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
 
-        st.write(f"Anteil Warmwasser-Wärmebedarf [kWh/a]: {ww_waermebedarf_kWh:.0f}")
         st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
         ergebnis = Heizwaermebedarf_input
     else:
@@ -1352,6 +1348,7 @@ st.subheader("Warmwasser")
 
 ww_aktiv = False
 ww_steuerbar = False
+ww_bedarf_kWh_tag = 0.0
 ww_ladeleistung_kw = 0.0
 ww_strategie = "Abends"
 ww_system = "nicht elektrisch"
@@ -1375,12 +1372,28 @@ elif heizsystem == "Fossil & Holz":
 
 if ww_aktiv:
 
-    ww_bedarf_kWh_tag_berechnet = (
-        personen * 45 * 0.058 * 7 * 50 + 365 / 2
-    ) / 365
+    # thermischer Warmwasserbedarf aus Personenanzahl
+    ww_waermebedarf_kWh_jahr = personen * 45 * 0.058 * 7 * 50
+    speicherverlust_kWh_jahr = 365 / 2
+
+    if ww_system == "Elektroboiler":
+        # Elektroboiler: Strombedarf ≈ Wärmebedarf + Speicherverluste
+        ww_bedarf_kWh_tag_berechnet = (
+            ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr
+        ) / 365
+
+        ww_label = "Elektrischer Warmwasserbedarf Elektroboiler [kWh/Tag]"
+
+    elif ww_system == "Wärmepumpe":
+        # Wärmepumpe: elektrischer Bedarf = thermischer Bedarf / JAZ
+        ww_bedarf_kWh_tag_berechnet = (
+            (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz
+        ) / 365
+
+        ww_label = "Elektrischer Warmwasserbedarf Wärmepumpe [kWh/Tag]"
 
     ww_bedarf_kWh_tag = st.number_input(
-        "Warmwasserbedarf [kWh/Tag]",
+        ww_label,
         min_value=0.0,
         max_value=30.0,
         value=float(round(ww_bedarf_kWh_tag_berechnet, 2)),
@@ -1883,7 +1896,7 @@ if "df_ts" in st.session_state:
 
         with col2:
             st.metric("Netzbezug", f"{df_sum['netzbezug_kWh'].sum():.1f} kWh")
-            st.metric("Netzeinspeisung", f"{df_plot['netzeinspeisung_kWh'].sum():.1f} kWh")
+            st.metric("Netzeinspeisung", f"{df_sum['netzeinspeisung_kWh'].sum():.1f} kWh")
 
         with col3:
             st.metric("Abregelung", f"{df_sum['abregelung_kWh'].sum():.1f} kWh")
