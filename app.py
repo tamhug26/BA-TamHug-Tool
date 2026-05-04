@@ -1329,19 +1329,19 @@ with col2:
         # variablen direkt in text als f-String (formatted string).
     elif heizsystem == "Wärmepumpe":
         wp_typ = st.radio(
-            "Wärmepumpenart",
+            "Wärmepumpenart WP",
             [
-                "Luft/Wasser Wärmepumpe",
-                "Sole/Wasser Wärmepumpe",
-                "Wasser/Wasser Wärmepumpe"
+                "Luft/Wasser WP",
+                "Sole/Wasser WP",
+                "Wasser/Wasser WP"
             ],
             horizontal=True
         )
         Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
         Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
-        if wp_typ == "Luft/Wasser Wärmepumpe":
+        if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
-        elif wp_typ == "Sole/Wasser Wärmepumpe":
+        elif wp_typ == "Sole/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
         else:
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
