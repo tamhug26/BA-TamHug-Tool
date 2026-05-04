@@ -1153,6 +1153,8 @@ EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
 #     "Standort wählen",
 #     list(Standort.keys())
 # ) 
+
+Personnen = st.number_input("Personnen im Haushalt", 1, 10, 4)
 jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 Stromnutzung = st.segmented_control(
     "Standartstromnutzungsprofil oder eigene daten als csv?",
@@ -1331,27 +1333,58 @@ st.subheader("Warmwasser")
 
 ww_aktiv = False
 ww_steuerbar = False
-ww_bedarf_kWh_tag = 0.0
 ww_ladeleistung_kw = 0.0
 ww_strategie = "Abends"
+ww_system = "nicht elektrisch"
+
 if heizsystem == "Wärmepumpe":
+    ww_system = "Wärmepumpe"
     ww_aktiv = True
-    st.info("Warmwasser wird bei Wärmepumpe immer als elektrische Last berücksichtigt.")
-    ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
+    st.info("Warmwasser wird bei Wärmepumpe als elektrische Last berücksichtigt.")
+
+elif heizsystem == "Fossil & Holz":
+    ww_system = st.selectbox(
+        "Warmwasser-System",
+        ["nicht elektrisch", "Elektroboiler"]
+    )
+
+    if ww_system == "Elektroboiler":
+        ww_aktiv = True
+        st.info("Elektroboiler wird als elektrische Warmwasserlast berücksichtigt.")
+    else:
+        st.info("Warmwasser wird nicht als elektrische Last simuliert.")
+
+if ww_aktiv:
+    personen = st.number_input(
+        "Anzahl Personen im Haushalt",
+        min_value=1,
+        max_value=20,
+        value=2,
+        step=1
+    )
+
+    ww_bedarf_kWh_tag_berechnet = (
+        personen * 45 * 0.058 * 7 * 50 + 365 / 2
+    ) / 365
+
     ww_bedarf_kWh_tag = st.number_input(
-        "WW-Bedarf [kWh/Tag]",
+        "Warmwasserbedarf [kWh/Tag]",
         min_value=0.0,
         max_value=30.0,
-        value=float(round(ww_waermebedarf_kWh / 365, 2)),
+        value=float(round(ww_bedarf_kWh_tag_berechnet, 2)),
         step=0.1
     )
+
     ww_ladeleistung_kw = st.number_input(
-        "WW-Ladeleistung [kW]",
+        "WW-/Boiler-Leistung [kW]",
         min_value=0.1,
         max_value=20.0,
         value=3.0,
         step=0.1
     )
+
+    ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
+
     if ww_steuerbar:
         ww_strategie = st.selectbox(
             "WW-Strategie",
@@ -1365,10 +1398,6 @@ if heizsystem == "Wärmepumpe":
     else:
         ww_strategie = "Abends"
         st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
-else:
-    st.info("Warmwasser wird bei Fossil & Holz aktuell nicht als elektrische Last simuliert.")
-
-st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")
 st.write("------------------------------")
 st.subheader("E-Auto")
 
