@@ -1544,91 +1544,106 @@ else:
 st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")
 st.write("------------------------------")
 
+
 st.subheader("Photovoltaikanlage")
-standort_auswahl = st.selectbox(
-    "Standort wählen",
-    list(standort_dateien.keys())
-)
-Höhenmeter_standort = st.number_input("Höhenmeter am standort", 50, 5000, 200)
-PVAnlagen = st.number_input(
-    "Anzahl PV-Anlagen",
-    min_value=1,
-    max_value=5,
-    value=1,
-    step=1
-)
+col1, col2, col3 = st.columns(3)
+with col1:
+    standort_auswahl = st.selectbox(
+        "Standort wählen",
+        list(standort_dateien.keys())
+    )
+with col2:
+    Höhenmeter_standort = st.number_input(
+        "Höhenmeter am Standort",
+        50, 5000, 200
+    )
+with col3:
+    PVAnlagen = st.number_input(
+        "Anzahl PV-Anlagen",
+        min_value=1,
+        max_value=5,
+        value=1,
+        step=1
+    )
 pv_anlagen_daten = []
-for i in range(PVAnlagen):
-    st.markdown(f"### PV-Anlage {i+1}")
 
-    PV_Wirkungsgrad = st.number_input(
-        f"PV Wirkungsgrad",
-        min_value=0.1,
-        max_value=100.0,
-        value=10.0,
-        step=0.1,
-        key=f"PV_Wirkungsgrad_{i}"
-    )
+# pro Zeile maximal 3 PV-Anlagen nebeneinander
+for start in range(0, PVAnlagen, 3):
+    cols = st.columns(3)
 
-    pv_Peakleistung = st.number_input(
-        f"PV-Peakleistung (kWp)",
-        min_value=0.0,
-        max_value=1000.0,
-        value=10.0,
-        step=0.1,
-        key=f"peakleistung_{i}"
-    )
+    for j in range(3):
+        i = start + j
 
-    gamma_pdc_input = st.number_input(
-        f"Temperaturkoeffizient Pmax [1/°C]",
-        min_value=-0.02,
-        max_value=0.0,
-        value=-0.0040,
-        step=0.0001,
-        format="%.4f",
-        key=f"gamma_pdc_{i}"
-    )
+        if i >= PVAnlagen:
+            break
 
-    nmot_input = st.number_input(
-        f"NMOT / NOCT [°C]",
-        min_value=20.0,
-        max_value=80.0,
-        value=45.0,
-        step=0.5,
-        key=f"nmot_{i}"
-    )
+        with cols[j]:
+            st.markdown(f"### PV-Anlage {i+1}")
 
-    Dachneigung = st.number_input(
-        f"Dachneigung (°)",
-        min_value=0,
-        max_value=90,
-        value=45,
-        step=1,
-        key=f"neigung_{i}"
-    )
+            PV_Wirkungsgrad = st.number_input(
+                "PV Wirkungsgrad [%]",
+                min_value=0.1,
+                max_value=100.0,
+                value=10.0,
+                step=0.1,
+                key=f"PV_Wirkungsgrad_{i}"
+            )
 
-    Dachausrichtung = st.number_input(
-        f"Dachausrichtung/Azimuth (°)",
-        min_value=0,
-        max_value=380,
-        value=180,
-        step=1,
-        key=f"ausrichtung_{i}"
-    )
+            pv_Peakleistung = st.number_input(
+                "PV-Peakleistung [kWp]",
+                min_value=0.0,
+                max_value=1000.0,
+                value=10.0,
+                step=0.1,
+                key=f"peakleistung_{i}"
+            )
 
-    st.caption("Neigung: 0 = Flachdach, 90 = Fassade")
-    st.caption("Azimut: 0 = Nord, 90 = Ost, 180 = Süd, 270 = West")
+            gamma_pdc_input = st.number_input(
+                "Temperaturkoeffizient Pmax [1/°C]",
+                min_value=-0.02,
+                max_value=0.0,
+                value=-0.0040,
+                step=0.0001,
+                format="%.4f",
+                key=f"gamma_pdc_{i}"
+            )
 
-    pv_anlagen_daten.append({
-        "Anlage": i + 1,
-        "PV_Wirkungsgrad": PV_Wirkungsgrad,
-        "pv_Peakleistung": pv_Peakleistung,
-        "Dachneigung": Dachneigung,
-        "Dachausrichtung": Dachausrichtung,
-        "gamma_pdc": gamma_pdc_input,
-        "nmot": nmot_input
-    })
+            nmot_input = st.number_input(
+                "NMOT / NOCT [°C]",
+                min_value=20.0,
+                max_value=80.0,
+                value=45.0,
+                step=0.5,
+                key=f"nmot_{i}"
+            )
 
+            Dachneigung = st.number_input(
+                "Dachneigung [°]",
+                min_value=0,
+                max_value=90,
+                value=45,
+                step=1,
+                key=f"neigung_{i}"
+            )
+
+            Dachausrichtung = st.number_input(
+                "Dachausrichtung / Azimut [°]",
+                min_value=0,
+                max_value=380,
+                value=180,
+                step=1,
+                key=f"ausrichtung_{i}"
+            )
+
+            pv_anlagen_daten.append({
+                "Anlage": i + 1,
+                "PV_Wirkungsgrad": PV_Wirkungsgrad,
+                "pv_Peakleistung": pv_Peakleistung,
+                "Dachneigung": Dachneigung,
+                "Dachausrichtung": Dachausrichtung,
+                "gamma_pdc": gamma_pdc_input,
+                "nmot": nmot_input
+            })
 
 st.write("------------------------------")
 st.subheader("Batterie")
