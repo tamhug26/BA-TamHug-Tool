@@ -1356,7 +1356,7 @@ with col2:
         ergebnis = stromverbrauch
         
 st.write("------------------------------")
-col1, divider, col2 = st.columns([1, 0.03, 1])
+col1, col2 = st.columns(2)
 with col1:
     st.subheader("Warmwasser")
 
@@ -1468,18 +1468,6 @@ with col1:
         else:
             ww_strategie = "Abends"
             st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
-
-with divider:
-    st.markdown(
-        """
-        <div style="
-            border-left: 2px solid #cccccc;
-            height: 1200px;
-            margin: auto;
-        "></div>
-        """,
-        unsafe_allow_html=True
-    )
 
 with col2:
     st.subheader("E-Auto")
