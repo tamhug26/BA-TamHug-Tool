@@ -1555,9 +1555,9 @@ with col2:
         ev_ladeleistung_kw = 0.0
         ev_strategie = "Abends"
 
-    st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")
-    st.write("------------------------------")
+    st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")   
 
+st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
 col1, col2, col3 = st.columns(3)
