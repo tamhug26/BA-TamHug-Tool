@@ -1645,70 +1645,70 @@ for start in range(0, PVAnlagen, 3):
                 "nmot": nmot_input
             })
 
-st.write("------------------------------")
-st.subheader("Batterie")
-
-batterie_aktiv = st.checkbox("Batterie vorhanden", value=True)
-
-if batterie_aktiv:
-    batteriekapazität = st.slider("Batteriekapazität (kWh)", 1, 50, 10)
-    maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 1, 20, 10)
-    maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
-    minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
-    maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
-else:
-    batteriekapazität = 0
-    maxLadeleistungBatterie = 0
-    maxEntladeleistungBatterie = 0
-    minSoC = 0
-    maxSoC = 100
 
 
 st.write("------------------------------")
-st.subheader("Einspeisen")
-# regel einbauen minSoC muss < sein als maxSoC
-Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
-gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
-EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
-st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.subheader("Batterie")
 
-st.write("------------------------------")
-st.subheader("EMS")
+    batterie_aktiv = st.checkbox("Batterie vorhanden", value=True)
 
-ems_optionen = []
+    if batterie_aktiv:
+        batteriekapazität = st.slider("Batteriekapazität (kWh)", 1, 50, 10)
+        maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 1, 20, 10)
+        maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
+        minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
+        maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+    else:
+        batteriekapazität = 0
+        maxLadeleistungBatterie = 0
+        maxEntladeleistungBatterie = 0
+        minSoC = 0
+        maxSoC = 100
+with col2: 
+    st.subheader("Einspeisen")
+    # regel einbauen minSoC muss < sein als maxSoC
+    Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
+    gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
+    EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
+    st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
+with col3:
+    st.subheader("EMS")
 
-if ww_aktiv and ww_steuerbar:
-    ems_optionen.append("Warmwasser")
+    ems_optionen = []
 
-if ev_aktiv:
-    ems_optionen.append("E-Auto")
+    if ww_aktiv and ww_steuerbar:
+        ems_optionen.append("Warmwasser")
 
-if batterie_aktiv and batteriekapazität > 0:
-    ems_optionen.append("Batterie")
+    if ev_aktiv:
+        ems_optionen.append("E-Auto")
 
-prioritaeten = st.multiselect(
-    "EMS-Priorität auswählen",
-    ems_optionen,
-    default=ems_optionen
-)
+    if batterie_aktiv and batteriekapazität > 0:
+        ems_optionen.append("Batterie")
 
-st.caption("Die Einspeisung erfolgt automatisch nach der EMS-Priorität. " \
-"Nicht auswählbare Verbraucher sind nicht aktiv oder nicht steuerbar.")
-# normale Hauslast plus Wärmepumpen-Raumheizung zuerst dann WW oder ev dann Batterie  dann Einspeisung
+    prioritaeten = st.multiselect(
+        "EMS-Priorität auswählen",
+        ems_optionen,
+        default=ems_optionen
+    )
 
-st.write("------------------------------")
-st.subheader("Ausspeisen")
-Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
-EVU_name = st.selectbox(
-    "EVU wählen",
-    list(EVU.keys())
-)
-CO2Emmisionen = EVU[EVU_name]
-CO2Emmisionen_input = st.number_input(
-    "CO2 Emmisionen [kg CO2e/MWh]",
-    value=int(CO2Emmisionen)
-)
-ergebnis = CO2Emmisionen
+    st.caption("Die Einspeisung erfolgt automatisch nach der EMS-Priorität. " \
+    "Nicht auswählbare Verbraucher sind nicht aktiv oder nicht steuerbar.")
+    # normale Hauslast plus Wärmepumpen-Raumheizung zuerst dann WW oder ev dann Batterie  dann Einspeisung
+with col4: 
+    st.subheader("Ausspeisen")
+    Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
+    EVU_name = st.selectbox(
+        "EVU wählen",
+        list(EVU.keys())
+    )
+    CO2Emmisionen = EVU[EVU_name]
+    CO2Emmisionen_input = st.number_input(
+        "CO2 Emmisionen [kg CO2e/MWh]",
+        value=int(CO2Emmisionen)
+    )
+    ergebnis = CO2Emmisionen
 
 
 st.write("------------------------------")
