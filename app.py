@@ -1356,193 +1356,195 @@ with col2:
         ergebnis = stromverbrauch
         
 st.write("------------------------------")
-st.subheader("Warmwasser")
+col1, col2 = st.solumns(2)
+with col1:
+    st.subheader("Warmwasser")
 
-ww_liter_pro_person_tag = 40
-ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
-
-ww_aktiv = False
-ww_steuerbar = False
-ww_bedarf_kWh_tag = 0.0
-ww_ladeleistung_kw = 0.0
-ww_strategie = "Abends"
-ww_system = "nicht elektrisch"
-
-if heizsystem == "Wärmepumpe":
-    ww_system = "Wärmepumpe"
-    ww_aktiv = True
-    st.info("Warmwasser wird bei Wärmepumpe als elektrische Last berücksichtigt.")
-
-elif heizsystem == "Fossil & Holz":
-    ww_system = st.selectbox(
-        "Warmwasser-System",
-        ["nicht elektrisch", "Elektroboiler"]
-    )
-
-    if ww_system == "Elektroboiler":
-        ww_aktiv = True
-        st.info("Elektroboiler wird als elektrische Warmwasserlast berücksichtigt.")
-    else:
-        st.info("Warmwasser wird nicht als elektrische Last simuliert.")
-
-if ww_aktiv:
-
-    # Warmwasserbedarf in Liter pro Tag
     ww_liter_pro_person_tag = 40
     ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
 
-    # Speichergrösse abhängig von Personenanzahl
-    speicher_kategorie = st.selectbox(
-        "Warmwasserspeicher-Grösse",
-        ["klein", "mittel", "gross"]
-    )
+    ww_aktiv = False
+    ww_steuerbar = False
+    ww_bedarf_kWh_tag = 0.0
+    ww_ladeleistung_kw = 0.0
+    ww_strategie = "Abends"
+    ww_system = "nicht elektrisch"
 
-    if speicher_kategorie == "klein":
-        ww_speicher_liter = ww_tagesbedarf_liter - 20
-    elif speicher_kategorie == "mittel":
-        ww_speicher_liter = ww_tagesbedarf_liter
-    else:
-        ww_speicher_liter = ww_tagesbedarf_liter + 20
+    if heizsystem == "Wärmepumpe":
+        ww_system = "Wärmepumpe"
+        ww_aktiv = True
+        st.info("Warmwasser wird bei Wärmepumpe als elektrische Last berücksichtigt.")
 
-    # Mindestgrösse, damit keine unrealistisch kleinen Speicher entstehen
-    ww_speicher_liter = max(60, ww_speicher_liter)
+    elif heizsystem == "Fossil & Holz":
+        ww_system = st.selectbox(
+            "Warmwasser-System",
+            ["nicht elektrisch", "Elektroboiler"]
+        )
 
-    # Anzahl notwendige Speicherladungen pro Tag
-    ladezyklen_pro_tag = int(np.ceil(ww_tagesbedarf_liter / ww_speicher_liter))
-
-    st.write(f"Geschätzter Tagesbedarf Warmwasser: {ww_tagesbedarf_liter:.0f} Liter/Tag")
-    st.write(f"Gewählter Speicher: {ww_speicher_liter:.0f} Liter")
-    st.write(f"Erforderliche Speicherladung: {ladezyklen_pro_tag}× pro Tag")
-
-    # thermischer Warmwasserbedarf aus Personenanzahl
-    ww_waermebedarf_kWh_jahr = personen * 45 * 0.058 * 7 * 50
-    speicherverlust_kWh_jahr = 365 / 2
-
-    if ww_system == "Elektroboiler":
-        # Elektroboiler: Strombedarf ≈ Wärmebedarf + Speicherverluste
-        ww_bedarf_kWh_tag_berechnet = (
-            ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr
-        ) / 365
-
-        ww_label = "Elektrischer Warmwasserbedarf Elektroboiler [kWh/Tag]"
-
-    elif ww_system == "Wärmepumpe":
-        # Wärmepumpe: Strombedarf ≈ thermischer Warmwasserbedarf / JAZ
-        ww_bedarf_kWh_tag_berechnet = (
-            (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz
-        ) / 365
-
-        ww_label = "Elektrischer Warmwasserbedarf Wärmepumpe [kWh/Tag]"
-
-    ww_bedarf_kWh_tag = st.number_input(
-        ww_label,
-        min_value=0.0,
-        max_value=30.0,
-        value=float(round(ww_bedarf_kWh_tag_berechnet, 2)),
-        step=0.1
-    )
-
-    ww_ladeleistung_kw = st.number_input(
-        "WW-/Boiler-Leistung [kW]",
-        min_value=0.1,
-        max_value=20.0,
-        value=3.0,
-        step=0.1
-    )
-
-    ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
-
-    if ww_steuerbar:
-        if ladezyklen_pro_tag <= 1:
-            ww_strategie = st.selectbox(
-                "WW-Strategie",
-                ["Morgens", "Mittag / PV-optimiert", "Abends"]
-            )
+        if ww_system == "Elektroboiler":
+            ww_aktiv = True
+            st.info("Elektroboiler wird als elektrische Warmwasserlast berücksichtigt.")
         else:
-            ww_strategie = st.selectbox(
-                "WW-Strategie",
-                ["Morgens + Mittag", "Morgens + Abends", "Mittag + Abends"]
-            )
+            st.info("Warmwasser wird nicht als elektrische Last simuliert.")
+
+    if ww_aktiv:
+
+        # Warmwasserbedarf in Liter pro Tag
+        ww_liter_pro_person_tag = 40
+        ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
+
+        # Speichergrösse abhängig von Personenanzahl
+        speicher_kategorie = st.selectbox(
+            "Warmwasserspeicher-Grösse",
+            ["klein", "mittel", "gross"]
+        )
+
+        if speicher_kategorie == "klein":
+            ww_speicher_liter = ww_tagesbedarf_liter - 20
+        elif speicher_kategorie == "mittel":
+            ww_speicher_liter = ww_tagesbedarf_liter
+        else:
+            ww_speicher_liter = ww_tagesbedarf_liter + 20
+
+        # Mindestgrösse, damit keine unrealistisch kleinen Speicher entstehen
+        ww_speicher_liter = max(60, ww_speicher_liter)
+
+        # Anzahl notwendige Speicherladungen pro Tag
+        ladezyklen_pro_tag = int(np.ceil(ww_tagesbedarf_liter / ww_speicher_liter))
+
+        st.write(f"Geschätzter Tagesbedarf Warmwasser: {ww_tagesbedarf_liter:.0f} Liter/Tag")
+        st.write(f"Gewählter Speicher: {ww_speicher_liter:.0f} Liter")
+        st.write(f"Erforderliche Speicherladung: {ladezyklen_pro_tag}× pro Tag")
+
+        # thermischer Warmwasserbedarf aus Personenanzahl
+        ww_waermebedarf_kWh_jahr = personen * 45 * 0.058 * 7 * 50
+        speicherverlust_kWh_jahr = 365 / 2
+
+        if ww_system == "Elektroboiler":
+            # Elektroboiler: Strombedarf ≈ Wärmebedarf + Speicherverluste
+            ww_bedarf_kWh_tag_berechnet = (
+                ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr
+            ) / 365
+
+            ww_label = "Elektrischer Warmwasserbedarf Elektroboiler [kWh/Tag]"
+
+        elif ww_system == "Wärmepumpe":
+            # Wärmepumpe: Strombedarf ≈ thermischer Warmwasserbedarf / JAZ
+            ww_bedarf_kWh_tag_berechnet = (
+                (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz
+            ) / 365
+
+            ww_label = "Elektrischer Warmwasserbedarf Wärmepumpe [kWh/Tag]"
+
+        ww_bedarf_kWh_tag = st.number_input(
+            ww_label,
+            min_value=0.0,
+            max_value=30.0,
+            value=float(round(ww_bedarf_kWh_tag_berechnet, 2)),
+            step=0.1
+        )
+
+        ww_ladeleistung_kw = st.number_input(
+            "WW-/Boiler-Leistung [kW]",
+            min_value=0.1,
+            max_value=20.0,
+            value=3.0,
+            step=0.1
+        )
+
+        ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
+
+        if ww_steuerbar:
+            if ladezyklen_pro_tag <= 1:
+                ww_strategie = st.selectbox(
+                    "WW-Strategie",
+                    ["Morgens", "Mittag / PV-optimiert", "Abends"]
+                )
+            else:
+                ww_strategie = st.selectbox(
+                    "WW-Strategie",
+                    ["Morgens + Mittag", "Morgens + Abends", "Mittag + Abends"]
+                )
+        else:
+            ww_strategie = "Abends"
+            st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
+
+with col2:
+    st.subheader("E-Auto")
+
+    ev_aktiv = st.checkbox("E-Auto vorhanden", value=False)
+
+    if ev_aktiv:
+        ev_fahrtage_namen = st.multiselect(
+            "Fahrtage auswählen",
+            ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+            default=["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
+        )
+
+        tag_mapping = {
+            "Montag": 0,
+            "Dienstag": 1,
+            "Mittwoch": 2,
+            "Donnerstag": 3,
+            "Freitag": 4,
+            "Samstag": 5,
+            "Sonntag": 6
+        }
+
+        ev_fahrtage = [tag_mapping[tag] for tag in ev_fahrtage_namen]
+
+        ev_verbrauch_kWh_pro_h = st.number_input(
+            "Verbrauch [kWh pro Fahrstunde]",
+            min_value=5.0,
+            max_value=30.0,
+            value=12.0,
+            step=0.5
+        )
+
+        ev_fahrzeit_h_tag = st.number_input(
+            "Fahrzeit pro Fahrtag [h]",
+            min_value=0.0,
+            max_value=5.0,
+            value=1.0,
+            step=0.25
+        )
+
+        ev_wochenende_kWh = st.number_input(
+            "Zusatzverbrauch an Nicht-Fahrtagen [kWh/Tag]",
+            min_value=0.0,
+            max_value=50.0,
+            value=0.0,
+            step=0.5
+        )
+
+        ev_ladeleistung_kw = st.number_input(
+            "E-Auto Ladeleistung [kW]",
+            min_value=0.1,
+            max_value=22.0,
+            value=3.7,
+            step=0.1
+        )
+
+        ev_strategie = st.selectbox(
+            "E-Auto Ladestrategie",
+            [
+                "Morgens",
+                "Mittag / PV-optimiert",
+                "Abends",
+                "Kombiniert (mittags + abends)"
+            ],
+            index=2
+        )
     else:
-        ww_strategie = "Abends"
-        st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
+        ev_fahrtage = []
+        ev_verbrauch_kWh_pro_h = 0.0
+        ev_fahrzeit_h_tag = 0.0
+        ev_wochenende_kWh = 0.0
+        ev_ladeleistung_kw = 0.0
+        ev_strategie = "Abends"
 
-st.write("------------------------------")
-st.subheader("E-Auto")
-
-ev_aktiv = st.checkbox("E-Auto vorhanden", value=False)
-
-if ev_aktiv:
-    ev_fahrtage_namen = st.multiselect(
-        "Fahrtage auswählen",
-        ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
-        default=["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
-    )
-
-    tag_mapping = {
-        "Montag": 0,
-        "Dienstag": 1,
-        "Mittwoch": 2,
-        "Donnerstag": 3,
-        "Freitag": 4,
-        "Samstag": 5,
-        "Sonntag": 6
-    }
-
-    ev_fahrtage = [tag_mapping[tag] for tag in ev_fahrtage_namen]
-
-    ev_verbrauch_kWh_pro_h = st.number_input(
-        "Verbrauch [kWh pro Fahrstunde]",
-        min_value=5.0,
-        max_value=30.0,
-        value=12.0,
-        step=0.5
-    )
-
-    ev_fahrzeit_h_tag = st.number_input(
-        "Fahrzeit pro Fahrtag [h]",
-        min_value=0.0,
-        max_value=5.0,
-        value=1.0,
-        step=0.25
-    )
-
-    ev_wochenende_kWh = st.number_input(
-        "Zusatzverbrauch an Nicht-Fahrtagen [kWh/Tag]",
-        min_value=0.0,
-        max_value=50.0,
-        value=0.0,
-        step=0.5
-    )
-
-    ev_ladeleistung_kw = st.number_input(
-        "E-Auto Ladeleistung [kW]",
-        min_value=0.1,
-        max_value=22.0,
-        value=3.7,
-        step=0.1
-    )
-
-    ev_strategie = st.selectbox(
-        "E-Auto Ladestrategie",
-        [
-            "Morgens",
-            "Mittag / PV-optimiert",
-            "Abends",
-            "Kombiniert (mittags + abends)"
-        ],
-        index=2
-    )
-else:
-    ev_fahrtage = []
-    ev_verbrauch_kWh_pro_h = 0.0
-    ev_fahrzeit_h_tag = 0.0
-    ev_wochenende_kWh = 0.0
-    ev_ladeleistung_kw = 0.0
-    ev_strategie = "Abends"
-
-st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")
-st.write("------------------------------")
+    st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")
+    st.write("------------------------------")
 
 
 st.subheader("Photovoltaikanlage")
