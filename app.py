@@ -1474,7 +1474,7 @@ with divider:
         """
         <div style="
             border-left: 2px solid #cccccc;
-            height: 100%;
+            height: 1200px;
             margin: auto;
         "></div>
         """,
