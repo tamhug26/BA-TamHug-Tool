@@ -1394,20 +1394,11 @@ with col1:
         ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
 
         # Speichergrösse abhängig von Personenanzahl
-        speicher_kategorie = st.selectbox(
-            "Warmwasserspeicher-Grösse",
-            ["klein", "mittel", "gross"]
+        ww_speicher_liter = st.selectbox(
+            "Warmwasserspeicher / Boiler [Liter]",
+            list(range(50, 401, 50)),
+            index=3   # Default = 200 Liter
         )
-
-        if speicher_kategorie == "klein":
-            ww_speicher_liter = ww_tagesbedarf_liter - 20
-        elif speicher_kategorie == "mittel":
-            ww_speicher_liter = ww_tagesbedarf_liter
-        else:
-            ww_speicher_liter = ww_tagesbedarf_liter + 20
-
-        # Mindestgrösse, damit keine unrealistisch kleinen Speicher entstehen
-        ww_speicher_liter = max(60, ww_speicher_liter)
 
         # Anzahl notwendige Speicherladungen pro Tag
         ladezyklen_pro_tag = int(np.ceil(ww_tagesbedarf_liter / ww_speicher_liter))
