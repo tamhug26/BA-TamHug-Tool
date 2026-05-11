@@ -166,25 +166,27 @@ def create_base_dataframe(year=2025):
     return df
 def get_day_type(timestamp):
     if timestamp.weekday() < 5:
-        return "WT"
+        return "WT" #Werktag
     elif timestamp.weekday() == 5:
-        return "SA"
+        return "SA" #Saturday
     else:
-        return "FT"
+        return "FT" #Feiertag bzw sonntag
 def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df = df.copy()
 
-    # Zeitinfos aus dem bestehenden DatetimeIndex
+    # Tagtyp WT, SA FT bestimmen
     df["Tagtyp"] = df.index.map(get_day_type)
+
+    #Uhrzeit entnehmen
     df["Zeit"] = df.index.strftime("%H:%M")
 
     # Excel vorbereiten
     slp_lookup = slp_df.copy()
     slp_lookup["Monat"] = slp_lookup["Monat"].astype(int)
     slp_lookup["Zeit"] = slp_lookup["Zeit"].astype(str).str[:5]
-    slp_lookup = slp_lookup.set_index(["Monat", "Zeit"])
+    slp_lookup = slp_lookup.set_index(["Monat", "Zeit"]) #Multiindex
 
-    # Werte holen, OHNE den DatetimeIndex zu zerstören
+    # Werte holen
     df["SA"] = [slp_lookup.loc[(m, z), "SA"] for m, z in zip(df["Monat"], df["Zeit"])]
     df["FT"] = [slp_lookup.loc[(m, z), "FT"] for m, z in zip(df["Monat"], df["Zeit"])]
     df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]
@@ -195,7 +197,7 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
         np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
     )
 
-    t = df["Tag_im_Jahr"].astype("float64")
+    t = df["Tag_im_Jahr"].astype("float64") #Tagesnummern 1-365
     dynamikfaktor = (
         - 3.92e-10 * t**4
         + 3.20e-7 * t**3
@@ -206,42 +208,34 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
 
     # auf Jahresverbrauch normieren
-    faktor_summe = df["slp_dyn"].sum()
+    faktor_summe = df["slp_dyn"].sum() #normierung auf Jahresverbrauch
     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
 
     return df
-def add_heating_profile(df, heizwaermebedarf_jahr):
+def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, raumtemperatur=20):
     df = df.copy()
-    # Heizanteile pro Monat (typisches Schweizer EFH)
-    monatsanteile = {
-        1: 0.17,
-        2: 0.15,
-        3: 0.12,
-        4: 0.08,
-        5: 0.04,
-        6: 0.01,
-        7: 0.00,
-        8: 0.01,
-        9: 0.03,
-        10: 0.09,
-        11: 0.14,
-        12: 0.16
-    }
-    df["heiz_monat"] = df["Monat"].map(monatsanteile)
-    # leichtes Tagesprofil
-    stundenfaktoren = {
-        0:0.9,1:0.85,2:0.8,3:0.8,4:0.85,5:1.0,
-        6:1.1,7:1.2,8:1.1,9:1.0,10:0.95,11:0.95,
-        12:0.9,13:0.9,14:0.9,15:0.95,16:1.0,17:1.1,
-        18:1.2,19:1.25,20:1.2,21:1.1,22:1.0,23:0.95
-    }
-    df["heiz_stunde"] = df["Stunde"].map(stundenfaktoren)
-    df["heiz_faktor"] = df["heiz_monat"] * df["heiz_stunde"]
+
+    weather = df_weather[["temp"]].copy()
+    weather["temp"] = pd.to_numeric(weather["temp"], errors="coerce")
+
+    # Wetterdaten von stündlich auf 15 min bringen
+    weather_15min = weather.resample("15min").interpolate("time")
+
+    df = df.join(weather_15min, how="left")
+    df["temp"] = df["temp"].interpolate("time")
+
+    # Heizbedarf nur, wenn Aussentemperatur unter gewünschter Raumtemperatur liegt
+    df["heiz_faktor"] = (raumtemperatur - df["temp"]).clip(lower=0)
+
     faktor_summe = df["heiz_faktor"].sum()
+
     if faktor_summe > 0:
-        df["heizwaerme_kWh"] = df["heiz_faktor"] / faktor_summe * heizwaermebedarf_jahr
+        df["heizwaerme_kWh"] = (
+            df["heiz_faktor"] / faktor_summe * heizwaermebedarf_jahr
+        )
     else:
-        df["heizwaerme_kWh"] = 0
+        df["heizwaerme_kWh"] = 0.0
+
     return df
 def add_heatpump_consumption(df, heizsystem, jaz=None):
     df = df.copy()
@@ -1354,6 +1348,13 @@ with col2:
             value=int(stromverbrauch)
         )
         ergebnis = stromverbrauch
+    raumtemperatur = st.number_input(
+        "Gewünschte Raumtemperatur [°C]",
+        min_value=15.0,
+        max_value=25.0,
+        value=20.0,
+        step=0.5
+    )
         
 st.write("------------------------------")
 col1, col2 = st.columns(2)
@@ -1734,7 +1735,12 @@ if run_simulation:
         else:
             heizwaerme_jahr = 12000
 
-        df_ts = add_heating_profile(df_ts, heizwaerme_jahr)
+        df_ts = add_heating_profile_weather_based(
+            df_ts,
+            df_weather,
+            heizwaerme_jahr,
+            raumtemperatur
+        )
 
         if heizsystem == "Wärmepumpe":
             df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
@@ -1922,7 +1928,7 @@ if "df_ts" in st.session_state:
 
         with col2:
             st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
-            st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
+            #st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
 
         st.write("---------------------")
         st.subheader("Gesamtlast über das Jahr")
