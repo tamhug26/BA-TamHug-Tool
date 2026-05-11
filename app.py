@@ -1831,7 +1831,6 @@ if "df_ts" in st.session_state:
         monatsbilanz = st.session_state["monatsbilanz"]
         jahreskennzahlen = st.session_state["jahreskennzahlen"]
 
-        st.write("------------------------------")
         st.subheader("Zeitverlauf Graphik")
 
         zeitraum = st.selectbox(
