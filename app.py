@@ -1871,60 +1871,7 @@ if "df_ts" in st.session_state:
         jahreskennzahlen = st.session_state["jahreskennzahlen"]
 
         st.write("------------------------------")
-        st.subheader("Jahreskennzahlen")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
-            st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
-
-        with col2:
-            st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
-            st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
-
-        st.write("------------------------------")
-        # st.subheader("Monatsbilanz")
-
-        # st.dataframe(monatsbilanz.round(1))
-
-        # st.write("Monatsbilanz:")
-        # st.bar_chart(monatsbilanz)
-
-        # st.write("Monatlicher Netzbezug und Einspeisung:")
-        # st.bar_chart(monatsbilanz[["Bezug_kWh", "Einspeisung_kWh"]])
-
-        # st.write("Monatliche Produktion und Eigenverbrauch:")
-        # st.bar_chart(monatsbilanz[["Produktion_kWh", "Eigenverbrauch_kWh"]])
-
-        st.write("---------------------")
-        st.subheader("Test: Gesamtlast über das Jahr")
-
-        df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
-        df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
-        fig_year = go.Figure()
-        fig_year.add_trace(go.Scatter(
-            x=df_year_plot.index,
-            y=df_year_plot["monatslast_kWh"],
-            mode="lines+markers",
-            name="Gesamtlast"
-        ))
-        fig_year.update_layout(
-            title="Gesamtlast im Jahresverlauf",
-            xaxis_title="Monat",
-            yaxis_title="Energie [kWh pro Monat]",
-            height=450
-        )
-        fig_year.update_xaxes(
-            tickformat="%b",
-            dtick="M1"
-        )
-        fig_year.update_yaxes(rangemode="tozero")
-
-        st.plotly_chart(fig_year, use_container_width=True)
-
-        st.write("------------------------------")
-        st.subheader("Graphik 1 – Zeitverlauf")
+        st.subheader("Zeitverlauf Graphik")
 
         zeitraum = st.selectbox(
             "Zeitraum wählen",
@@ -2003,6 +1950,46 @@ if "df_ts" in st.session_state:
                     "unterdeckung_kWh"
                 ]].round(3)
             )
+
+        st.write("------------------------------")
+        st.subheader("Jahreskennzahlen")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
+            st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
+
+        with col2:
+            st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
+            st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
+
+        st.write("---------------------")
+        st.subheader("Gesamtlast über das Jahr")
+
+        df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
+        df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
+        fig_year = go.Figure()
+        fig_year.add_trace(go.Scatter(
+            x=df_year_plot.index,
+            y=df_year_plot["monatslast_kWh"],
+            mode="lines+markers",
+            name="Gesamtlast"
+        ))
+        fig_year.update_layout(
+            title="Gesamtlast im Jahresverlauf",
+            xaxis_title="Monat",
+            yaxis_title="Energie [kWh pro Monat]",
+            height=450
+        )
+        fig_year.update_xaxes(
+            tickformat="%b",
+            dtick="M1"
+        )
+        fig_year.update_yaxes(rangemode="tozero")
+
+        st.plotly_chart(fig_year, use_container_width=True)
+        
         st.write("PV-Produktion Jahreswert [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
         st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
         st.write("Netzeinspeisung Jahreswert [kWh]:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
@@ -2032,4 +2019,6 @@ if "df_ts" in st.session_state:
         fig_pv_monat.update_yaxes(rangemode="tozero")
 
         st.plotly_chart(fig_pv_monat, use_container_width=True)
+
+
         
