@@ -1797,9 +1797,7 @@ if run_simulation:
         ev_check = pruefe_ev_plausibilitaet(ev_config)
 
         if ev_check is not None:
-            st.write("E-Auto Fahrbedarf pro Fahrtag [kWh]:", round(ev_check["fahrbedarf_kWh"], 1))
-            st.write("Maximal mögliche Ladung im gewählten Ladefenster [kWh]:", round(ev_check["max_ladung_kWh"], 1))
-
+            
             if not ev_check["ok"]:
                 st.warning(
                     "Achtung: Der Fahrbedarf pro Fahrtag ist höher als die maximal mögliche Ladung "
@@ -1821,8 +1819,6 @@ if run_simulation:
             Bezugsgrenze
         )
 
-        st.write("WW-Jahresverbrauch [kWh]:", round(df_ts["ww_kWh"].sum(), 1))
-        st.write("EV-Jahresverbrauch [kWh]:", round(df_ts["ev_kWh"].sum(), 1))
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
         st.success("Simulation abgeschlossen ✅")
 
