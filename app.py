@@ -467,7 +467,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     # Gesamtlast
     fig.add_trace(go.Scatter(
         x=df_plot.index,
-        y=df_plot["gesamtlast_kWh"],
+        y=df_plot["gesamtlast_kW"],
         mode="lines",
         name="Hausverbrauch / Gesamtlast",
         line=dict(color="blue", width=2)
@@ -1958,7 +1958,6 @@ if "df_ts" in st.session_state:
         fig_year.add_trace(go.Bar(
             x=df_year_plot.index,
             y=df_year_plot["monatslast_kWh"],
-            mode="lines+markers",
             name="Gesamtlast"
         ))
         fig_year.update_layout(
@@ -1985,7 +1984,6 @@ if "df_ts" in st.session_state:
         fig_pv_monat.add_trace(go.Bar(
             x=pv_monat.index,
             y=pv_monat,
-            mode="lines+markers",
             name="PV-Produktion"
         ))
 
