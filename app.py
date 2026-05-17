@@ -1950,58 +1950,63 @@ if "df_ts" in st.session_state:
             #st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
 
         st.write("---------------------")
-        st.subheader("Gesamtlast über das Jahr")
 
-        df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
-        df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
-        fig_year = go.Figure()
-        fig_year.add_trace(go.Bar(
-            x=df_year_plot.index,
-            y=df_year_plot["monatslast_kWh"],
-            name="Gesamtlast"
-        ))
-        fig_year.update_layout(
-            title="Gesamtlast im Jahresverlauf",
-            xaxis_title="Monat",
-            yaxis_title="Energie [kWh pro Monat]",
-            height=450
-        )
-        fig_year.update_xaxes(
-            tickformat="%b",
-            dtick="M1"
-        )
-        fig_year.update_yaxes(rangemode="tozero")
+        col1, col2 =st.columns(2)
 
-        st.plotly_chart(fig_year, use_container_width=True)
-        
-        st.write("PV-Produktion Jahreswert [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
-        st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
-        st.write("Netzeinspeisung Jahreswert [kWh]:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
-        st.write("Gesamtlast Jahreswert [kWh]:", round(df_ts["gesamtlast_kWh"].sum(), 1))
-        pv_monat = df_ts["pv_kWh"].resample("MS").sum()
+        with col1:
+            st.subheader("Gesamtlast über das Jahr")
 
-        fig_pv_monat = go.Figure()
-        fig_pv_monat.add_trace(go.Bar(
-            x=pv_monat.index,
-            y=pv_monat,
-            name="PV-Produktion"
-        ))
+            df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
+            df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
+            fig_year = go.Figure()
+            fig_year.add_trace(go.Bar(
+                x=df_year_plot.index,
+                y=df_year_plot["monatslast_kWh"],
+                name="Gesamtlast"
+            ))
+            fig_year.update_layout(
+                title="Gesamtlast im Jahresverlauf",
+                xaxis_title="Monat",
+                yaxis_title="Energie [kWh pro Monat]",
+                height=450
+            )
+            fig_year.update_xaxes(
+                tickformat="%b",
+                dtick="M1"
+            )
+            fig_year.update_yaxes(rangemode="tozero")
 
-        fig_pv_monat.update_layout(
-            title="Monatliche PV-Produktion",
-            xaxis_title="Monat",
-            yaxis_title="PV-Produktion [kWh pro Monat]",
-            height=450
-        )
+            st.plotly_chart(fig_year, use_container_width=True)
+            
+            st.write("PV-Produktion Jahreswert [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
+            st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+            st.write("Netzeinspeisung Jahreswert [kWh]:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
+            st.write("Gesamtlast Jahreswert [kWh]:", round(df_ts["gesamtlast_kWh"].sum(), 1))
+            pv_monat = df_ts["pv_kWh"].resample("MS").sum()
 
-        fig_pv_monat.update_xaxes(
-            tickformat="%b",
-            dtick="M1"
-        )
+        with col2: 
+            fig_pv_monat = go.Figure()
+            fig_pv_monat.add_trace(go.Bar(
+                x=pv_monat.index,
+                y=pv_monat,
+                name="PV-Produktion"
+            ))
 
-        fig_pv_monat.update_yaxes(rangemode="tozero")
+            fig_pv_monat.update_layout(
+                title="Monatliche PV-Produktion",
+                xaxis_title="Monat",
+                yaxis_title="PV-Produktion [kWh pro Monat]",
+                height=450
+            )
 
-        st.plotly_chart(fig_pv_monat, use_container_width=True)
+            fig_pv_monat.update_xaxes(
+                tickformat="%b",
+                dtick="M1"
+            )
+
+            fig_pv_monat.update_yaxes(rangemode="tozero")
+
+            st.plotly_chart(fig_pv_monat, use_container_width=True)
 
 
         
