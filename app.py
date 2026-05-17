@@ -437,12 +437,12 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
     # kWh pro 15 min -> mittlere Leistung in kW
     leistung_spalten = [
-        "gesamtlast_kWh",
-        "pv_kWh",
-        "ww_kWh",
-        "ev_kWh",
-        "netzbezug_kWh",
-        "netzeinspeisung_kWh"
+        "gesamtlast_kW",
+        "pv_kW",
+        "ww_kW",
+        "ev_kW",
+        "netzbezug_kW",
+        "netzeinspeisung_kW"
     ]
 
     for col in leistung_spalten:
@@ -473,7 +473,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     ))
 
     # Warmwasser
-    if "ww_kWh" in df_plot.columns:
+    if "ww_kW" in df_plot.columns:
         fig.add_trace(go.Scatter(
             x=df_plot.index,
             y=df_plot["ww_kW"],
@@ -483,7 +483,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         ))
 
     # E-Auto
-    if "ev_kWh" in df_plot.columns:
+    if "ev_kW" in df_plot.columns:
         fig.add_trace(go.Scatter(
             x=df_plot.index,
             y=df_plot["ev_kW"],
@@ -539,18 +539,18 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     # ))
 
     # Abregelung rot markieren
-    df_abregelung = df_plot[df_plot["abregelung_kWh"] > 0]
+    df_abregelung = df_plot[df_plot["abregelung_kW"] > 0]
     if not df_abregelung.empty:
         fig.add_trace(go.Scatter(
             x=df_abregelung.index,
-            y=df_abregelung["netzeinspeisung_kWh"] + df_abregelung["abregelung_kWh"],
+            y=df_abregelung["netzeinspeisung_kW"] + df_abregelung["abregelung_kW"],
             mode="markers",
             name="Abregelung",
             marker=dict(color="red", size=8, symbol="x")
         ))
 
     # Unterdeckung rot markieren
-    df_unterdeckung = df_plot[df_plot["unterdeckung_kWh"] > 0]
+    df_unterdeckung = df_plot[df_plot["unterdeckung_kW"] > 0]
     if not df_unterdeckung.empty:
         fig.add_trace(go.Scatter(
             x=df_unterdeckung.index,
