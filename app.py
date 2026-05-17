@@ -1002,7 +1002,7 @@ def simulate_ems(
                 * ev_config["verbrauch_pro_100km"]
                 / 100
             )
-        # E-Auto-Fahrbedarf entsteht erst nach der Fahrt, hier vereinfacht ab 17:00 Uhr
+        # morgens entsteht einfach ein zusätzlicher Energiebedarf
         if i.hour == 17 and i.minute == 0:
             ev_rest += get_ev_fahrbedarf(i, ev_config)
 
@@ -1527,6 +1527,7 @@ with col2:
             value=0.0,
             step=5.0
         )
+        st.write = ("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
 
         ev_ladeleistung_kw = st.number_input(
             "E-Auto Ladeleistung [kW]",
