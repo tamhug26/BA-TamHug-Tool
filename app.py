@@ -379,20 +379,6 @@ def create_energy_summary(df):
 def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
     df = df.copy()
 
-    spalten = [
-        "gesamtlast_kWh",
-        "pv_kWh",
-        "ww_kWh",
-        "ev_kWh",
-        "soc_kWh",
-        "netzbezug_kWh",
-        "netzeinspeisung_kWh",
-        "abregelung_kWh",
-        "unterdeckung_kWh"
-    ]
-
-    spalten = [s for s in spalten if s in df.columns]
-
     energie_spalten = [
         "gesamtlast_kWh",
         "pv_kWh",
@@ -408,6 +394,28 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         if col in df.columns:
             neue_spalte = col.replace("_kWh", "_kW")
             df[neue_spalte] = df[col] / 0.25
+
+    spalten = [
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "ww_kWh",
+        "ev_kWh",
+        "soc_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh",
+        "abregelung_kWh",
+        "unterdeckung_kWh",
+        "gesamtlast_kW",
+        "pv_kW",
+        "ww_kW",
+        "ev_kW",
+        "netzbezug_kW",
+        "netzeinspeisung_kW",
+        "abregelung_kW",
+        "unterdeckung_kW"
+    ]
+
+    spalten = [s for s in spalten if s in df.columns]
 
     if zeitraum == "Tag":
         if start_datum is None:
