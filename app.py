@@ -227,8 +227,8 @@ def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, rau
     # Heizbedarf nur, wenn Aussentemperatur unter gewünschter Raumtemperatur liegt
     df["heiz_faktor"] = (raumtemperatur - df["temp"]).clip(lower=0)
 
+    #Normierung
     faktor_summe = df["heiz_faktor"].sum()
-
     if faktor_summe > 0:
         df["heizwaerme_kWh"] = (
             df["heiz_faktor"] / faktor_summe * heizwaermebedarf_jahr
@@ -920,7 +920,7 @@ def get_ev_fahrbedarf(timestamp, ev_config):
         return 0.0
 
     if timestamp.weekday() in ev_config["fahrtage"]:
-        return ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
+        return ev_config["km_pro_fahrtag"] * ev_config["verbrauch_pro_100km"] / 100
 
     return 0.0
 def pruefe_ev_plausibilitaet(ev_config):
@@ -935,7 +935,7 @@ def pruefe_ev_plausibilitaet(ev_config):
         "Kombiniert (mittags + abends)": 9   # 11–15 + 17–22 Uhr
     }
 
-    fahrbedarf_kWh = ev_config["fahrzeit_tag"] * ev_config["verbrauch_pro_h"]
+    fahrbedarf_kWh = ev_config["km_pro_fahrtag"] * ev_config["verbrauch_pro_100km"] / 100
     max_ladung_kWh = ev_config["leistung_kw"] * ladefenster_stunden[ev_config["strategie"]]
 
     return {
@@ -1485,20 +1485,20 @@ with col2:
 
         ev_fahrtage = [tag_mapping[tag] for tag in ev_fahrtage_namen]
 
-        ev_verbrauch_kWh_pro_h = st.number_input(
-            "Verbrauch [kWh pro Fahrstunde]",
+        ev_verbrauch_kWh_pro_100km = st.number_input(
+            "Verbrauch [kWh/100 km]",
             min_value=5.0,
-            max_value=30.0,
-            value=12.0,
+            max_value=35.0,
+            value=18.0,
             step=0.5
         )
 
-        ev_fahrzeit_h_tag = st.number_input(
-            "Fahrzeit pro Fahrtag [h]",
+        ev_km_pro_fahrtag = st.number_input(
+            "Fahrstrecke pro Fahrtag [km]",
             min_value=0.0,
-            max_value=5.0,
-            value=1.0,
-            step=0.25
+            max_value=300.0,
+            value=50.0,
+            step=5.0
         )
 
         ev_wochenende_kWh = st.number_input(
@@ -1529,8 +1529,8 @@ with col2:
         )
     else:
         ev_fahrtage = []
-        ev_verbrauch_kWh_pro_h = 0.0
-        ev_fahrzeit_h_tag = 0.0
+        ev_verbrauch_kWh_pro_100km = 0.0
+        ev_km_pro_fahrtag = 0.0
         ev_wochenende_kWh = 0.0
         ev_ladeleistung_kw = 0.0
         ev_strategie = "Abends"
@@ -1559,6 +1559,7 @@ with col3:
         value=1,
         step=1
     )
+    st.write("Ein Anlage gleicht einer Ausrichtung.")
 pv_anlagen_daten = []
 
 # pro Zeile maximal 3 PV-Anlagen nebeneinander
@@ -1793,8 +1794,8 @@ if run_simulation:
         ev_config = {
             "aktiv": ev_aktiv,
             "leistung_kw": ev_ladeleistung_kw,
-            "verbrauch_pro_h": ev_verbrauch_kWh_pro_h,
-            "fahrzeit_tag": ev_fahrzeit_h_tag,
+            "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
+            "km_pro_fahrtag": ev_km_pro_fahrtag,
             "zusatz_nicht_fahrtag": ev_wochenende_kWh,
             "strategie": ev_strategie,
             "fahrtage": ev_fahrtage
