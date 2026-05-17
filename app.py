@@ -982,7 +982,11 @@ def simulate_ems(
         if current_day != i.date():
             current_day = i.date()
             ww_rest = ww_config["bedarf_tag"] if ww_config["aktiv"] else 0.0
-            ev_rest += ev_config["zusatz_nicht_fahrtag"] if ev_config["aktiv"] and i.weekday() not in ev_config["fahrtage"] else 0.0
+            ev_rest += (
+                ev_config["km_nicht_fahrtag"]
+                * ev_config["verbrauch_pro_100km"]
+                / 100
+            )
         # E-Auto-Fahrbedarf entsteht erst nach der Fahrt, hier vereinfacht ab 17:00 Uhr
         if i.hour == 17 and i.minute == 0:
             ev_rest += get_ev_fahrbedarf(i, ev_config)
@@ -1501,12 +1505,12 @@ with col2:
             step=5.0
         )
 
-        ev_wochenende_kWh = st.number_input(
-            "Zusatzverbrauch an Nicht-Fahrtagen [kWh/Tag]",
+        ev_km_nicht_fahrtag = st.number_input(
+            "Fahrstrecke an Nicht-Fahrtagen [km/Tag]",
             min_value=0.0,
-            max_value=50.0,
+            max_value=300.0,
             value=0.0,
-            step=0.5
+            step=5.0
         )
 
         ev_ladeleistung_kw = st.number_input(
@@ -1531,7 +1535,7 @@ with col2:
         ev_fahrtage = []
         ev_verbrauch_kWh_pro_100km = 0.0
         ev_km_pro_fahrtag = 0.0
-        ev_wochenende_kWh = 0.0
+        ev_km_nicht_fahrtag = 0.0
         ev_ladeleistung_kw = 0.0
         ev_strategie = "Abends"
 
@@ -1796,7 +1800,7 @@ if run_simulation:
             "leistung_kw": ev_ladeleistung_kw,
             "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
             "km_pro_fahrtag": ev_km_pro_fahrtag,
-            "zusatz_nicht_fahrtag": ev_wochenende_kWh,
+            "km_nicht_fahrtag": ev_km_nicht_fahrtag,
             "strategie": ev_strategie,
             "fahrtage": ev_fahrtage
         }
