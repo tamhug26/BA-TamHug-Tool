@@ -1236,7 +1236,7 @@ with col4:
 st.write("-----------------------")
 col1, col2 =st.columns(2)
 with col1:
-    st.subheader("Heizwärmebedarf ermittlung")
+    st.subheader("Heizwärmebedarf-Ermittlung")
     # aus Baujahr Heizwärmebedarf kWh/m2
     m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
     bau_typ = st.selectbox(
@@ -1396,69 +1396,63 @@ with col1:
     ww_liter_pro_person_tag = 40
     ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
 
-    ww_aktiv = False
+    ww_system = st.selectbox(
+        "Warmwasser-System",
+        [
+            "nicht elektrisch",
+            "Elektroboiler",
+            "Wärmepumpenboiler"
+        ]
+    )
+
+    ww_aktiv = ww_system != "nicht elektrisch"
     ww_steuerbar = False
     ww_bedarf_kWh_tag = 0.0
     ww_ladeleistung_kw = 0.0
     ww_strategie = "Abends"
-    ww_system = "nicht elektrisch"
 
-    if heizsystem == "Wärmepumpe":
-        ww_system = "Wärmepumpe"
-        ww_aktiv = True
-        st.info("Warmwasser wird bei Wärmepumpe als elektrische Last berücksichtigt.")
+    if not ww_aktiv:
+        st.info("Warmwasser wird nicht als elektrische Last simuliert.")
 
-    elif heizsystem == "Fossil & Holz":
-        ww_system = st.selectbox(
-            "Warmwasser-System",
-            ["nicht elektrisch", "Elektroboiler"]
-        )
+    else:
+        st.info(f"{ww_system} wird als elektrische Warmwasserlast berücksichtigt.")
 
-        if ww_system == "Elektroboiler":
-            ww_aktiv = True
-            st.info("Elektroboiler wird als elektrische Warmwasserlast berücksichtigt.")
-        else:
-            st.info("Warmwasser wird nicht als elektrische Last simuliert.")
-
-    if ww_aktiv:
-
-        # Warmwasserbedarf in Liter pro Tag
-        ww_liter_pro_person_tag = 40
-        ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
-
-        # Speichergrösse abhängig von Personenanzahl
         ww_speicher_liter = st.selectbox(
             "Warmwasserspeicher / Boiler [Liter]",
             list(range(50, 401, 50)),
-            index=3   # Default = 200 Liter
+            index=3
         )
 
-        # Anzahl notwendige Speicherladungen pro Tag
         ladezyklen_pro_tag = int(np.ceil(ww_tagesbedarf_liter / ww_speicher_liter))
 
         st.write(f"Geschätzter Tagesbedarf Warmwasser: {ww_tagesbedarf_liter:.0f} Liter/Tag")
         st.write(f"Gewählter Speicher: {ww_speicher_liter:.0f} Liter")
         st.write(f"Erforderliche Speicherladung: {ladezyklen_pro_tag}× pro Tag")
 
-        # thermischer Warmwasserbedarf aus Personenanzahl
         ww_waermebedarf_kWh_jahr = personen * 45 * 0.058 * 7 * 50
         speicherverlust_kWh_jahr = 365 / 2
 
         if ww_system == "Elektroboiler":
-            # Elektroboiler: Strombedarf ≈ Wärmebedarf + Speicherverluste
             ww_bedarf_kWh_tag_berechnet = (
                 ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr
             ) / 365
 
             ww_label = "Elektrischer Warmwasserbedarf Elektroboiler [kWh/Tag]"
 
-        elif ww_system == "Wärmepumpe":
-            # Wärmepumpe: Strombedarf ≈ thermischer Warmwasserbedarf / JAZ
+        elif ww_system == "Wärmepumpenboiler":
+            jaz_ww = st.number_input(
+                "JAZ Warmwasser-Wärmepumpe",
+                min_value=0.1,
+                max_value=10.0,
+                value=2.5,
+                step=0.1
+            )
+
             ww_bedarf_kWh_tag_berechnet = (
-                (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz
+                (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz_ww
             ) / 365
 
-            ww_label = "Elektrischer Warmwasserbedarf Wärmepumpe [kWh/Tag]"
+            ww_label = "Elektrischer Warmwasserbedarf Wärmepumpenboiler [kWh/Tag]"
 
         ww_bedarf_kWh_tag = st.number_input(
             ww_label,
@@ -1492,7 +1486,6 @@ with col1:
         else:
             ww_strategie = "Abends"
             st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
-
 with col2:
     st.subheader("E-Auto")
 
