@@ -478,7 +478,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         y=df_plot["gesamtlast_kW"],
         mode="lines",
         name="Hausverbrauch / Gesamtlast",
-        line=dict(color="blue", width=3, dash="dash")
+        line=dict(color="blue", width=4, dash="dash")
     ))
 
     # Warmwasser
@@ -517,7 +517,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         y=df_plot["netzbezug_kW"],
         mode="lines",
         name="Netzbezug",
-        line=dict(color="orange", width=2.5, dash="longdash")
+        line=dict(color="orange", width=2, dash="longdash")
     ))
 
     # Netzeinspeisung
