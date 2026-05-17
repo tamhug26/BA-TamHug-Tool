@@ -1954,7 +1954,6 @@ if "df_ts" in st.session_state:
         col1, col2 =st.columns(2)
 
         with col1:
-            st.subheader("Gesamtlast über das Jahr")
 
             df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
             df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
