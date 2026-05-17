@@ -1522,13 +1522,14 @@ with col2:
 
         ev_km_nicht_fahrtag = st.number_input(
             "Fahrstrecke an Nicht-Fahrtagen [km/Tag]",
-            "Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.",
             min_value=0.0,
             max_value=300.0,
             value=0.0,
             step=5.0
         )
         
+        st.write("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
+
         ev_ladeleistung_kw = st.number_input(
             "E-Auto Ladeleistung [kW]",
             min_value=0.1,
