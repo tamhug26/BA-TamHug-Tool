@@ -436,6 +436,21 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
     else:
         df_anzeige = df[spalten]
 
+    # kWh pro 15 min -> mittlere Leistung in kW
+    leistung_spalten = [
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "ww_kWh",
+        "ev_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh"
+    ]
+
+    for col in leistung_spalten:
+        if col in df_anzeige.columns:
+            neue_spalte = col.replace("_kWh", "_kW")
+            df_anzeige[neue_spalte] = df_anzeige[col] / 0.25
+
     return df_anzeige
 def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     fig = go.Figure()
@@ -443,7 +458,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     # PV-Produktion
     fig.add_trace(go.Scatter(
         x=df_plot.index,
-        y=df_plot["pv_kWh"],
+        y=df_plot["pv_kW"],
         mode="lines",
         name="PV-Produktion",
         line=dict(color="gold", width=2)
@@ -553,7 +568,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     elif zeitraum == "Jahr":
         y_title = "Durchschnittliche Energie [kWh pro Monat]"
     else:
-        y_title = "Energie [kWh]"
+        y_title = "Leistung [kW]"
 
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
@@ -1522,7 +1537,7 @@ with col2:
         )
 
         ev_strategie = st.selectbox(
-            "E-Auto Ladestrategie",
+            "Wann steht das E-Auto zuhause und kann geladen werden?",
             [
                 "Morgens",
                 "Mittag / PV-optimiert",
@@ -1531,15 +1546,14 @@ with col2:
             ],
             index=2
         )
+        st.write("Ladefenster: morgens 5–8 Uhr, mittags 11–15 Uhr, abends 17–22 Uhr")
     else:
         ev_fahrtage = []
         ev_verbrauch_kWh_pro_100km = 0.0
         ev_km_pro_fahrtag = 0.0
         ev_km_nicht_fahrtag = 0.0
         ev_ladeleistung_kw = 0.0
-        ev_strategie = "Abends"
-
-    st.write("morgens: 5-8h, Mittags: 11-15h, Abends: 17-22h")   
+        ev_strategie = "Abends" 
 
 st.write("------------------------------")
 
@@ -1941,7 +1955,7 @@ if "df_ts" in st.session_state:
         df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
         df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
         fig_year = go.Figure()
-        fig_year.add_trace(go.Scatter(
+        fig_year.add_trace(go.Bar(
             x=df_year_plot.index,
             y=df_year_plot["monatslast_kWh"],
             mode="lines+markers",
@@ -1968,7 +1982,7 @@ if "df_ts" in st.session_state:
         pv_monat = df_ts["pv_kWh"].resample("MS").sum()
 
         fig_pv_monat = go.Figure()
-        fig_pv_monat.add_trace(go.Scatter(
+        fig_pv_monat.add_trace(go.Bar(
             x=pv_monat.index,
             y=pv_monat,
             mode="lines+markers",
