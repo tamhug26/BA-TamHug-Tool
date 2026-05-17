@@ -549,13 +549,24 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
 
     # Abregelung rot markieren
     df_abregelung = df_plot[df_plot["abregelung_kW"] > 0]
+
     if not df_abregelung.empty:
         fig.add_trace(go.Scatter(
             x=df_abregelung.index,
             y=df_abregelung["netzeinspeisung_kW"] + df_abregelung["abregelung_kW"],
             mode="markers",
             name="Abregelung",
-            marker=dict(color="red", size=8, symbol="x")
+            marker=dict(
+                color="red",
+                size=10,
+                symbol="x"
+            ),
+            customdata=df_abregelung["abregelung_kW"],
+            hovertemplate=
+                "<b>Abregelung</b><br>" +
+                "Zeit: %{x}<br>" +
+                "Verlorene Leistung: %{customdata:.2f} kW<br>" +
+                "<extra></extra>"
         ))
 
     # Unterdeckung rot markieren
