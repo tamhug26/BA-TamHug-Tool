@@ -393,6 +393,22 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
     spalten = [s for s in spalten if s in df.columns]
 
+    energie_spalten = [
+        "gesamtlast_kWh",
+        "pv_kWh",
+        "ww_kWh",
+        "ev_kWh",
+        "netzbezug_kWh",
+        "netzeinspeisung_kWh",
+        "abregelung_kWh",
+        "unterdeckung_kWh"
+    ]
+
+    for col in energie_spalten:
+        if col in df.columns:
+            neue_spalte = col.replace("_kWh", "_kW")
+            df[neue_spalte] = df[col] / 0.25
+
     if zeitraum == "Tag":
         if start_datum is None:
             start_datum = df.index.min().date()
@@ -434,21 +450,6 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
     else:
         df_anzeige = df[spalten]
-
-    # kWh pro 15 min -> mittlere Leistung in kW
-    leistung_spalten = [
-        "gesamtlast_kW",
-        "pv_kW",
-        "ww_kW",
-        "ev_kW",
-        "netzbezug_kW",
-        "netzeinspeisung_kW"
-    ]
-
-    for col in leistung_spalten:
-        if col in df_anzeige.columns:
-            neue_spalte = col.replace("_kWh", "_kW")
-            df_anzeige[neue_spalte] = df_anzeige[col] / 0.25
 
     return df_anzeige
 def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
@@ -554,7 +555,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     if not df_unterdeckung.empty:
         fig.add_trace(go.Scatter(
             x=df_unterdeckung.index,
-            y=df_unterdeckung["gesamtlast_kWh"],
+            y=df_unterdeckung["gesamtlast_kW"],
             mode="markers",
             name="Unterdeckung",
             marker=dict(color="darkred", size=8, symbol="circle-open")
