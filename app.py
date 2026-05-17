@@ -477,7 +477,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     if "ww_kWh" in df_plot.columns:
         fig.add_trace(go.Scatter(
             x=df_plot.index,
-            y=df_plot["ww_kWh"],
+            y=df_plot["ww_kW"],
             mode="lines",
             name="Warmwasser",
             line=dict(color="red", width=2, dash="dot")
@@ -487,7 +487,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     if "ev_kWh" in df_plot.columns:
         fig.add_trace(go.Scatter(
             x=df_plot.index,
-            y=df_plot["ev_kWh"],
+            y=df_plot["ev_kW"],
             mode="lines",
             name="E-Auto",
             line=dict(color="green", width=2, dash="dot")
@@ -506,7 +506,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     # Netzbezug
     fig.add_trace(go.Scatter(
         x=df_plot.index,
-        y=df_plot["netzbezug_kWh"],
+        y=df_plot["netzbezug_kW"],
         mode="lines",
         name="Netzbezug",
         line=dict(color="orange", width=2)
@@ -515,7 +515,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     # Netzeinspeisung
     fig.add_trace(go.Scatter(
         x=df_plot.index,
-        y=df_plot["netzeinspeisung_kWh"],
+        y=df_plot["netzeinspeisung_kW"],
         mode="lines",
         name="Netzeinspeisung",
         line=dict(color="purple", width=2)
@@ -561,14 +561,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             marker=dict(color="darkred", size=8, symbol="circle-open")
         ))
 
-    if zeitraum == "Tag":
-        y_title = "Durchschnittliche Energie [kWh pro Stunde]"
-    elif zeitraum in ["Woche", "Monat"]:
-        y_title = "Durchschnittliche Energie [kWh pro Tag]"
-    elif zeitraum == "Jahr":
-        y_title = "Durchschnittliche Energie [kWh pro Monat]"
-    else:
-        y_title = "Leistung [kW]"
+    y_title = "Leistung [kW]"
 
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
