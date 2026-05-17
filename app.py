@@ -469,7 +469,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         y=df_plot["pv_kW"],
         mode="lines",
         name="PV-Produktion",
-        line=dict(color="gold", width=2)
+        line=dict(color="gold", width=3, dash="solid")
     ))
 
     # Gesamtlast
@@ -478,7 +478,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         y=df_plot["gesamtlast_kW"],
         mode="lines",
         name="Hausverbrauch / Gesamtlast",
-        line=dict(color="blue", width=2)
+        line=dict(color="blue", width=3, dash="dash")
     ))
 
     # Warmwasser
@@ -488,7 +488,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             y=df_plot["ww_kW"],
             mode="lines",
             name="Warmwasser",
-            line=dict(color="red", width=2, dash="dot")
+            line=dict(color="red", width=2.5, dash="dot")
         ))
 
     # E-Auto
@@ -498,7 +498,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             y=df_plot["ev_kW"],
             mode="lines",
             name="E-Auto",
-            line=dict(color="green", width=2, dash="dot")
+            line=dict(color="green", width=2.5, dash="dashdot")
         ))
 
     # SoC
@@ -517,7 +517,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         y=df_plot["netzbezug_kW"],
         mode="lines",
         name="Netzbezug",
-        line=dict(color="orange", width=2)
+        line=dict(color="orange", width=2.5, dash="longdash")
     ))
 
     # Netzeinspeisung
@@ -526,7 +526,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         y=df_plot["netzeinspeisung_kW"],
         mode="lines",
         name="Netzeinspeisung",
-        line=dict(color="purple", width=2)
+        line=dict(color="purple", width=2.5, dash="longdashdot")
     ))
 
     # Einspeisegrenze
@@ -558,8 +558,9 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             name="Abregelung",
             marker=dict(
                 color="red",
-                size=10,
-                symbol="x"
+                size=14,
+                symbol="x",
+                line=dict(color="darkred", width=2)
             ),
             customdata=df_abregelung["abregelung_kWh"],
             hovertemplate=
