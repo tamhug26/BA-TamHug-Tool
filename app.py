@@ -561,11 +561,11 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
                 size=10,
                 symbol="x"
             ),
-            customdata=df_abregelung["abregelung_kW"],
+            customdata=df_abregelung["abregelung_kWh"],
             hovertemplate=
                 "<b>Abregelung</b><br>" +
                 "Zeit: %{x}<br>" +
-                "Verlorene Leistung: %{customdata:.2f} kW<br>" +
+                "Abgeregelte Energie: %{customdata:.3f} kWh<br>" +
                 "<extra></extra>"
         ))
 
