@@ -53,6 +53,64 @@ Standort = {
     "Zürich-MeteoSchweiz" : -8
 }
 
+#Herstellung und Entsorgung
+UBP = {
+    "HeizölEL pro kWh":437,
+    "Erdgas pro kWh": 279,
+    "Pellets": 142,
+    "Sole Wasser WP 7 kW, Gerät stk": 4690000,
+    "Sole Wasser WP 7 kW, Masse kg": 29700,
+    "Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m": 46100,
+    "Luft Wasser WP 7 kW, Gerät stk": 7440000,
+    "Luft Wasser WP 7 kW, Masse kg": 29100,
+    "Förder- und Schluckbrunnen für Grundwasser-Wärmepumpe, Gerät stk": 947000,
+    "Batterie Li-Ionen 5 kWh, Speicherkap. kWh": 2100000,
+    "Batterie Li-Ionen 20 kWh, Speicherkap. kWh": 932000,
+    "Solarstromanlage Marktmix, Max. Leistung kWp": 2240000,
+    "Solarstromanlage Schrägdach Marktmix, Max. Leistung kWp": 2090000,
+    "Solarstromanlage Flachdach Marktmix, Max. Leistung kWp": 2370000,
+    "Solarstromanlage Fassade Marktmix, Max. Leistung kWp": 2890000,
+    "Solarstromanlage Schrägdach Kleinanlage Mono-Si, Max. Leistung kWp": 2940000,
+    "Solarstromanlage Schrägdach Kleinanlage Multi-Si, Max. Leistung kWp": 2980000,
+    "Wechselrichter 2.5 kW, Max. Leistung kWp": 534000,
+    "Wechselrichter 5 kW, Max. Leistung kWp": 428000,
+    "Wechselrichter 10 kW, Max. Leistung kWp": 343000,
+    "Wechselrichter 20 kW, Max. Leistung kWp": 274000,
+    "Elektroinstallation Photovoltaikanlage": 167000,
+    "Wärmeerzeuger spez. Leistungsbedarf 10 W/m², EBF m²": 1810,
+    "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²": 5420,
+    "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF m²": 9030,
+}
+
+#Herstellung und Entsorgung
+kgCO2eq = {
+    "HeizölEL pro kWh": 0.343,
+    "Erdgas pro kWh": 0.234,
+    "Pellets pro kWh": 0.038,
+    "Sole Wasser WP 7 kW, Gerät stk": 2400.00,
+    "Sole Wasser WP 7 kW, Masse kg": 15.20,
+    "Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m": 23.20,
+    "Luft Wasser WP 7 kW, Gerät stk": 4000.00,
+    "Luft Wasser WP 7 kW, Masse kg": 15.60,
+    "Förder- und Schluckbrunnen für Grundwasser-Wärmepumpe, Gerät stk": 661.00,
+    "Batterie Li-Ionen 5 kWh, Speicherkap. kWh": 730.00,
+    "Batterie Li-Ionen 20 kWh, Speicherkap. kWh": 332.00,
+    "Solarstromanlage Marktmix, Max. Leistung kWp": 1070.00,
+    "Solarstromanlage Schrägdach Marktmix, Max. Leistung kWp": 1000.00,
+    "Solarstromanlage Flachdach Marktmix, Max. Leistung kWp": 1140.00,
+    "Solarstromanlage Fassade Marktmix, Max. Leistung kWp": 1220.00,
+    "Solarstromanlage Schrägdach Kleinanlage Mono-Si, Max. Leistung kWp": 1260.00,
+    "Solarstromanlage Schrägdach Kleinanlage Multi-Si, Max. Leistung kWp": 1250.00,
+    "Wechselrichter 2.5 kW, Max. Leistung kWp": 144.00,
+    "Wechselrichter 5 kW, Max. Leistung kWp": 115.00,
+    "Wechselrichter 10 kW, Max. Leistung kWp": 92.50,
+    "Wechselrichter 20 kW, Max. Leistung kWp": 74.10,
+    "Elektroinstallation Photovoltaikanlage": 42.10,
+    "Wärmeerzeuger spez. Leistungsbedarf 10 W/m², EBF m²": 0.86,
+    "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²": 2.58,
+    "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF m²": 4.29,
+}
+
 basis_pfad_weather = "Weather_data"
 #dateipfad = f"{basis_pfad_weather}/{dateiname}"
 
@@ -1363,11 +1421,13 @@ with col2:
             ],
             horizontal=True
         )
+        WPkW = st.number_input("Wärmepumpe kW", 1, 100, 7)
         Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
         Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
         elif wp_typ == "Sole/Wasser WP":
+            Erdsondentiefe = st.number_input("Erdsondentiefe", min value=0.1, max_value=50, value= 8, step=0.1)
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
         else:
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
@@ -1566,7 +1626,7 @@ with col2:
 st.write("------------------------------")
 
 st.subheader("Photovoltaikanlage")
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     standort_auswahl = st.selectbox(
         "Standort wählen",
@@ -1578,6 +1638,14 @@ with col2:
         50, 5000, 200
     )
 with col3:
+    WechselrichterkW = st.number_input(
+        "Wechselrichter kW",
+        min_value=1,
+        max_value=50,
+        value=5,
+        step=1
+    )
+with col4:
     PVAnlagen = st.number_input(
         "Anzahl PV-Anlagen",
         min_value=1,
@@ -1600,6 +1668,11 @@ for start in range(0, PVAnlagen, 3):
 
         with cols[j]:
             st.markdown(f"### PV-Anlage {i+1}")
+
+            Dachart = st.segmented_control(
+                "Dach auch welches die Photovoltaik montiert ist", ["Flachdach", "Schrägdach", "Fassade"],
+                default="Schrägdach"
+            )
 
             PV_Wirkungsgrad = st.number_input(
                 "PV Wirkungsgrad [%]",
@@ -1658,6 +1731,7 @@ for start in range(0, PVAnlagen, 3):
 
             pv_anlagen_daten.append({
                 "Anlage": i + 1,
+                "Dachart": Dachart,
                 "PV_Wirkungsgrad": PV_Wirkungsgrad,
                 "pv_Peakleistung": pv_Peakleistung,
                 "Dachneigung": Dachneigung,
