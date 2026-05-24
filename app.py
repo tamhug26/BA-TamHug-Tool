@@ -1427,7 +1427,7 @@ with col2:
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
         elif wp_typ == "Sole/Wasser WP":
-            Erdsondentiefe = st.number_input("Erdsondentiefe", min value=0.1, max_value=50, value= 8, step=0.1)
+            Erdsondentiefe = st.number_input("Erdsondentiefe", min_value=0.1, max_value=50, value= 8, step=0.1)
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
         else:
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
