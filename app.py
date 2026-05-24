@@ -57,7 +57,7 @@ Standort = {
 UBP = {
     "HeizölEL pro kWh":437,
     "Erdgas pro kWh": 279,
-    "Pellets": 142,
+    "Pellets pro kWh": 142,
     "Sole Wasser WP 7 kW, Gerät stk": 4690000,
     "Sole Wasser WP 7 kW, Masse kg": 29700,
     "Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m": 46100,
@@ -1427,7 +1427,7 @@ with col2:
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
         elif wp_typ == "Sole/Wasser WP":
-            Erdsondentiefe = st.number_input("Erdsondentiefe", min_value=0.1, max_value=50, value= 8, step=0.1)
+            Erdsondentiefe = st.number_input("Gesamt Erdsondenlänge m", min_value=0.1, max_value=500, value= 150, step=0.1)
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
         else:
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
@@ -1670,8 +1670,9 @@ for start in range(0, PVAnlagen, 3):
             st.markdown(f"### PV-Anlage {i+1}")
 
             Dachart = st.segmented_control(
-                "Dach auch welches die Photovoltaik montiert ist", ["Flachdach", "Schrägdach", "Fassade"],
-                default="Schrägdach"
+                "Dach auf welches die Photovoltaik montiert ist", ["Flachdach", "Schrägdach", "Fassade"],
+                default="Schrägdach",
+                key=f"dachart_{i}"
             )
 
             PV_Wirkungsgrad = st.number_input(
