@@ -1234,7 +1234,144 @@ def get_raw_period_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
     else:
         return df.copy()
-    
+def faktor_wechselrichter(wechselrichter_kw, daten):
+    if wechselrichter_kw <= 2.5:
+        return daten["Wechselrichter 2.5 kW, Max. Leistung kWp"]
+    elif wechselrichter_kw <= 5:
+        return daten["Wechselrichter 5 kW, Max. Leistung kWp"]
+    elif wechselrichter_kw <= 10:
+        return daten["Wechselrichter 10 kW, Max. Leistung kWp"]
+    else:
+        return daten["Wechselrichter 20 kW, Max. Leistung kWp"]
+
+
+def faktor_batterie(batteriekapazitaet, daten):
+    if batteriekapazitaet <= 5:
+        return daten["Batterie Li-Ionen 5 kWh, Speicherkap. kWh"]
+    else:
+        return daten["Batterie Li-Ionen 20 kWh, Speicherkap. kWh"]
+
+
+def faktor_pv_dachart(dachart, daten):
+    if dachart == "Schrägdach":
+        return daten["Solarstromanlage Schrägdach Marktmix, Max. Leistung kWp"]
+    elif dachart == "Flachdach":
+        return daten["Solarstromanlage Flachdach Marktmix, Max. Leistung kWp"]
+    elif dachart == "Fassade":
+        return daten["Solarstromanlage Fassade Marktmix, Max. Leistung kWp"]
+    else:
+        return daten["Solarstromanlage Marktmix, Max. Leistung kWp"]
+
+
+def berechne_umweltwirkung(
+    df_ts,
+    pv_anlagen_daten,
+    wechselrichter_kw,
+    batterie_aktiv,
+    batteriekapazitaet,
+    heizsystem,
+    fossil_typ,
+    wp_typ,
+    wp_kw,
+    erdsondenlaenge,
+    ebf_m2,
+    lebensdauer_pv=20,
+    lebensdauer_batterie=15,
+    lebensdauer_wp=20,
+    lebensdauer_waermeerzeuger=20
+):
+    ergebnisse = []
+
+    def add(name, ubp_total, co2_total):
+        ergebnisse.append({
+            "Kategorie": name,
+            "UBP/a": ubp_total,
+            "kg CO2-eq/a": co2_total
+        })
+
+    # PV: Anlage + Wechselrichter + Elektroinstallation
+    pv_kwp_total = sum(a["pv_Peakleistung"] for a in pv_anlagen_daten)
+
+    pv_ubp = 0
+    pv_co2 = 0
+
+    for anlage in pv_anlagen_daten:
+        faktor_ubp = faktor_pv_dachart(anlage["Dachart"], UBP)
+        faktor_co2 = faktor_pv_dachart(anlage["Dachart"], kgCO2eq)
+
+        pv_ubp += faktor_ubp * anlage["pv_Peakleistung"]
+        pv_co2 += faktor_co2 * anlage["pv_Peakleistung"]
+
+    pv_ubp += faktor_wechselrichter(wechselrichter_kw, UBP) * wechselrichter_kw
+    pv_co2 += faktor_wechselrichter(wechselrichter_kw, kgCO2eq) * wechselrichter_kw
+
+    pv_ubp += UBP["Elektroinstallation Photovoltaikanlage"] * pv_kwp_total
+    pv_co2 += kgCO2eq["Elektroinstallation Photovoltaikanlage"] * pv_kwp_total
+
+    add("PV Herstellung + Installation", pv_ubp / lebensdauer_pv, pv_co2 / lebensdauer_pv)
+
+    # Batterie
+    if batterie_aktiv and batteriekapazitaet > 0:
+        batterie_ubp = faktor_batterie(batteriekapazitaet, UBP) * batteriekapazitaet
+        batterie_co2 = faktor_batterie(batteriekapazitaet, kgCO2eq) * batteriekapazitaet
+        add("Batterie Herstellung", batterie_ubp / lebensdauer_batterie, batterie_co2 / lebensdauer_batterie)
+
+    # Strombezug Betrieb
+    netzbezug_kWh = df_ts["netzbezug_kWh"].sum()
+    strom_co2 = netzbezug_kWh * CO2Emmisionen_input / 1000
+    add("Netzstrom Betrieb", 0, strom_co2)
+
+    # Heizung Betrieb fossil / Holz
+    heizwaerme_kWh = df_ts["heizwaerme_kWh"].sum()
+
+    if heizsystem == "Fossil & Holz":
+        if fossil_typ == "Öl":
+            add(
+                "Heizöl Betrieb",
+                heizwaerme_kWh * UBP["HeizölEL pro kWh"],
+                heizwaerme_kWh * kgCO2eq["HeizölEL pro kWh"]
+            )
+        elif fossil_typ == "Gas":
+            add(
+                "Erdgas Betrieb",
+                heizwaerme_kWh * UBP["Erdgas pro kWh"],
+                heizwaerme_kWh * kgCO2eq["Erdgas pro kWh"]
+            )
+        elif fossil_typ == "Pellets":
+            add(
+                "Pellets Betrieb",
+                heizwaerme_kWh * UBP["Pellets pro kWh"],
+                heizwaerme_kWh * kgCO2eq["Pellets pro kWh"]
+            )
+
+        # Wärmeerzeuger pauschal nach EBF
+        add(
+            "Wärmeerzeuger Herstellung",
+            UBP["Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²"] * ebf_m2 / lebensdauer_waermeerzeuger,
+            kgCO2eq["Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²"] * ebf_m2 / lebensdauer_waermeerzeuger
+        )
+
+    # Wärmepumpe Herstellung
+    if heizsystem == "Wärmepumpe":
+        if wp_typ == "Luft/Wasser WP":
+            wp_ubp = UBP["Luft Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
+            wp_co2 = kgCO2eq["Luft Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
+
+        elif wp_typ == "Sole/Wasser WP":
+            wp_ubp = UBP["Sole Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
+            wp_co2 = kgCO2eq["Sole Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
+
+            wp_ubp += UBP["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
+            wp_co2 += kgCO2eq["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
+
+        else:
+            wp_ubp = UBP["Förder- und Schluckbrunnen für Grundwasser-Wärmepumpe, Gerät stk"]
+            wp_co2 = kgCO2eq["Förder- und Schluckbrunnen für Grundwasser-Wärmepumpe, Gerät stk"]
+
+        add("Wärmepumpe Herstellung", wp_ubp / lebensdauer_wp, wp_co2 / lebensdauer_wp)
+
+    return pd.DataFrame(ergebnisse)   
+
 # Aus dem Bericht stammen methodisch:
 # 	•	Strahlungsdaten als Eingangsdaten
 # 	•	stündliche Verarbeitung
@@ -1264,7 +1401,6 @@ with col1:
     #     "Standort wählen",
     #     list(Standort.keys())
     # ) 
-
 with col2:
     personen = st.number_input("Personen im Haushalt", 1, 10, 4)
 with col3:
@@ -1292,6 +1428,7 @@ with col4:
         """)
 
 st.write("-----------------------")
+#Heizwärmebedarf-Ermittlung & Heizsystem
 col1, col2 =st.columns(2)
 with col1:
     st.subheader("Heizwärmebedarf-Ermittlung")
@@ -1367,7 +1504,6 @@ with col1:
             ergebnis = Heizwaermebedarf_input
         else:
             st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
-
 with col2:
     st.subheader("Heizsystem")
 
@@ -1449,6 +1585,7 @@ with col2:
     )
         
 st.write("------------------------------")
+#Warmwasser & EAuto
 col1, col2 = st.columns(2)
 with col1:
     st.subheader("Warmwasser")
@@ -1624,7 +1761,6 @@ with col2:
         ev_strategie = "Abends" 
 
 st.write("------------------------------")
-
 st.subheader("Photovoltaikanlage")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
@@ -1655,7 +1791,6 @@ with col4:
     )
     st.write("Ein Anlage gleicht einer Ausrichtung.")
 pv_anlagen_daten = []
-
 # pro Zeile maximal 3 PV-Anlagen nebeneinander
 for start in range(0, PVAnlagen, 3):
     cols = st.columns(3)
@@ -1741,9 +1876,8 @@ for start in range(0, PVAnlagen, 3):
                 "nmot": nmot_input
             })
 
-
-
 st.write("------------------------------")
+# Batterie Einspeisen EMS Auspeisen
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.subheader("Batterie")
@@ -1928,6 +2062,31 @@ if run_simulation:
         )
 
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
+        if heizsystem != "Wärmepumpe":
+            wp_typ_use = None
+            WPkW_use = 0
+            Erdsondentiefe_use = 0
+        else:
+            wp_typ_use = wp_typ
+            WPkW_use = WPkW
+            Erdsondentiefe_use = Erdsondentiefe if wp_typ == "Sole/Wasser WP" else 0
+
+        df_umwelt = berechne_umweltwirkung(
+            df_ts=df_ts,
+            pv_anlagen_daten=pv_anlagen_daten,
+            wechselrichter_kw=WechselrichterkW,
+            batterie_aktiv=batterie_aktiv,
+            batteriekapazitaet=batteriekapazität,
+            heizsystem=heizsystem,
+            fossil_typ=fossil_typ if heizsystem == "Fossil & Holz" else None,
+            wp_typ=wp_typ_use,
+            wp_kw=WPkW_use,
+            erdsondenlaenge=Erdsondentiefe_use,
+            ebf_m2=EBFm2
+        )
+
+        st.session_state["df_umwelt"] = df_umwelt
+                
         st.success("Simulation abgeschlossen ✅")
 
         st.session_state["df_ts"] = df_ts
@@ -2089,6 +2248,41 @@ if "df_ts" in st.session_state:
             fig_pv_monat.update_yaxes(rangemode="tozero")
 
             st.plotly_chart(fig_pv_monat, use_container_width=True)
+
+        df_umwelt = st.session_state["df_umwelt"]
+
+        st.write("------------------------------")
+        st.subheader("Umweltwirkungen")
+
+        total_ubp = df_umwelt["UBP/a"].sum()
+        total_co2 = df_umwelt["kg CO2-eq/a"].sum()
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Total UBP pro Jahr", f"{total_ubp:,.0f} UBP/a".replace(",", "'"))
+
+        with col2:
+            st.metric("Total Treibhausgasemissionen", f"{total_co2:,.1f} kg CO₂-eq/a".replace(",", "'"))
+
+        st.dataframe(df_umwelt.round(2), use_container_width=True)
+
+        fig_umwelt = go.Figure()
+
+        fig_umwelt.add_trace(go.Bar(
+            x=df_umwelt["Kategorie"],
+            y=df_umwelt["kg CO2-eq/a"],
+            name="kg CO₂-eq/a"
+        ))
+
+        fig_umwelt.update_layout(
+            title="Treibhausgasemissionen nach Kategorie",
+            xaxis_title="Kategorie",
+            yaxis_title="kg CO₂-eq pro Jahr",
+            height=500
+        )
+
+        st.plotly_chart(fig_umwelt, use_container_width=True)
 
 
         
