@@ -2265,24 +2265,28 @@ if "df_ts" in st.session_state:
         with col2:
             st.metric("Total Treibhausgasemissionen", f"{total_co2:,.1f} kg CO₂-eq/a".replace(",", "'"))
 
-        st.dataframe(df_umwelt.round(2), use_container_width=True)
+        col1, col2 = st.columns(2)
 
-        fig_umwelt = go.Figure()
+        with col1: 
+            st.dataframe(df_umwelt.round(2), use_container_width=True)
 
-        fig_umwelt.add_trace(go.Bar(
-            x=df_umwelt["Kategorie"],
-            y=df_umwelt["kg CO2-eq/a"],
-            name="kg CO₂-eq/a"
-        ))
+        with col2:
+            fig_umwelt = go.Figure()
 
-        fig_umwelt.update_layout(
-            title="Treibhausgasemissionen nach Kategorie",
-            xaxis_title="Kategorie",
-            yaxis_title="kg CO₂-eq pro Jahr",
-            height=500
-        )
+            fig_umwelt.add_trace(go.Bar(
+                x=df_umwelt["Kategorie"],
+                y=df_umwelt["kg CO2-eq/a"],
+                name="kg CO₂-eq/a"
+            ))
 
-        st.plotly_chart(fig_umwelt, use_container_width=True)
+            fig_umwelt.update_layout(
+                title="Treibhausgasemissionen nach Kategorie",
+                xaxis_title="Kategorie",
+                yaxis_title="kg CO₂-eq pro Jahr",
+                height=500
+            )
+
+            st.plotly_chart(fig_umwelt, use_container_width=True)
 
 
         
