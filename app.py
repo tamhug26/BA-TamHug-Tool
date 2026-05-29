@@ -2269,6 +2269,7 @@ if "df_ts" in st.session_state:
 
         with col1: 
             st.write("")
+            st.write("")
             st.write("**Treibhausgasemmissionen Data**")
             st.write("")
             st.dataframe(df_umwelt.round(2), use_container_width=True)
