@@ -111,6 +111,15 @@ kgCO2eq = {
     "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF m²": 4.29,
 }
 
+LebenszeitJahre = {
+    "WP": 20,
+    "Batterie": 30, 
+    "Fossil/Holzheizung": 20,
+    "Erdsonde": 50,
+    "Wechselreichter": 15,
+    "PV": 30,
+}
+
 basis_pfad_weather = "Weather_data"
 #dateipfad = f"{basis_pfad_weather}/{dateiname}"
 
@@ -1275,10 +1284,11 @@ def berechne_umweltwirkung(
     wp_kw,
     erdsondenlaenge,
     ebf_m2,
-    lebensdauer_pv=20,
-    lebensdauer_batterie=15,
-    lebensdauer_wp=20,
-    lebensdauer_waermeerzeuger=20
+    lebensdauer_pv=LebenszeitJahre["PV"],
+    lebensdauer_batterie=LebenszeitJahre["Batterie"],
+    lebensdauer_wp=LebenszeitJahre["WP"],
+    lebensdauer_waermeerzeuger=LebenszeitJahre["Fossil/Holzheizung"],
+    lebensdauer_wechselrichter=LebenszeitJahre["Wechselreichter"]
 ):
     ergebnisse = []
 
@@ -1289,27 +1299,38 @@ def berechne_umweltwirkung(
             "kg CO2-eq/a": co2_total
         })
 
-    # PV: Anlage + Wechselrichter + Elektroinstallation
+    # PV-Module nach Dachart
+    for anlage in pv_anlagen_daten:
+        pv_ubp = faktor_pv_dachart(anlage["Dachart"], UBP) * anlage["pv_Peakleistung"]
+        pv_co2 = faktor_pv_dachart(anlage["Dachart"], kgCO2eq) * anlage["pv_Peakleistung"]
+
+        add(
+            f"PV-Anlage {anlage['Anlage']} Herstellung",
+            pv_ubp / lebensdauer_pv,
+            pv_co2 / lebensdauer_pv
+        )
+
+    # Wechselrichter separat
+    wr_ubp = faktor_wechselrichter(wechselrichter_kw, UBP) * wechselrichter_kw
+    wr_co2 = faktor_wechselrichter(wechselrichter_kw, kgCO2eq) * wechselrichter_kw
+
+    add(
+        "Wechselrichter Herstellung",
+        wr_ubp / lebensdauer_wechselrichter,
+        wr_co2 / lebensdauer_wechselrichter
+    )
+
+    # Elektroinstallation separat, aber mit PV-Lebensdauer
     pv_kwp_total = sum(a["pv_Peakleistung"] for a in pv_anlagen_daten)
 
-    pv_ubp = 0
-    pv_co2 = 0
+    elektro_ubp = UBP["Elektroinstallation Photovoltaikanlage"] * pv_kwp_total
+    elektro_co2 = kgCO2eq["Elektroinstallation Photovoltaikanlage"] * pv_kwp_total
 
-    for anlage in pv_anlagen_daten:
-        faktor_ubp = faktor_pv_dachart(anlage["Dachart"], UBP)
-        faktor_co2 = faktor_pv_dachart(anlage["Dachart"], kgCO2eq)
-
-        pv_ubp += faktor_ubp * anlage["pv_Peakleistung"]
-        pv_co2 += faktor_co2 * anlage["pv_Peakleistung"]
-
-    pv_ubp += faktor_wechselrichter(wechselrichter_kw, UBP) * wechselrichter_kw
-    pv_co2 += faktor_wechselrichter(wechselrichter_kw, kgCO2eq) * wechselrichter_kw
-
-    pv_ubp += UBP["Elektroinstallation Photovoltaikanlage"] * pv_kwp_total
-    pv_co2 += kgCO2eq["Elektroinstallation Photovoltaikanlage"] * pv_kwp_total
-
-    add("PV Herstellung + Installation", pv_ubp / lebensdauer_pv, pv_co2 / lebensdauer_pv)
-
+    add(
+        "Elektroinstallation PV",
+        elektro_ubp / lebensdauer_pv,
+        elektro_co2 / lebensdauer_pv
+    )
     # Batterie
     if batterie_aktiv and batteriekapazitaet > 0:
         batterie_ubp = faktor_batterie(batteriekapazitaet, UBP) * batteriekapazitaet
@@ -1353,6 +1374,7 @@ def berechne_umweltwirkung(
 
     # Wärmepumpe Herstellung
     if heizsystem == "Wärmepumpe":
+
         if wp_typ == "Luft/Wasser WP":
             wp_ubp = UBP["Luft Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
             wp_co2 = kgCO2eq["Luft Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
@@ -1361,14 +1383,24 @@ def berechne_umweltwirkung(
             wp_ubp = UBP["Sole Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
             wp_co2 = kgCO2eq["Sole Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
 
-            wp_ubp += UBP["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
-            wp_co2 += kgCO2eq["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
+            erdsonde_ubp = UBP["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
+            erdsonde_co2 = kgCO2eq["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
 
-        else:
+            add(
+                "Erdsonde Herstellung",
+                erdsonde_ubp / LebenszeitJahre["Erdsonde"],
+                erdsonde_co2 / LebenszeitJahre["Erdsonde"]
+            )
+
+        else:  # Wasser/Wasser WP
             wp_ubp = UBP["Förder- und Schluckbrunnen für Grundwasser-Wärmepumpe, Gerät stk"]
             wp_co2 = kgCO2eq["Förder- und Schluckbrunnen für Grundwasser-Wärmepumpe, Gerät stk"]
 
-        add("Wärmepumpe Herstellung", wp_ubp / lebensdauer_wp, wp_co2 / lebensdauer_wp)
+        add(
+            "Wärmepumpe Herstellung",
+            wp_ubp / lebensdauer_wp,
+            wp_co2 / lebensdauer_wp
+        )
 
     return pd.DataFrame(ergebnisse)   
 
@@ -2268,6 +2300,7 @@ if "df_ts" in st.session_state:
         col1, col2 = st.columns(2)
 
         with col1: 
+            st.write("")
             st.write("")
             st.write("")
             st.write("**Treibhausgasemmissionen Data**")
