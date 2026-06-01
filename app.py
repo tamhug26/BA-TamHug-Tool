@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import pvlib
 st.set_page_config(layout="wide")
 
-st.write("test1")
+st.write("Prototyp 1")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
@@ -320,10 +320,16 @@ def simulate_battery(
     min_soc_prozent,
     max_soc_prozent,
     einspeisegrenze_kw,
-    bezugsgrenze_kw
+    bezugsgrenze_kw,
+    wirkungsgrad_roundtrip = 0.95
 ):
     delta_t = 0.25  # 15 Minuten
 
+    # Rechnerische Aufteilung des Round-Trip-Wirkungsgrads
+    eta_lade = np.sqrt(wirkungsgrad_roundtrip)
+    eta_entlade = np.sqrt(wirkungsgrad_roundtrip)
+
+    # Umrechnung der kW-Grenzen in kWh-Grenzen für dieses Intervall
     max_ladung_kWh = max_ladeleistung * delta_t
     max_entladung_kWh = max_entladeleistung * delta_t
     einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
@@ -356,10 +362,10 @@ def simulate_battery(
         restlast = last - direktverbrauch
 
         # 2) Batterie laden bei PV-Überschuss
-        freie_kapazitaet = soc_max - soc
+        freie_kapazitaet = (soc_max - soc) /eta_lade
         batterie_ladung = min(pv_ueberschuss, max_ladung_kWh, freie_kapazitaet)
         #Die Batterie kann nur so viel laden, wie: PV-Überschuss vorhanden ist, die maximale Ladeleistung erlaubt, und noch Platz in der Batterie ist.
-        soc += batterie_ladung
+        soc += batterie_ladung * eta_lade
         rest_pv_nach_batterie = pv_ueberschuss - batterie_ladung
         #Batteriestand soc erhöht
         
@@ -368,9 +374,9 @@ def simulate_battery(
         abregelung = max(0.0, rest_pv_nach_batterie - netzeinspeisung)
 
         # 4) Batterie entladen bei Restlast
-        verfuegbar_batterie = soc - soc_min
-        batterie_entladung = min(restlast, max_entladung_kWh, verfuegbar_batterie)
-        soc -= batterie_entladung
+        verfuegbar_batterie_effektiv = (soc - soc_min) * eta_entlade
+        batterie_entladung = min(restlast, max_entladung_kWh, verfuegbar_batterie_effektiv)
+        soc -= batterie_entladung /eta_entlade
 
         restlast_nach_batterie = restlast - batterie_entladung
 
