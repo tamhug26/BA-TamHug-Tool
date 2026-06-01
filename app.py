@@ -272,6 +272,7 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
         + 1.24
     )
     df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
+    df["slp_dyn"] = df["slp_dyn"].clip(lower=0)
 
     # auf Jahresverbrauch normieren
     faktor_summe = df["slp_dyn"].sum() #normierung auf Jahresverbrauch
@@ -305,7 +306,7 @@ def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, rau
     return df
 def add_heatpump_consumption(df, heizsystem, jaz=None):
     df = df.copy()
-    if heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0:
+    if heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0: #Nur wenn wirklich eine WP ausgewählt ist und eine gültige JAZ vorhanden ist, wird WP-Strom berechnet.
         df["wp_strom_kWh"] = df["heizwaerme_kWh"] / jaz
     else:
         df["wp_strom_kWh"] = 0.0
@@ -350,18 +351,18 @@ def simulate_battery(
         pv = df.at[i, "pv_kWh"]
 
         # 1) direkter PV-Verbrauch
-        direktverbrauch = min(pv, last)
-
-        pv_ueberschuss = pv - direktverbrauch
+        direktverbrauch = min(pv, last) #Pv zuerst im Haus verbraucht
+        pv_ueberschuss = pv - direktverbrauch # Es kann nie mehr direkt verbraucht werden als PV vorhanden ist oder als Last vorhanden ist.
         restlast = last - direktverbrauch
 
         # 2) Batterie laden bei PV-Überschuss
         freie_kapazitaet = soc_max - soc
         batterie_ladung = min(pv_ueberschuss, max_ladung_kWh, freie_kapazitaet)
+        #Die Batterie kann nur so viel laden, wie: PV-Überschuss vorhanden ist, die maximale Ladeleistung erlaubt, und noch Platz in der Batterie ist.
         soc += batterie_ladung
-
         rest_pv_nach_batterie = pv_ueberschuss - batterie_ladung
-
+        #Batteriestand soc erhöht
+        
         # 3) Einspeisen bis Grenze, Rest abregeln
         netzeinspeisung = min(rest_pv_nach_batterie, einspeisegrenze_kWh)
         abregelung = max(0.0, rest_pv_nach_batterie - netzeinspeisung)
@@ -395,18 +396,18 @@ def create_energy_summary(df):
     # PV-Produktion minus Einspeisung minus Abregelung
     df["eigenverbrauch_kWh"] = df["pv_kWh"] - df["netzeinspeisung_kWh"] - df["abregelung_kWh"]
 
-    # Sicherheit: keine negativen Rundungsreste
+    # keine negativen Rundungsreste
     df["eigenverbrauch_kWh"] = df["eigenverbrauch_kWh"].clip(lower=0)
 
     # Monatsbilanz
-    monatsbilanz = df.groupby("Monat")[[
+    monatsbilanz = df.groupby("Monat")[[ #groupierung nach Monat
         "pv_kWh",
         "eigenverbrauch_kWh",
         "netzeinspeisung_kWh",
         "netzbezug_kWh"
     ]].sum()
 
-    monatsbilanz = monatsbilanz.rename(columns={
+    monatsbilanz = monatsbilanz.rename(columns={ # neubennennung der Spalten
         "pv_kWh": "Produktion_kWh",
         "eigenverbrauch_kWh": "Eigenverbrauch_kWh",
         "netzeinspeisung_kWh": "Einspeisung_kWh",
@@ -443,6 +444,7 @@ def create_energy_summary(df):
     }
 
     return df, monatsbilanz, jahreskennzahlen
+#hier lernen
 def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
     df = df.copy()
 
@@ -1049,7 +1051,8 @@ def simulate_ems(
     min_soc_prozent,
     max_soc_prozent,
     einspeisegrenze_kw,
-    bezugsgrenze_kw
+    bezugsgrenze_kw,
+    batterie_wirkungsgrad
 ):
     df = df.copy()
     delta_t = 0.25
@@ -1124,9 +1127,11 @@ def simulate_ems(
                 freie_kapazitaet = soc_max - soc
                 max_ladung = max_ladeleistung * delta_t
 
-                ladung = min(pv_rest, max_ladung, freie_kapazitaet)
-                soc += ladung
+                eta = batterieWirkungsgrad / 100
+                ladung = min(pv_rest, max_ladung, freie_kapazitaet / eta)
+                soc += ladung * eta
                 pv_rest -= ladung
+
                 df.at[i, "batterie_ladung_kWh"] += ladung
 
             elif element == "Einspeisung":
@@ -1252,15 +1257,11 @@ def faktor_wechselrichter(wechselrichter_kw, daten):
         return daten["Wechselrichter 10 kW, Max. Leistung kWp"]
     else:
         return daten["Wechselrichter 20 kW, Max. Leistung kWp"]
-
-
 def faktor_batterie(batteriekapazitaet, daten):
     if batteriekapazitaet <= 5:
         return daten["Batterie Li-Ionen 5 kWh, Speicherkap. kWh"]
     else:
         return daten["Batterie Li-Ionen 20 kWh, Speicherkap. kWh"]
-
-
 def faktor_pv_dachart(dachart, daten):
     if dachart == "Schrägdach":
         return daten["Solarstromanlage Schrägdach Marktmix, Max. Leistung kWp"]
@@ -1270,8 +1271,6 @@ def faktor_pv_dachart(dachart, daten):
         return daten["Solarstromanlage Fassade Marktmix, Max. Leistung kWp"]
     else:
         return daten["Solarstromanlage Marktmix, Max. Leistung kWp"]
-
-
 def berechne_umweltwirkung(
     df_ts,
     pv_anlagen_daten,
@@ -1461,6 +1460,11 @@ with col4:
 
 st.write("-----------------------")
 #Heizwärmebedarf-Ermittlung & Heizsystem
+fossil_typ = "Gas"      # default
+wp_typ = "Luft/Wasser WP"  # default
+Erdsondentiefe = 0      # default
+jaz = 2.5               # default
+Heizwaermebedarf = 0
 col1, col2 =st.columns(2)
 with col1:
     st.subheader("Heizwärmebedarf-Ermittlung")
@@ -1922,12 +1926,14 @@ with col1:
         maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
         minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
         maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+        batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie (%)", 80, 100, 95)
     else:
         batteriekapazität = 0
         maxLadeleistungBatterie = 0
         maxEntladeleistungBatterie = 0
         minSoC = 0
         maxSoC = 100
+        batterieWirkungsgrad = 95
 with col2: 
     st.subheader("Einspeisen")
     # regel einbauen minSoC muss < sein als maxSoC
@@ -1960,7 +1966,7 @@ with col3:
     # normale Hauslast plus Wärmepumpen-Raumheizung zuerst dann WW oder ev dann Batterie  dann Einspeisung
 with col4: 
     st.subheader("Ausspeisen")
-    Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 60, 100, 80)
+    Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 5, 100, 80)
     EVU_name = st.selectbox(
         "EVU wählen",
         list(EVU.keys())
@@ -2090,7 +2096,8 @@ if run_simulation:
             minSoC,
             maxSoC,
             EinspeisegrenzekW,
-            Bezugsgrenze
+            Bezugsgrenze,
+            batterieWirkungsgrad
         )
 
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
@@ -2324,6 +2331,10 @@ if "df_ts" in st.session_state:
             )
 
             st.plotly_chart(fig_umwelt, use_container_width=True)
+        #zur Kontrolle:
+        st.write("Kontrolle Bilanz:")
+        st.write("PV + Netzbezug:", round(df_ts["pv_kWh"].sum() + df_ts["netzbezug_kWh"].sum(), 1))
+        st.write("Gesamtlast + Einspeisung + Abregelung:", 
+                round(df_ts["gesamtlast_kWh"].sum() + df_ts["netzeinspeisung_kWh"].sum() + df_ts["abregelung_kWh"].sum(), 1))
 
-
-        
+                
