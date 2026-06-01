@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import pvlib
+import os
+import json
+PROFILE_DIR = "profiles"
+os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
 
 st.write("Prototyp 1")
@@ -1133,7 +1137,7 @@ def simulate_ems(
                 freie_kapazitaet = soc_max - soc
                 max_ladung = max_ladeleistung * delta_t
 
-                eta = batterieWirkungsgrad / 100
+                eta = batterie_wirkungsgrad / 100
                 ladung = min(pv_rest, max_ladung, freie_kapazitaet / eta)
                 soc += ladung * eta
                 pv_rest -= ladung
@@ -1408,29 +1412,63 @@ def berechne_umweltwirkung(
         )
 
     return pd.DataFrame(ergebnisse)   
-
-# Aus dem Bericht stammen methodisch:
-# 	•	Strahlungsdaten als Eingangsdaten
-# 	•	stündliche Verarbeitung
-# 	•	Umrechnung auf geneigte Fläche
-# 	•	Verwendung eines anisotropen Modells
-# 	•	Berücksichtigung von Modulwirkungsgrad und Performance Ratio als Einflussgrößen auf den PV-Ertrag
-# Für dein Tool habe ich konkret modelliert:
-# 	•	pvlib für Sonnenstand und Transposition
-# 	•	15-min-Interpolation
-# 	•	Zelltemperaturmodell
-# 	•	Leistungsformel für jeden Zeitschritt
-# 	•	aus Peakleistung und Wirkungsgrad abgeleitete Modulfläche
-# Der Wirkungsgrad-Eingabewert beeinflusst den Ertrag praktisch nicht.
-# Die Batteriesimulation mischt kW und kWh.
+#Profile
+def speichere_profil(profilname, profil):
+    pfad = os.path.join(PROFILE_DIR, f"{profilname}.json")
+    with open(pfad, "w", encoding="utf-8") as f:
+        json.dump(profil, f, indent=4, ensure_ascii=False)
+def lade_profil(profilname):
+    pfad = os.path.join(PROFILE_DIR, f"{profilname}.json")
+    with open(pfad, "r", encoding="utf-8") as f:
+        return json.load(f)
+def liste_profile():
+    return [
+        f.replace(".json", "")
+        for f in os.listdir(PROFILE_DIR)
+        if f.endswith(".json")
+    ]
 
 # noch ändern
 # WW schwankt
 # Wochenendverhalten anders
 
-
 st.header("Dimensionierungstool")
 
+#profile
+st.subheader("Profile")
+profil_name = st.text_input("Profilname", value="Profil 1")
+vorhandene_profile = liste_profile()
+vergleichsmodus = st.checkbox("Profile vergleichen", value=False)
+if vergleichsmodus:
+    if len(vorhandene_profile) < 2:
+        st.info("Speichere zuerst mindestens zwei Profile.")
+        st.stop()
+
+    profil_a_name = st.selectbox("Profil A wählen", vorhandene_profile, key="profil_a")
+    profil_b_name = st.selectbox("Profil B wählen", vorhandene_profile, key="profil_b")
+
+    profil_a = lade_profil(profil_a_name)
+    profil_b = lade_profil(profil_b_name)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader(profil_a_name)
+        st.metric("Autarkiegrad", f"{profil_a['jahreskennzahlen']['Autarkiegrad_%']:.1f} %")
+        st.metric("Eigenverbrauchsquote", f"{profil_a['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %")
+        st.metric("PV-Produktion", f"{profil_a['jahreskennzahlen']['PV_Produktion_kWh']:.1f} kWh")
+        st.metric("Netzbezug", f"{profil_a['jahreskennzahlen']['Netzbezug_kWh']:.1f} kWh")
+
+    with col2:
+        st.subheader(profil_b_name)
+        st.metric("Autarkiegrad", f"{profil_b['jahreskennzahlen']['Autarkiegrad_%']:.1f} %")
+        st.metric("Eigenverbrauchsquote", f"{profil_b['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %")
+        st.metric("PV-Produktion", f"{profil_b['jahreskennzahlen']['PV_Produktion_kWh']:.1f} kWh")
+        st.metric("Netzbezug", f"{profil_b['jahreskennzahlen']['Netzbezug_kWh']:.1f} kWh")
+
+    st.stop()
+
+#allgemein
 col1, col2, col3, col4 = st.columns(4)
 with col1: 
     EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
@@ -2137,6 +2175,37 @@ if run_simulation:
         st.session_state["df_ts"] = df_ts
         st.session_state["monatsbilanz"] = monatsbilanz
         st.session_state["jahreskennzahlen"] = jahreskennzahlen
+
+        profil = {
+            "name": profil_name,
+            "personen": personen,
+            "jahresstromverbrauch": jahresstromverbrauch,
+            "m2": m2,
+            "bau_typ": bau_typ,
+            "heizsystem": heizsystem,
+            "fossil_typ": fossil_typ,
+            "wp_typ": wp_typ,
+            "WPkW": WPkW if heizsystem == "Wärmepumpe" else 0,
+            "jaz": jaz,
+            "Erdsondentiefe": Erdsondentiefe,
+            "ww_system": ww_system,
+            "ww_bedarf_kWh_tag": ww_bedarf_kWh_tag,
+            "ev_aktiv": ev_aktiv,
+            "batterie_aktiv": batterie_aktiv,
+            "batteriekapazität": batteriekapazität,
+            "standort": standort_auswahl,
+            "pv_anlagen_daten": pv_anlagen_daten,
+            "df_ts": df_ts,
+            "df_umwelt": df_umwelt,
+            "jahreskennzahlen": jahreskennzahlen,
+            "df_umwelt": df_umwelt.to_dict(orient="records")
+        }
+        speichere_profil(profil_name, profil)
+        st.success(f"Profil '{profil_name}' wurde gespeichert.")
+        if "profile" not in st.session_state:
+            st.session_state["profile"] = {}
+
+        st.session_state["profile"][profil_name] = profil
 
 if "df_ts" in st.session_state:
         df_ts = st.session_state["df_ts"]
