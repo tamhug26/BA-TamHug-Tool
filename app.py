@@ -1438,7 +1438,7 @@ st.header("Dimensionierungstool")
 st.subheader("Profile")
 profil_name = st.text_input("Profilname", value="Profil 1")
 vorhandene_profile = liste_profile()
-vergleichsmodus = st.checkbox("Profile vergleichen", value=False)
+vergleichsmodus = st.checkbox("Profile vergleichen pro Jahr", value=False)
 if vergleichsmodus:
     if len(vorhandene_profile) < 2:
         st.info("Speichere zuerst mindestens zwei Profile.")
