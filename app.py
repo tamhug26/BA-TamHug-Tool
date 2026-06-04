@@ -533,7 +533,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df[spalten]
 
         # Durchschnitt pro Monat
-        df_anzeige = df_anzeige.resample("MS").mean()
+        df_anzeige = df_anzeige.resample("MS").sum()
 
     else:
         df_anzeige = df[spalten]
@@ -1648,7 +1648,6 @@ with col2:
         Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
         Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
         st.info("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
-        st.info("NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung.")
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
         elif wp_typ == "Sole/Wasser WP":
@@ -1903,7 +1902,7 @@ for start in range(0, PVAnlagen, 3):
                 "PV Wirkungsgrad [%]",
                 min_value=0.1,
                 max_value=100.0,
-                value=10.0,
+                value=20.0,
                 step=0.1,
                 key=f"PV_Wirkungsgrad_{i}"
             )
@@ -1935,7 +1934,8 @@ for start in range(0, PVAnlagen, 3):
                 step=0.5,
                 key=f"nmot_{i}"
             )
-
+            st.info("NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung.")
+        
             Dachneigung = st.number_input(
                 "Dachneigung [°]",
                 min_value=0,
@@ -1953,7 +1953,7 @@ for start in range(0, PVAnlagen, 3):
                 step=1,
                 key=f"ausrichtung_{i}"
             )
-
+            st.info ("0=Nord, 90=Ost, 180=Süd, 270=West")
             pv_anlagen_daten.append({
                 "Anlage": i + 1,
                 "Dachart": Dachart,
@@ -1979,6 +1979,7 @@ with col1:
         maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
         minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
         maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+        st.info("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
         batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie (%)", 80, 100, 95)
     else:
         batteriekapazität = 0
