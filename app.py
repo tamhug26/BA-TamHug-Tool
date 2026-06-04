@@ -1522,7 +1522,7 @@ with col1:
     # aus Baujahr Heizwärmebedarf kWh/m2
     m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
     bau_typ = st.selectbox(
-        "Gebäudestandard",
+        "Gebäudestandart",
         ["Baujahr", "Minergie", "Minergie-P"]
     )
     if bau_typ == "Baujahr":
@@ -1647,6 +1647,8 @@ with col2:
         WPkW = st.number_input("Wärmepumpe kW", 1, 100, 7)
         Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
         Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
+        st.info("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
+        st.info("NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung.")
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
         elif wp_typ == "Sole/Wasser WP":
@@ -1769,7 +1771,7 @@ with col1:
                 )
         else:
             ww_strategie = "Abends"
-            st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
+            st.caption("Nicht steuerbares Warmwasser wird standartmässig abends geladen.")
 with col2:
     st.subheader("E-Auto")
 
@@ -2051,7 +2053,7 @@ if run_simulation:
                 df_ts = add_uploaded_load_profile(df_ts, uploaded_file)
                 st.write("Hochgeladener Jahresverbrauch [kWh]:", round(df_ts["hauslast_kWh"].sum(), 1))
             else:
-                st.warning("Bitte eine Datei hochladen.")
+                st.info("Bitte entweder Standardprofil wählen oder eine gültige CSV-/Excel-Datei hochladen.")
                 st.stop()
 
         # Raumheizung übernehmen (ohne Warmwasser)
@@ -2417,4 +2419,17 @@ if "df_ts" in st.session_state:
         st.write("Gesamtlast + Einspeisung + Abregelung:", 
                 round(df_ts["gesamtlast_kWh"].sum() + df_ts["netzeinspeisung_kWh"].sum() + df_ts["abregelung_kWh"].sum(), 1))
 
-                
+        csv = df_ts.to_csv().encode("utf-8")
+        st.download_button(
+            label="Zeitreihe als CSV herunterladen",
+            data=csv,
+            file_name=f"{profil_name}_zeitreihe.csv",
+            mime="text/csv"
+        )        
+        csv_umwelt = df_umwelt.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Umweltwirkungen als CSV herunterladen",
+            data=csv_umwelt,
+            file_name=f"{profil_name}_umweltwirkungen.csv",
+            mime="text/csv"
+        )
