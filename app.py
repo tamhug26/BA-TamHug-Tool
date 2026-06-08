@@ -533,7 +533,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df[spalten]
 
         # Durchschnitt pro Monat
-        df_anzeige = df_anzeige.resample("MS").sum()
+        df_anzeige = df_anzeige.resample("MS").mean()
 
     else:
         df_anzeige = df[spalten]
@@ -1644,7 +1644,13 @@ with col2:
             ],
             horizontal=True
         )
-        WPkW = st.number_input("Wärmepumpe kW", 1, 100, 7)
+        WPkW = st.number_input(
+            "Wärmepumpe kW",
+            min_value=1.0,
+            max_value=100.0,
+            value=7.0,
+            step=0.1
+        )
         Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
         Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
         st.info("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
