@@ -529,7 +529,6 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         # Durchschnitt pro Tag
         df_anzeige = df_anzeige.resample("D").mean()
 
-    #von hier 
     elif zeitraum == "Jahr":
         energie_cols = [
             "gesamtlast_kWh",
@@ -555,7 +554,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
         if "soc_kWh" in df.columns:
             df_anzeige["soc_kWh"] = df["soc_kWh"].resample("MS").mean()
-    #bis hier
+
 
     else:
         df_anzeige = df[spalten]
@@ -1462,39 +1461,35 @@ if vergleichsmodus:
         st.info("Speichere zuerst mindestens zwei Profile.")
         st.stop()
 
-    profil_a_name = st.selectbox("Profil A wählen", vorhandene_profile, key="profil_a")
-    profil_b_name = st.selectbox("Profil B wählen", vorhandene_profile, key="profil_b")
+    ausgewaehlte_profile = st.multiselect(
+        "Profile auswählen",
+        vorhandene_profile,
+        default=vorhandene_profile[:2],
+        max_selections=5
+    )
 
-    profil_a = lade_profil(profil_a_name)
-    profil_b = lade_profil(profil_b_name)
+    if len(ausgewaehlte_profile) < 2:
+        st.warning("Bitte mindestens zwei Profile auswählen.")
+        st.stop()
 
-    df_umwelt_a = pd.DataFrame(profil_a["df_umwelt"])
-    df_umwelt_b = pd.DataFrame(profil_b["df_umwelt"])
+    cols = st.columns(len(ausgewaehlte_profile))
 
-    total_ubp_a = df_umwelt_a["UBP/a"].sum()
-    total_co2_a = df_umwelt_a["kg CO2-eq/a"].sum()
+    for col, profil_name_vergleich in zip(cols, ausgewaehlte_profile):
+        profil = lade_profil(profil_name_vergleich)
+        df_umwelt = pd.DataFrame(profil["df_umwelt"])
 
-    total_ubp_b = df_umwelt_b["UBP/a"].sum()
-    total_co2_b = df_umwelt_b["kg CO2-eq/a"].sum()
+        total_ubp = df_umwelt["UBP/a"].sum()
+        total_co2 = df_umwelt["kg CO2-eq/a"].sum()
 
-    col1, col2 = st.columns(2)
+        with col:
+            st.subheader(profil_name_vergleich)
+            st.metric("Autarkiegrad", f"{profil['jahreskennzahlen']['Autarkiegrad_%']:.1f} %")
+            st.metric("Eigenverbrauchsquote", f"{profil['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %")
+            st.metric("PV-Produktion", f"{profil['jahreskennzahlen']['PV_Produktion_kWh']:.1f} kWh")
+            st.metric("Netzbezug", f"{profil['jahreskennzahlen']['Netzbezug_kWh']:.1f} kWh")
+            st.metric("Total UBP", f"{total_ubp:,.0f} UBP/a".replace(",", "'"))
+            st.metric("Total CO₂", f"{total_co2:,.1f} kg CO₂-eq/a".replace(",", "'"))
 
-    with col1:
-        st.subheader(profil_a_name)
-        st.metric("Autarkiegrad", f"{profil_a['jahreskennzahlen']['Autarkiegrad_%']:.1f} %")
-        st.metric("Eigenverbrauchsquote", f"{profil_a['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %")
-        st.metric("PV-Produktion", f"{profil_a['jahreskennzahlen']['PV_Produktion_kWh']:.1f} kWh")
-        st.metric("Netzbezug", f"{profil_a['jahreskennzahlen']['Netzbezug_kWh']:.1f} kWh")
-        st.metric("Total UBP", f"{total_ubp_a:,.0f} UBP/a".replace(",", "'"))
-        st.metric("Total CO₂", f"{total_co2_a:,.1f} kg CO₂-eq/a".replace(",", "'"))
-    with col2:
-        st.subheader(profil_b_name)
-        st.metric("Autarkiegrad", f"{profil_b['jahreskennzahlen']['Autarkiegrad_%']:.1f} %")
-        st.metric("Eigenverbrauchsquote", f"{profil_b['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %")
-        st.metric("PV-Produktion", f"{profil_b['jahreskennzahlen']['PV_Produktion_kWh']:.1f} kWh")
-        st.metric("Netzbezug", f"{profil_b['jahreskennzahlen']['Netzbezug_kWh']:.1f} kWh")
-        st.metric("Total UBP", f"{total_ubp_b:,.0f} UBP/a".replace(",", "'"))
-        st.metric("Total CO₂", f"{total_co2_b:,.1f} kg CO₂-eq/a".replace(",", "'"))
     st.stop()
 
 #allgemein
