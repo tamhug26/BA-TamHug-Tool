@@ -1455,22 +1455,6 @@ st.header("Dimensionierungstool")
 st.subheader("Profile")
 profil_name = st.text_input("Profilname", value="Profil 1")
 vorhandene_profile = liste_profile()
-st.write("### Gespeicherte Profile")
-
-for profil in vorhandene_profile:
-    col1, col2 = st.columns([10, 1])
-
-    with col1:
-        st.markdown(f"**{profil}**")
-
-    with col2:
-        if st.button("❌", key=f"delete_{profil}"):
-            pfad = os.path.join(PROFILE_DIR, f"{profil}.json")
-
-            if os.path.exists(pfad):
-                os.remove(pfad)
-
-            st.rerun()
 vergleichsmodus = st.checkbox("Profile vergleichen pro Jahr", value=False)
 if vergleichsmodus:
     if len(vorhandene_profile) < 2:
@@ -1485,26 +1469,93 @@ if vergleichsmodus:
     )
 
     if len(ausgewaehlte_profile) < 2:
-        st.warning("Bitte mindestens zwei Profile auswählen.")
+        st.info("Bitte mindestens zwei Profile auswählen.")
         st.stop()
 
-    cols = st.columns(len(ausgewaehlte_profile))
+    profile_daten = []
 
-    for col, profil_name_vergleich in zip(cols, ausgewaehlte_profile):
-        profil = lade_profil(profil_name_vergleich)
+    for name in ausgewaehlte_profile:
+        profil = lade_profil(name)
         df_umwelt = pd.DataFrame(profil["df_umwelt"])
 
-        total_ubp = df_umwelt["UBP/a"].sum()
-        total_co2 = df_umwelt["kg CO2-eq/a"].sum()
+        profile_daten.append({
+            "name": name,
+            "profil": profil,
+            "total_ubp": df_umwelt["UBP/a"].sum(),
+            "total_co2": df_umwelt["kg CO2-eq/a"].sum()
+        })
+
+    st.subheader("Profilvergleich Jahreskennzahlen")
+
+    cols = st.columns(len(profile_daten))
+
+    for col, p in zip(cols, profile_daten):
+        profil = p["profil"]
 
         with col:
-            st.subheader(profil_name_vergleich)
+            st.markdown(f"### {p['name']}")
             st.metric("Autarkiegrad", f"{profil['jahreskennzahlen']['Autarkiegrad_%']:.1f} %")
             st.metric("Eigenverbrauchsquote", f"{profil['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %")
-            st.metric("PV-Produktion", f"{profil['jahreskennzahlen']['PV_Produktion_kWh']:.1f} kWh")
-            st.metric("Netzbezug", f"{profil['jahreskennzahlen']['Netzbezug_kWh']:.1f} kWh")
-            st.metric("Total UBP", f"{total_ubp:,.0f} UBP/a".replace(",", "'"))
-            st.metric("Total CO₂", f"{total_co2:,.1f} kg CO₂-eq/a".replace(",", "'"))
+            st.metric("PV-Produktion", f"{profil['jahreskennzahlen']['PV_Produktion_kWh']:.0f} kWh")
+            st.metric("Netzbezug", f"{profil['jahreskennzahlen']['Netzbezug_kWh']:.0f} kWh")
+            st.metric("Abregelung", f"{profil['jahreskennzahlen']['Abgeregelte_Energie_kWh']:.1f} kWh")
+            st.metric("Total UBP", f"{p['total_ubp']:,.0f} UBP/a".replace(",", "'"))
+            st.metric("Total CO₂", f"{p['total_co2']:,.1f} kg CO₂-eq/a".replace(",", "'"))
+
+    st.write("------------------------------")
+    st.subheader("Jahresverlauf im Vergleich")
+
+    vergleichswert = st.selectbox(
+        "Kennwert für Jahresdiagramm auswählen",
+        [
+            "pv_kWh",
+            "gesamtlast_kWh",
+            "netzbezug_kWh",
+            "netzeinspeisung_kWh",
+            "abregelung_kWh"
+        ],
+        format_func=lambda x: {
+            "pv_kWh": "PV-Produktion",
+            "gesamtlast_kWh": "Gesamtlast",
+            "netzbezug_kWh": "Netzbezug",
+            "netzeinspeisung_kWh": "Netzeinspeisung",
+            "abregelung_kWh": "Abregelung"
+        }[x]
+    )
+
+    fig_vergleich = go.Figure()
+
+    for p in profile_daten:
+        profil = p["profil"]
+
+        if "monatswerte" not in profil:
+            st.warning(f"Profil '{p['name']}' enthält noch keine Monatswerte. Bitte dieses Profil neu simulieren und speichern.")
+            continue
+
+        df_monat = pd.DataFrame.from_dict(profil["monatswerte"], orient="index")
+        df_monat.index = pd.to_datetime(df_monat.index)
+
+        fig_vergleich.add_trace(go.Scatter(
+            x=df_monat.index,
+            y=df_monat[vergleichswert],
+            mode="lines+markers",
+            name=p["name"]
+        ))
+
+    fig_vergleich.update_layout(
+        title="Monatlicher Jahresverlauf im Profilvergleich",
+        xaxis_title="Monat",
+        yaxis_title="Energie [kWh/Monat]",
+        height=500,
+        legend=dict(orientation="h", y=-0.2)
+    )
+
+    fig_vergleich.update_xaxes(
+        tickformat="%b",
+        dtick="M1"
+    )
+
+    st.plotly_chart(fig_vergleich, use_container_width=True)
 
     st.stop()
 
@@ -2225,6 +2276,16 @@ if run_simulation:
         st.session_state["monatsbilanz"] = monatsbilanz
         st.session_state["jahreskennzahlen"] = jahreskennzahlen
 
+        monatswerte = df_ts.resample("MS")[[
+            "pv_kWh",
+            "gesamtlast_kWh",
+            "netzbezug_kWh",
+            "netzeinspeisung_kWh",
+            "abregelung_kWh"
+        ]].sum()
+
+        monatswerte.index = monatswerte.index.strftime("%Y-%m")
+
         profil = {
             "name": profil_name,
             "personen": int(personen),
@@ -2245,7 +2306,8 @@ if run_simulation:
             "standort": standort_auswahl,
             "pv_anlagen_daten": pv_anlagen_daten,
             "jahreskennzahlen": jahreskennzahlen,
-            "df_umwelt": df_umwelt.to_dict(orient="records")
+            "df_umwelt": df_umwelt.to_dict(orient="records"),
+            "monatswerte": monatswerte.to_dict(orient="index")
         }
         speichere_profil(profil_name, profil)
         st.success(f"Profil '{profil_name}' wurde gespeichert.")
