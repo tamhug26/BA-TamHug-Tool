@@ -56,7 +56,6 @@ Standort = {
     "Zürich-Kloten" : -8,
     "Zürich-MeteoSchweiz" : -8
 }
-
 #Herstellung und Entsorgung
 UBP = {
     "HeizölEL pro kWh":437,
@@ -85,7 +84,6 @@ UBP = {
     "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²": 5420,
     "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF m²": 9030,
 }
-
 #Herstellung und Entsorgung
 kgCO2eq = {
     "HeizölEL pro kWh": 0.343,
@@ -114,7 +112,7 @@ kgCO2eq = {
     "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²": 2.58,
     "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF m²": 4.29,
 }
-
+#lebenszeit Hausgeräte
 LebenszeitJahre = {
     "WP": 20,
     "Batterie": 30, 
@@ -122,6 +120,11 @@ LebenszeitJahre = {
     "Erdsonde": 50,
     "Wechselreichter": 15,
     "PV": 30,
+}
+Auto_Faktoren = {
+    "Benzin": {"UBP/Fzkm": 442, "kg CO2-eq/Fzkm": 0.243, "MJ/Fzkm": 4.07},
+    "Diesel": {"UBP/Fzkm": 400, "kg CO2-eq/Fzkm": 0.213, "MJ/Fzkm": 3.54},
+    "Gas": {"UBP/Fzkm": 378, "kg CO2-eq/Fzkm": 0.196, "MJ/Fzkm": 3.61},
 }
 
 basis_pfad_weather = "Weather_data"
@@ -1318,7 +1321,10 @@ def berechne_umweltwirkung(
     lebensdauer_batterie=LebenszeitJahre["Batterie"],
     lebensdauer_wp=LebenszeitJahre["WP"],
     lebensdauer_waermeerzeuger=LebenszeitJahre["Fossil/Holzheizung"],
-    lebensdauer_wechselrichter=LebenszeitJahre["Wechselreichter"]
+    lebensdauer_wechselrichter=LebenszeitJahre["Wechselreichter"],
+    auto_aktiv=False,
+    auto_typ=None,
+    auto_km_jahr=0.0
 ):
     ergebnisse = []
 
@@ -1430,6 +1436,17 @@ def berechne_umweltwirkung(
             "Wärmepumpe Herstellung",
             wp_ubp / lebensdauer_wp,
             wp_co2 / lebensdauer_wp
+        )
+
+        # Auto Betrieb fossil
+    if auto_aktiv and auto_typ is not None and auto_km_jahr > 0:
+        auto_ubp = Auto_Faktoren[auto_typ]["UBP/Fzkm"] * auto_km_jahr
+        auto_co2 = Auto_Faktoren[auto_typ]["kg CO2-eq/Fzkm"] * auto_km_jahr
+
+        add(
+            f"Auto {auto_typ} Betrieb",
+            auto_ubp,
+            auto_co2
         )
 
     return pd.DataFrame(ergebnisse)   
@@ -1961,6 +1978,31 @@ with col2:
         ev_ladeleistung_kw = 0.0
         ev_strategie = "Abends" 
 
+#fossil auto
+auto_aktiv = st.checkbox("Auto vorhanden, aber kein-E Auto", value=False)
+
+auto_typ = None
+auto_km_woche = 0.0
+auto_km_jahr = 0.0
+
+
+if auto_aktiv:
+    auto_typ = st.selectbox(
+        "Antrieb Auto",
+        ["Benzin", "Diesel", "Gas"]
+    )
+
+    auto_km_jahr = st.number_input(
+        "Gefahrene Kilometer pro Woche [km/Woche]",
+        min_value=0.0,
+        max_value=100000.0,
+        value=100.0,
+        step=500.0
+    )
+    auto_km_jahr = auto_km_woche * 52
+
+    st.caption(f"Entspricht ca. {auto_km_jahr:.0f} km pro Jahr.")
+
 st.write("------------------------------")
 st.subheader("Photovoltaikanlage")
 col1, col2, col3, col4 = st.columns(4)
@@ -2288,7 +2330,10 @@ if run_simulation:
             wp_typ=wp_typ_use,
             wp_kw=WPkW_use,
             erdsondenlaenge=Erdsondentiefe_use,
-            ebf_m2=EBFm2
+            ebf_m2=EBFm2,
+            auto_aktiv=auto_aktiv,
+            auto_typ=auto_typ,
+            auto_km_jahr=auto_km_jahr
         )
 
         st.session_state["df_umwelt"] = df_umwelt
@@ -2330,7 +2375,9 @@ if run_simulation:
             "pv_anlagen_daten": pv_anlagen_daten,
             "jahreskennzahlen": jahreskennzahlen,
             "df_umwelt": df_umwelt.to_dict(orient="records"),
-            "monatswerte": monatswerte.to_dict(orient="index")
+            "monatswerte": monatswerte.to_dict(orient="index"),
+            "auto_aktiv": bool(auto_aktiv),
+            "auto_typ": auto_typ
         }
         speichere_profil(profil_name, profil)
         st.success(f"Profil '{profil_name}' wurde gespeichert.")
