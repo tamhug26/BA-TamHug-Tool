@@ -533,7 +533,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df[spalten]
 
         # Durchschnitt pro Monat
-        df_anzeige = df_anzeige.resample("MS").mean()
+        df_anzeige = df_anzeige.resample("MS").sum()
 
     else:
         df_anzeige = df[spalten]
