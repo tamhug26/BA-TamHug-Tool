@@ -2442,7 +2442,7 @@ if "df_ts" in st.session_state:
                         Autarkiegrad
                     </div>
                     <div style="
-                        font-size:32px;
+                        font-size:48px;
                         font-weight:bold;
                         color:{farbe};
                     ">
