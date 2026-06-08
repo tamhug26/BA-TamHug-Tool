@@ -1448,6 +1448,29 @@ def liste_profile():
         for f in os.listdir(PROFILE_DIR)
         if f.endswith(".json")
     ]
+#farbliche Darstellung Autarkiegrad
+def autarkie_farbe(wert):
+    if wert < 10:
+        return "#ff4b1f"
+    elif wert < 20:
+        return "#ff7a1a"
+    elif wert < 30:
+        return "#ffa51f"
+    elif wert < 40:
+        return "#ffc928"
+    elif wert < 50:
+        return "#ffe04a"
+    elif wert < 60:
+        return "#d9d84a"
+    elif wert < 70:
+        return "#b6cc38"
+    elif wert < 80:
+        return "#8fbd2e"
+    elif wert < 90:
+        return "#63a827"
+    else:
+        return "#3f8f1f"
+    
 
 st.header("Dimensionierungstool")
 
@@ -2407,7 +2430,25 @@ if "df_ts" in st.session_state:
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
+            autarkie = jahreskennzahlen["Autarkiegrad_%"]
+            farbe = autarkie_farbe(autarkie)
+
+            st.markdown(
+                f"""
+                <div style="
+                    background-color:{farbe};
+                    padding:18px;
+                    border-radius:12px;
+                    color:white;
+                    text-align:center;
+                    font-weight:bold;
+                    margin-bottom:15px;">
+                    <div style="font-size:18px;">Autarkiegrad</div>
+                    <div style="font-size:36px;">{autarkie:.1f} %</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
 
         with col2:
