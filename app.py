@@ -2080,7 +2080,7 @@ for start in range(0, PVAnlagen, 3):
 
 st.write("------------------------------")
 # Batterie Einspeisen EMS Auspeisen
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 with col1:
     st.subheader("Batterie")
 
@@ -2101,14 +2101,8 @@ with col1:
         minSoC = 0
         maxSoC = 100
         batterieWirkungsgrad = 95
-with col2: 
-    st.subheader("Einspeisen")
-    # regel einbauen minSoC muss < sein als maxSoC
-    Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
-    gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
-    EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
-    st.metric("Einspeisegrenze kW:", EinspeisegrenzekW, "kW")
-with col3:
+    
+with col2:
     st.subheader("EMS")
 
     ems_optionen = []
@@ -2131,7 +2125,12 @@ with col3:
     st.caption("Die Einspeisung erfolgt automatisch nach der EMS-Priorität. " \
     "Nicht auswählbare Verbraucher sind nicht aktiv oder nicht steuerbar.")
     # normale Hauslast plus Wärmepumpen-Raumheizung zuerst dann WW oder ev dann Batterie  dann Einspeisung
-with col4: 
+with col3: 
+    st.subheader("Einspeisen")
+    # regel einbauen minSoC muss < sein als maxSoC
+    Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
+    gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
+    EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
     st.subheader("Ausspeisen")
     Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 5, 100, 80)
     EVU_name = st.selectbox(
@@ -2430,6 +2429,7 @@ if "df_ts" in st.session_state:
         col1, col2 = st.columns(2)
 
         with col1:
+            
             autarkie = jahreskennzahlen["Autarkiegrad_%"]
             farbe = autarkie_farbe(autarkie)
 
@@ -2449,6 +2449,7 @@ if "df_ts" in st.session_state:
                 """,
                 unsafe_allow_html=True
             )
+            st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
             st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
 
         with col2:
