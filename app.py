@@ -1992,7 +1992,7 @@ with col2:
             ["Benzin", "Diesel", "Gas"]
         )
 
-        auto_km_jahr = st.number_input(
+        auto_km_woche = st.number_input(
             "Gefahrene Kilometer pro Woche [km/Woche]",
             min_value=0.0,
             max_value=100000.0,
