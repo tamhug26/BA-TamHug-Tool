@@ -2430,7 +2430,7 @@ if "df_ts" in st.session_state:
         st.write("------------------------------")
         st.subheader("Jahreskennzahlen")
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             
@@ -2440,26 +2440,29 @@ if "df_ts" in st.session_state:
             st.markdown(
                 f"""
                 <div style="
-                    background-color:{farbe};
-                    padding:18px;
-                    border-radius:12px;
-                    color:white;
+                    background:{farbe};
+                    border-radius:16px;
+                    padding:24px;
                     text-align:center;
-                    font-weight:bold;
-                    margin-bottom:15px;">
-                    <div style="font-size:18px;">Autarkiegrad</div>
-                    <div style="font-size:36px;">{autarkie:.1f} %</div>
+                    color:white;
+                    min-height:150px;
+                ">
+                    <div style="font-size:18px; font-weight:600;">
+                        Autarkiegrad
+                    </div>
+                    <div style="font-size:48px; font-weight:700;">
+                        {autarkie:.1f} %
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            st.metric("Autarkiegrad", f"{jahreskennzahlen['Autarkiegrad_%']:.1f} %")
+        with col2:
             st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
 
-        with col2:
+        with col3:
             st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
-            #st.metric("Unterdeckung", f"{jahreskennzahlen['Unterdeckung_kWh']:.1f} kWh")
-
+            
         st.write("---------------------")
 
         col1, col2 =st.columns(2)
