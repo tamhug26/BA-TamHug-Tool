@@ -1978,30 +1978,30 @@ with col2:
         ev_ladeleistung_kw = 0.0
         ev_strategie = "Abends" 
 
-#fossil auto
-auto_aktiv = st.checkbox("Auto vorhanden, aber kein-E Auto", value=False)
+    #fossil auto
+    auto_aktiv = st.checkbox("Auto vorhanden, aber kein-E Auto", value=False)
 
-auto_typ = None
-auto_km_woche = 0.0
-auto_km_jahr = 0.0
+    auto_typ = None
+    auto_km_woche = 0.0
+    auto_km_jahr = 0.0
 
 
-if auto_aktiv:
-    auto_typ = st.selectbox(
-        "Antrieb Auto",
-        ["Benzin", "Diesel", "Gas"]
-    )
+    if auto_aktiv:
+        auto_typ = st.selectbox(
+            "Antrieb Auto",
+            ["Benzin", "Diesel", "Gas"]
+        )
 
-    auto_km_jahr = st.number_input(
-        "Gefahrene Kilometer pro Woche [km/Woche]",
-        min_value=0.0,
-        max_value=100000.0,
-        value=100.0,
-        step=500.0
-    )
-    auto_km_jahr = auto_km_woche * 52
+        auto_km_jahr = st.number_input(
+            "Gefahrene Kilometer pro Woche [km/Woche]",
+            min_value=0.0,
+            max_value=100000.0,
+            value=100.0,
+            step=500.0
+        )
+        auto_km_jahr = auto_km_woche * 52
 
-    st.caption(f"Entspricht ca. {auto_km_jahr:.0f} km pro Jahr.")
+        st.caption(f"Entspricht ca. {auto_km_jahr:.0f} km pro Jahr.")
 
 st.write("------------------------------")
 st.subheader("Photovoltaikanlage")
