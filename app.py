@@ -9,7 +9,7 @@ PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
 
-st.write("Prototyp 1")
+st.write("Prototyp 1 test 2")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
