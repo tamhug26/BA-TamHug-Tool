@@ -2090,10 +2090,10 @@ with col1:
         batteriekapazität = st.slider("Batteriekapazität (kWh)", 1, 50, 10)
         maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 1, 20, 10)
         maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
-        col1, col2 =st.columns(2)
-        with col1:
+        col3, col4 =st.columns(2)
+        with col3:
             minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
-        with col2:
+        with col4:
             maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
         st.info("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
         batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie (%)", 80, 100, 95)
