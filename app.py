@@ -1612,11 +1612,10 @@ with col2:
 with col3:
     jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
 with col4:
-    Stromnutzung = st.segmented_control(
-        "Standartstromnutzungsprofil oder eigene daten als csv?",
+    Stromnutzung = st.radio(
+        "Stromprofil wählen",
         ["Standartprofil", "eigene Daten"],
-        default="Standartprofil",
-        key="Stromnutzung"
+        horizontal=True
     )
     uploaded_file = None
     if Stromnutzung == "eigene Daten":
