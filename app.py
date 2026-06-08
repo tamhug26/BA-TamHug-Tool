@@ -1455,6 +1455,26 @@ st.header("Dimensionierungstool")
 st.subheader("Profile")
 profil_name = st.text_input("Profilname", value="Profil 1")
 vorhandene_profile = liste_profile()
+st.subheader("Profil löschen")
+if vorhandene_profile:
+    profil_loeschen = st.selectbox(
+        "Profil auswählen",
+        vorhandene_profile,
+        key="profil_loeschen"
+    )
+
+    bestaetigung = st.checkbox(
+        "Löschen bestätigen",
+        key="confirm_delete"
+    )
+
+    if st.button("Profil löschen") and bestaetigung:
+        pfad = os.path.join(PROFILE_DIR, f"{profil_loeschen}.json")
+
+        if os.path.exists(pfad):
+            os.remove(pfad)
+            st.success(f"Profil '{profil_loeschen}' wurde gelöscht.")
+            st.rerun()
 vergleichsmodus = st.checkbox("Profile vergleichen pro Jahr", value=False)
 if vergleichsmodus:
     if len(vorhandene_profile) < 2:
