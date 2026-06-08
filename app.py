@@ -529,11 +529,33 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         # Durchschnitt pro Tag
         df_anzeige = df_anzeige.resample("D").mean()
 
+    #von hier 
     elif zeitraum == "Jahr":
-        df_anzeige = df[spalten]
+        energie_cols = [
+            "gesamtlast_kWh",
+            "pv_kWh",
+            "ww_kWh",
+            "ev_kWh",
+            "netzbezug_kWh",
+            "netzeinspeisung_kWh",
+            "abregelung_kWh",
+            "unterdeckung_kWh"
+        ]
 
-        # Durchschnitt pro Monat
-        df_anzeige = df_anzeige.resample("MS").sum()
+        energie_cols = [c for c in energie_cols if c in df.columns]
+
+        df_anzeige = df[energie_cols].resample("MS").sum()
+
+        # Monatsenergie in durchschnittliche Monatsleistung umrechnen
+        stunden_pro_monat = df_anzeige.index.days_in_month * 24
+
+        for col in energie_cols:
+            neue_spalte = col.replace("_kWh", "_kW")
+            df_anzeige[neue_spalte] = df_anzeige[col] / stunden_pro_monat
+
+        if "soc_kWh" in df.columns:
+            df_anzeige["soc_kWh"] = df["soc_kWh"].resample("MS").mean()
+    #bis hier
 
     else:
         df_anzeige = df[spalten]
