@@ -2432,22 +2432,20 @@ if "df_ts" in st.session_state:
         with col1:
             
             autarkie = jahreskennzahlen["Autarkiegrad_%"]
+
             farbe = autarkie_farbe(autarkie)
 
             st.markdown(
                 f"""
-                <div style="
-                    background:{farbe};
-                    border-radius:16px;
-                    padding:24px;
-                    text-align:center;
-                    color:white;
-                    min-height:150px;
-                ">
-                    <div style="font-size:18px; font-weight:600;">
+                <div style="text-align:center">
+                    <div style="font-size:18px;">
                         Autarkiegrad
                     </div>
-                    <div style="font-size:48px; font-weight:700;">
+                    <div style="
+                        font-size:64px;
+                        font-weight:bold;
+                        color:{farbe};
+                    ">
                         {autarkie:.1f} %
                     </div>
                 </div>
