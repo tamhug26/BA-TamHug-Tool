@@ -127,6 +127,18 @@ Auto_Faktoren = {
     "Gas": {"UBP/Fzkm": 378, "kg CO2-eq/Fzkm": 0.196, "MJ/Fzkm": 3.61},
 }
 
+strompreis_mapping = {
+
+    "9,64 Rp./kWh": 9.64,
+
+    "20,96 Rp./kWh": 20.96,
+
+    "32,29 Rp./kWh": 32.29,
+
+    "43,61 Rp./kWh": 43.61
+
+}
+
 basis_pfad_weather = "Weather_data"
 #dateipfad = f"{basis_pfad_weather}/{dateiname}"
 
@@ -1948,7 +1960,7 @@ with col2:
             step=5.0
         )
         
-        st.write("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
+        st.info("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
 
         ev_ladeleistung_kw = st.number_input(
             "E-Auto Ladeleistung [kW]",
@@ -1968,7 +1980,7 @@ with col2:
             ],
             index=2
         )
-        st.write("Ladefenster: morgens 5–8 Uhr, mittags 11–15 Uhr, abends 17–22 Uhr")
+        st.info("Ladefenster: morgens 5–8 Uhr, mittags 11–15 Uhr, abends 17–22 Uhr")
     else:
         ev_fahrtage = []
         ev_verbrauch_kWh_pro_100km = 0.0
@@ -2175,6 +2187,10 @@ with col2:
     
     st.subheader("Ausspeisen")
     Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 5, 100, 80)
+    Strompreis = st.selectbox(
+        "Strompreis (Rp./kWh)", 
+        list(strompreis_mapping.keys())
+    )
     EVU_name = st.selectbox(
         "EVU wählen",
         list(EVU.keys())
@@ -2185,7 +2201,8 @@ with col2:
         value=int(CO2Emmisionen)
     )
     ergebnis = CO2Emmisionen
-
+    strompreis_rp_kWh = strompreis_mapping[Strompreis]
+    strompreis_chf_kWh = strompreis_rp_kWh / 100
 
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
@@ -2309,6 +2326,8 @@ if run_simulation:
         )
 
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
+        stromkosten_chf = df_ts["netzbezug_kWh"].sum() * strompreis_chf_kWh
+        jahreskennzahlen["Stromkosten_CHF"] = stromkosten_chf
         if heizsystem != "Wärmepumpe":
             wp_typ_use = None
             WPkW_use = 0
@@ -2376,7 +2395,9 @@ if run_simulation:
             "df_umwelt": df_umwelt.to_dict(orient="records"),
             "monatswerte": monatswerte.to_dict(orient="index"),
             "auto_aktiv": bool(auto_aktiv),
-            "auto_typ": auto_typ
+            "auto_typ": auto_typ,
+            "strompreis_rp_kWh": float(strompreis_rp_kWh),
+            "stromkosten_chf": float(stromkosten_chf)
         }
         speichere_profil(profil_name, profil)
         st.success(f"Profil '{profil_name}' wurde gespeichert.")
@@ -2473,7 +2494,7 @@ if "df_ts" in st.session_state:
         st.write("------------------------------")
         st.subheader("Jahreskennzahlen")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             
@@ -2503,7 +2524,13 @@ if "df_ts" in st.session_state:
 
         with col3:
             st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
-            
+        with col4:
+            st.metric(
+                "Stromkosten",
+                f"{jahreskennzahlen.get('Stromkosten_CHF', 0):,.0f} CHF/a".replace(",", "'")
+            )
+
+
         st.write("---------------------")
 
         col1, col2 =st.columns(2)
