@@ -14,48 +14,48 @@ st.write("Prototyp 1 test 2")
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
 #Tabellen bzw Dataframes
-Standort = {
-    "Adelboden" : -10,
-    "Aigle" : -6,
-    "Altdorf" : -6,
-    "Basel-Binningen" : -7,
-    "Bern-Liebefeld" : -7,
-    "Buchs-Aarau" : -7,
-    "Chur" : -7,
-    "Davos" : -13,
-    "Disentis" : -10,
-    "Engelberg" : -11,
-    "Genève-Cointrin" : -4,
-    "Glarus" : -8,
-    "Grand-St-Bernard" : -15,
-    "Güttingen" : -7,
-    "Interlaken" : -7,
-    "La Chaux-de-Fonds" : -10,
-    "La Frétaz" : -10,
-    "Locarno-Monti" : -1,
-    "Lugano" : -1,
-    "Luzern" : -6,
-    "Magadino" : -3,
-    "Montana" : -10,
-    "Neuchâtel" : -5,
-    "Payerne" : -7,
-    "Piotta" : -7,
-    "Pully" : -4,
-    "Robbia" : -8,
-    "Rünenberg" : -8,
-    "Samedan" : -18,
-    "San Bernardino" : -11,
-    "St. Gallen" : -9,
-    "Schaffhausen" : -8,
-    "Scuol" : -12,
-    "Sion" : -6,
-    "Ulrichen" : -16,
-    "Vaduz" : -8,
-    "Wynau" : -7,
-    "Zermatt" : -11,
-    "Zürich-Kloten" : -8,
-    "Zürich-MeteoSchweiz" : -8
-}
+# Standort = {
+#     "Adelboden" : -10,
+#     "Aigle" : -6,
+#     "Altdorf" : -6,
+#     "Basel-Binningen" : -7,
+#     "Bern-Liebefeld" : -7,
+#     "Buchs-Aarau" : -7,
+#     "Chur" : -7,
+#     "Davos" : -13,
+#     "Disentis" : -10,
+#     "Engelberg" : -11,
+#     "Genève-Cointrin" : -4,
+#     "Glarus" : -8,
+#     "Grand-St-Bernard" : -15,
+#     "Güttingen" : -7,
+#     "Interlaken" : -7,
+#     "La Chaux-de-Fonds" : -10,
+#     "La Frétaz" : -10,
+#     "Locarno-Monti" : -1,
+#     "Lugano" : -1,
+#     "Luzern" : -6,
+#     "Magadino" : -3,
+#     "Montana" : -10,
+#     "Neuchâtel" : -5,
+#     "Payerne" : -7,
+#     "Piotta" : -7,
+#     "Pully" : -4,
+#     "Robbia" : -8,
+#     "Rünenberg" : -8,
+#     "Samedan" : -18,
+#     "San Bernardino" : -11,
+#     "St. Gallen" : -9,
+#     "Schaffhausen" : -8,
+#     "Scuol" : -12,
+#     "Sion" : -6,
+#     "Ulrichen" : -16,
+#     "Vaduz" : -8,
+#     "Wynau" : -7,
+#     "Zermatt" : -11,
+#     "Zürich-Kloten" : -8,
+#     "Zürich-MeteoSchweiz" : -8
+# }
 #Herstellung und Entsorgung
 UBP = {
     "HeizölEL pro kWh":437,
@@ -298,7 +298,7 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
 
     return df
-def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, raumtemperatur=20):
+def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, raumtemperatur=20, stationshoehe_m=None,standorthoehe_m=None):
     df = df.copy()
 
     weather = df_weather[["temp"]].copy()
@@ -309,6 +309,13 @@ def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, rau
 
     df = df.join(weather_15min, how="left")
     df["temp"] = df["temp"].interpolate("time")
+
+    if stationshoehe_m is not None and standorthoehe_m is not None:
+        hoehenunterschied_m = standorthoehe_m - stationshoehe_m
+
+        if abs(hoehenunterschied_m) >= 100:
+            temperaturkorrektur = -0.65 * (hoehenunterschied_m / 100)
+            df["temp"] = df["temp"] + temperaturkorrektur
 
     # Heizbedarf nur, wenn Aussentemperatur unter gewünschter Raumtemperatur liegt
     df["heiz_faktor"] = (raumtemperatur - df["temp"]).clip(lower=0)
@@ -2234,11 +2241,17 @@ if run_simulation:
         else:
             heizwaerme_jahr = 12000
 
+        meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
+        station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
+
+
         df_ts = add_heating_profile_weather_based(
             df_ts,
             df_weather,
             heizwaerme_jahr,
-            raumtemperatur
+            raumtemperatur,
+            stationshoehe_m=station_info["altitude"],
+            standorthoehe_m=Höhenmeter_standort
         )
 
         if heizsystem == "Wärmepumpe":
@@ -2247,9 +2260,8 @@ if run_simulation:
         else:
             df_ts = add_heatpump_consumption(df_ts, heizsystem)
 
-        meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
-        station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
 
+        
         # st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
         # st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
         # st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
