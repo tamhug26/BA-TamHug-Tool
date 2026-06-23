@@ -346,33 +346,32 @@ def berechne_vorlauftemperatur(temp_aussen, auslegetemperatur=-7, vorlauf_ausleg
         lower=raumtemperatur,
         upper=vorlauf_auslegung
     )
-def add_heatpump_consumption(df, heizsystem, jaz=None, wp_typ=None, waermequellentemperatur=2):
+def add_heatpump_consumption(df, heizsystem, jaz=None, wp_typ=None):
     df = df.copy()
 
-    if heizsystem == "Wärmepumpe":
+    if heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0:
+        if "vorlauftemperatur_C" in df.columns:
+            # Referenz: eingegebene JAZ gilt ungefähr bei 35 °C Vorlauf
+            referenz_vorlauf = 35
 
-        if wp_typ == "Luft/Wasser WP":
-            df["quelle_temp_C"] = df["temp"]
+            # Pro 1 °C höherer Vorlauf sinkt die Effizienz grob um 2 %
+            korrekturfaktor = 1 - 0.02 * (df["vorlauftemperatur_C"] - referenz_vorlauf)
+
+            # Begrenzen, damit keine unrealistischen Werte entstehen
+            korrekturfaktor = korrekturfaktor.clip(lower=0.5, upper=1.3)
+
+            df["jaz_dynamisch"] = jaz * korrekturfaktor
+            df["wp_strom_kWh"] = df["heizwaerme_kWh"] / df["jaz_dynamisch"]
+
         else:
-            df["quelle_temp_C"] = waermequellentemperatur
-
-        # vereinfachtes COP-Modell über Temperaturhub
-        temp_senke_K = df["vorlauftemperatur_C"] + 273.15
-        temp_quelle_K = df["quelle_temp_C"] + 273.15
-
-        carnot_cop = temp_senke_K / (temp_senke_K - temp_quelle_K)
-
-        # Realfaktor: reale WP erreicht nur Teil des Carnot-COP
-        df["cop"] = (carnot_cop * 0.45).clip(lower=1.0, upper=6.0)
-
-        df["wp_strom_kWh"] = df["heizwaerme_kWh"] / df["cop"]
+            df["jaz_dynamisch"] = jaz
+            df["wp_strom_kWh"] = df["heizwaerme_kWh"] / jaz
 
     else:
+        df["jaz_dynamisch"] = 0.0
         df["wp_strom_kWh"] = 0.0
-        df["cop"] = np.nan
 
     df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
-
     return df
 def simulate_battery(
     df,
@@ -1834,7 +1833,7 @@ with col2:
             max_value=70,
             value=40
         )
-        Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
+        #Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
         st.info("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
@@ -1848,7 +1847,7 @@ with col2:
         else:
             stromverbrauch = 0.0
         StromverbrauchWP_input = st.number_input(
-            "Stromverbrauch [kWh/a]",
+            "geschätzter Stromverbrauch [kWh/a]",
             value=int(stromverbrauch)
         )
         ergebnis = stromverbrauch
@@ -2069,10 +2068,19 @@ with col1:
         "Standort wählen",
         list(standort_dateien.keys())
     )
+    meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
+    station_info_ui = get_station_info(
+        meta_df,
+        standort_auswahl if "standort_auswahl" in locals() else list(standort_dateien.keys())[0],
+        standort_dateien
+    )
 with col2:
     Höhenmeter_standort = st.number_input(
         "Höhenmeter am Standort",
-        50, 5000, 200
+        50, 5000, int(station_info_ui["altitude"])
+    )
+    st.caption(
+        f"MeteoSchweiz-Station: {station_info_ui['altitude']:.0f} m ü. M."
     )
 with col3:
     WechselrichterkW = st.number_input(
@@ -2299,9 +2307,8 @@ if run_simulation:
         df_ts = add_heatpump_consumption(
             df_ts,
             heizsystem,
-            jaz=jaz,
-            wp_typ=wp_typ if heizsystem == "Wärmepumpe" else None,
-            waermequellentemperatur=Wärmequellentemperatur if heizsystem == "Wärmepumpe" else 2
+            jaz=jaz if heizsystem == "Wärmepumpe" else None,
+            wp_typ=wp_typ if heizsystem == "Wärmepumpe" else None
         )
 
 
