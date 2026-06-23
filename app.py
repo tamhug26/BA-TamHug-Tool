@@ -298,7 +298,7 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
 
     return df
-def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, raumtemperatur=20, stationshoehe_m=None,standorthoehe_m=None):
+def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, raumtemperatur=20, stationshoehe_m=None,standorthoehe_m=None, auslegetemperatur=-7, vorlauf_auslegung=40):
     df = df.copy()
 
     weather = df_weather[["temp"]].copy()
@@ -317,6 +317,13 @@ def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, rau
             temperaturkorrektur = -0.65 * (hoehenunterschied_m / 100)
             df["temp"] = df["temp"] + temperaturkorrektur
 
+    df["vorlauftemperatur_C"] = berechne_vorlauftemperatur(
+        df["temp"],
+        auslegetemperatur=auslegetemperatur,
+        vorlauf_auslegung=vorlauf_auslegung,
+        raumtemperatur=raumtemperatur
+    )
+
     # Heizbedarf nur, wenn Aussentemperatur unter gewünschter Raumtemperatur liegt
     df["heiz_faktor"] = (raumtemperatur - df["temp"]).clip(lower=0)
 
@@ -330,6 +337,15 @@ def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, rau
         df["heizwaerme_kWh"] = 0.0
 
     return df
+def berechne_vorlauftemperatur(temp_aussen, auslegetemperatur=-7, vorlauf_auslegung=40, raumtemperatur=20):
+    steigung = (vorlauf_auslegung - raumtemperatur) / (auslegetemperatur - raumtemperatur)
+
+    vorlauf = raumtemperatur + steigung * (temp_aussen - raumtemperatur)
+
+    return vorlauf.clip(
+        lower=raumtemperatur,
+        upper=vorlauf_auslegung
+    )
 def add_heatpump_consumption(df, heizsystem, jaz=None):
     df = df.copy()
     if heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0: #Nur wenn wirklich eine WP ausgewählt ist und eine gültige JAZ vorhanden ist, wird WP-Strom berechnet.
@@ -1644,7 +1660,7 @@ with col4:
             type=["csv", "xlsx"]
         )
         st.info("""
-        CSV-Format:
+        CSV-Format: 15 Minuten Werte
         timestamp,verbrauch_kWh
         2025-01-01 00:00,0.42
         2025-01-01 00:15,0.38
@@ -1786,7 +1802,18 @@ with col2:
             value=7.0,
             step=0.1
         )
-        Vorlauftemperatur = st.number_input("Vorlauftemperatur (°)", 15, 60, 35)
+        Auslegetemperatur = st.number_input(
+            "Auslegetemperatur [°C]",
+            min_value=-25,
+            max_value=10,
+            value=-7
+        )
+        Vorlauftemperatur_Auslegung = st.number_input(
+            "Vorlauftemperatur bei Auslegetemperatur [°C]",
+            min_value=20,
+            max_value=70,
+            value=40
+        )
         Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
         st.info("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
         if wp_typ == "Luft/Wasser WP":
@@ -2244,7 +2271,9 @@ if run_simulation:
             heizwaerme_jahr,
             raumtemperatur,
             stationshoehe_m=station_info["altitude"],
-            standorthoehe_m=Höhenmeter_standort
+            standorthoehe_m=Höhenmeter_standort,
+            auslegetemperatur=Auslegetemperatur if heizsystem == "Wärmepumpe" else -7,
+            vorlauf_auslegung=Vorlauftemperatur_Auslegung if heizsystem == "Wärmepumpe" else 40
         )
 
         if heizsystem == "Wärmepumpe":
