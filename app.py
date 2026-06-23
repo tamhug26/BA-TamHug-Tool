@@ -346,13 +346,33 @@ def berechne_vorlauftemperatur(temp_aussen, auslegetemperatur=-7, vorlauf_ausleg
         lower=raumtemperatur,
         upper=vorlauf_auslegung
     )
-def add_heatpump_consumption(df, heizsystem, jaz=None):
+def add_heatpump_consumption(df, heizsystem, jaz=None, wp_typ=None, waermequellentemperatur=2):
     df = df.copy()
-    if heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0: #Nur wenn wirklich eine WP ausgewählt ist und eine gültige JAZ vorhanden ist, wird WP-Strom berechnet.
-        df["wp_strom_kWh"] = df["heizwaerme_kWh"] / jaz
+
+    if heizsystem == "Wärmepumpe":
+
+        if wp_typ == "Luft/Wasser WP":
+            df["quelle_temp_C"] = df["temp"]
+        else:
+            df["quelle_temp_C"] = waermequellentemperatur
+
+        # vereinfachtes COP-Modell über Temperaturhub
+        temp_senke_K = df["vorlauftemperatur_C"] + 273.15
+        temp_quelle_K = df["quelle_temp_C"] + 273.15
+
+        carnot_cop = temp_senke_K / (temp_senke_K - temp_quelle_K)
+
+        # Realfaktor: reale WP erreicht nur Teil des Carnot-COP
+        df["cop"] = (carnot_cop * 0.45).clip(lower=1.0, upper=6.0)
+
+        df["wp_strom_kWh"] = df["heizwaerme_kWh"] / df["cop"]
+
     else:
         df["wp_strom_kWh"] = 0.0
+        df["cop"] = np.nan
+
     df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
+
     return df
 def simulate_battery(
     df,
@@ -2276,11 +2296,13 @@ if run_simulation:
             vorlauf_auslegung=Vorlauftemperatur_Auslegung if heizsystem == "Wärmepumpe" else 40
         )
 
-        if heizsystem == "Wärmepumpe":
-            df_ts = add_heatpump_consumption(df_ts, heizsystem, jaz)
-
-        else:
-            df_ts = add_heatpump_consumption(df_ts, heizsystem)
+        df_ts = add_heatpump_consumption(
+            df_ts,
+            heizsystem,
+            jaz=jaz,
+            wp_typ=wp_typ if heizsystem == "Wärmepumpe" else None,
+            waermequellentemperatur=Wärmequellentemperatur if heizsystem == "Wärmepumpe" else 2
+        )
 
 
         
