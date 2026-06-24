@@ -1080,20 +1080,12 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
     if verbraucher == "Warmwasser":
         if strategie == "Morgens":
             return 5 <= h < 7
-        elif strategie == "Mittag / PV-optimiert":
-            return 11 <= h < 15
         elif strategie == "Abends":
             return 17 <= h < 20
-        elif strategie == "Kombiniert (morgens + mittags)":
-            return (5 <= h < 7) or (11 <= h < 15)
-        elif strategie == "Morgens + Mittag":
-            return (5 <= h < 7) or (11 <= h < 15)
         elif strategie == "Morgens + Abends":
             return (5 <= h < 7) or (17 <= h < 20)
-        elif strategie == "Mittag + Abends":
-            return (11 <= h < 15) or (17 <= h < 20)
-        elif strategie == "PV-Überschussgeführt (spätestens 12 Uhr)":
-            return True
+        elif strategie == "PV-Überschussgeführt (spätestens 11 Uhr)":
+            return 5 <= h < 15
 
     if verbraucher == "E-Auto":
         if strategie == "Morgens":
@@ -1203,10 +1195,10 @@ def simulate_ems(
 
                 max_step = ww_config["leistung_kw"] * delta_t
 
-                if ww_config["strategie"] == "PV-Überschussgeführt (spätestens 12 Uhr)":
+                if ww_config["strategie"] == "PV-Überschussgeführt (spätestens 11 Uhr)":
                     if pv_rest > 0:
                         ladung = min(max_step, ww_rest, pv_rest)
-                    elif i.hour >= 12:
+                    elif i.hour >= 11:
                         ladung = min(max_step, ww_rest)
                     else:
                         ladung = 0
@@ -1971,21 +1963,21 @@ with col1:
             if ladezyklen_pro_tag <= 1:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["Mittag / PV-optimiert", "PV-Überschussgeführt (spätestens 12 Uhr)", "Morgens", "Abends"],
+                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens", "Abends"],
                     index=0
                 )
             else:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["Mittag + Abends", "PV-Überschussgeführt (spätestens 12 Uhr)", "Morgens + Mittag", "Morgens + Abends"],
+                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens + Abends"],
                     index=0
                 )
 
-            if ww_strategie == "PV-Überschussgeführt (spätestens 12 Uhr)":
+            if ww_strategie == "PV-Überschussgeführt (spätestens 11 Uhr)":
                 st.info(
                     "Der Boiler wird bevorzugt mit PV-Überschuss geladen. "
-                    "Falls bis 12:00 Uhr nicht genügend PV-Energie verfügbar war, "
-                    "wird die Ladung ab 12:00 Uhr automatisch abgeschlossen."
+                    "Falls bis 11:00 Uhr nicht genügend PV-Energie verfügbar war, "
+                    "wird die Ladung ab 11:00 Uhr automatisch abgeschlossen."
                 )
         else:
             ww_strategie = "Abends"
