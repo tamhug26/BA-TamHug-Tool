@@ -2201,6 +2201,14 @@ for start in range(0, PVAnlagen, 3):
                 step=0.5,
                 key=f"nmot_{i}"
             )
+            performance_ratio_input = st.number_input(
+                "Performance Ratio [-]",
+                min_value=0.5,
+                max_value=1.1,
+                value=0.85,
+                step=0.01,
+                key=f"performance_ratio_{i}"
+            )
             if i == 0:
                 st.info(
                     "NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. "
@@ -2233,7 +2241,8 @@ for start in range(0, PVAnlagen, 3):
                 "Dachneigung": Dachneigung,
                 "Dachausrichtung": Dachausrichtung,
                 "gamma_pdc": gamma_pdc_input,
-                "nmot": nmot_input
+                "nmot": nmot_input,
+                "performance_ratio": performance_ratio_input
             })
 
 st.write("------------------------------")
@@ -2385,7 +2394,7 @@ if run_simulation:
                 dachausrichtung=anlage["Dachausrichtung"],
                 pv_peakleistung_kwp=anlage["pv_Peakleistung"],
                 wirkungsgrad_prozent=anlage["PV_Wirkungsgrad"],
-                performance_ratio=0.85,
+                performance_ratio=anlage["performance_ratio"],
                 gamma_pdc=anlage["gamma_pdc"],
                 noct=anlage["nmot"]
             )
