@@ -767,18 +767,22 @@ def get_station_abbr(standort_name):
 def load_weather_data(standort_name):
     dateiname = standort_dateien[standort_name]
     dateipfad = f"{basis_pfad_weather}/{dateiname}"
+
     df_weather = pd.read_csv(dateipfad)
+
+    # SIA/Meteodaten haben oft Stunden 1–24.
+    # Für Python-Zeitstempel brauchen wir 0–23.
     df_weather["timestamp"] = pd.to_datetime(
         dict(
             year=df_weather["time.yy"],
             month=df_weather["time.mm"],
             day=df_weather["time.dd"],
-            hour=df_weather["time.hh"]
+            hour=df_weather["time.hh"] - 1
         )
     )
+
     df_weather = df_weather.set_index("timestamp")
-    st.write(df_weather.loc["2025-06-21"][["rad.global"]])
-    st.write(df_weather.index[:5])
+
     return df_weather
 def prepare_weather_for_simulation(df_weather, target_year):
     df = df_weather.copy().reset_index(drop=True) #copy vom original wetterindex und ignoriert dass die Wetterdaten aus verschiedenen Jahren sind
