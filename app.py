@@ -666,7 +666,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         y=df_plot["netzbezug_kW"],
         mode="lines",
         name="Netzbezug",
-        line=dict(color="orange", width=2, dash="longdash")
+        line=dict(color="orange", width=5, dash="dot")
     ))
 
     # Netzeinspeisung
