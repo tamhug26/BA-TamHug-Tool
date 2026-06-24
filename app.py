@@ -550,7 +550,9 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         "netzbezug_kW",
         "netzeinspeisung_kW",
         "abregelung_kW",
-        "unterdeckung_kW"
+        "unterdeckung_kW",
+        "temp",
+        "poa_global",
     ]
 
     spalten = [s for s in spalten if s in df.columns]
