@@ -747,22 +747,69 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             name="Unterdeckung",
             marker=dict(color="darkred", size=8, symbol="circle-open")
         ))
-
     y_title = "Leistung [kW]"
-
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
         xaxis_title="Zeit",
-        yaxis_title=y_title,
+        yaxis=dict(
+            title="Leistung [kW]",
+            zeroline=True,
+            zerolinewidth=1,
+            zerolinecolor="black",
+            showgrid=True
+        ),
         yaxis2=dict(
             title="Batterie-SoC [%]",
             overlaying="y",
             side="right",
-            range=[0, 100]
+            range=[0, 100],
+            showgrid=False,
+            tickvals=[0, 20, 40, 60, 80, 100]
         ),
-        legend=dict(orientation="h", y=-0.2),
+        legend=dict(orientation="h", y=-0.25),
         height=600,
-        margin=dict(l=40, r=40, t=60, b=80)
+        margin=dict(l=40, r=40, t=60, b=100)
+    )
+    return fig
+def create_weather_plot(df_plot):
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["temp"],
+        mode="lines",
+        name="Außentemperatur [°C]",
+        line=dict(color="blue", width=3, dash="dash")
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=df_plot.index,
+        y=df_plot["poa_global"],
+        mode="lines",
+        name="Sonneneinstrahlung [W/m²]",
+        line=dict(color="orange", width=3, dash="dot"),
+        yaxis="y2"
+    ))
+
+    fig.update_layout(
+        title="Temperatur und Sonneneinstrahlung",
+        xaxis_title="Zeit",
+        yaxis=dict(
+            title="Temperatur [°C]",
+            zeroline=True,
+            zerolinewidth=1,
+            zerolinecolor="black",
+            showgrid=True
+        ),
+        yaxis2=dict(
+            title="Sonneneinstrahlung [W/m²]",
+            overlaying="y",
+            side="right",
+            showgrid=False
+        ),
+        legend=dict(orientation="h", y=-0.25),
+        height=500,
+        margin=dict(l=40, r=40, t=60, b=100)
     )
 
     return fig
@@ -2573,49 +2620,9 @@ if "df_ts" in st.session_state:
 
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze, zeitraum)
         st.plotly_chart(fig, use_container_width=True)
-
-        #wettergraphik
-
-        df_wetter_plot = df_plot.copy()
-
-        fig_wetter = go.Figure()
-
-        if "temp" in df_wetter_plot.columns:
-            fig_wetter.add_trace(go.Scatter(
-                x=df_wetter_plot.index,
-                y=df_wetter_plot["temp"],
-                mode="lines",
-                name="Aussentemperatur [°C]",
-                yaxis="y1"
-            ))
-
-        if "poa_global" in df_wetter_plot.columns:
-            fig_wetter.add_trace(go.Scatter(
-                x=df_wetter_plot.index,
-                y=df_wetter_plot["poa_global"],
-                mode="lines",
-                name="Sonneneinstrahlung auf PV-Fläche [W/m²]",
-                yaxis="y2"
-            ))
-
-        fig_wetter.update_layout(
-            title="Temperatur und Sonneneinstrahlung",
-            xaxis_title="Zeit",
-            yaxis=dict(
-                title="Temperatur [°C]",
-                side="left"
-            ),
-            yaxis2=dict(
-                title="Sonneneinstrahlung [W/m²]",
-                overlaying="y",
-                side="right"
-            ),
-            legend=dict(orientation="h", y=-0.2),
-            height=450,
-            margin=dict(l=40, r=40, t=60, b=80)
-        )
-
-        st.plotly_chart(fig_wetter, use_container_width=True)
+        
+        fig_weather = create_weather_plot(df_plot)
+        st.plotly_chart(fig_weather, use_container_width=True)
 
 
         if zeitraum in ["Tag", "Woche"]:
