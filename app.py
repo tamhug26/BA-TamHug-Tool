@@ -2080,7 +2080,7 @@ with col2:
         50, 5000, int(station_info_ui["altitude"])
     )
     st.caption(
-        f"MeteoSchweiz-Station: {station_info_ui['altitude']:.0f} m ü. M."
+        f"MeteoSchweiz-Station an ihrem Standort: {station_info_ui['altitude']:.0f} m ü. M."
     )
 with col3:
     WechselrichterkW = st.number_input(
@@ -2236,12 +2236,12 @@ with col2:
     
     st.subheader("Einspeisen")
     # regel einbauen minSoC muss < sein als maxSoC
-    Einspeisegrenze = st.number_input("Einspeisegrenze (%)", 60, 100, 70)
+    Einspeisegrenze = st.number_input("Einspeisegrenze (%) bezogen auf die Peak-Leistung der PV-Anlage", 60, 100, 70)
     gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
     EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
     
-    st.subheader("Ausspeisen")
-    Bezugsgrenze = st.number_input("Bezugsgrenze (kW)", 5, 100, 80)
+    st.subheader("Netzbezug")
+    Bezugsgrenze = st.number_input("Bezugsgrenze (kW) bezieht sich auf die Absicherung des Gebäudes", 5, 100, 80)
     Strompreis = st.selectbox(
         "Strompreis (Rp./kWh)", 
         list(strompreis_mapping.keys())
