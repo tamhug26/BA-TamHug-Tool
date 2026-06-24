@@ -2199,7 +2199,7 @@ with col4:
         value=1,
         step=1
     )
-    st.write("Ein Anlage gleicht einer Ausrichtung.")
+    st.caption("Ein Anlage gleicht einer Ausrichtung.")
 pv_anlagen_daten = []
 # pro Zeile maximal 3 PV-Anlagen nebeneinander
 for start in range(0, PVAnlagen, 3):
