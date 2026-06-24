@@ -2743,4 +2743,13 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_umweltwirkungen.csv",
             mime="text/csv"
         )
+        
         st.write(df_weather[["rad.global","rad.direct","rad.diffus"]].loc["2025-06-21"])
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df_ts.loc["2025-06-21"].index,
+            y=df_ts.loc["2025-06-21","pv_power_kW"]
+        ))
+
+        st.plotly_chart(fig)
