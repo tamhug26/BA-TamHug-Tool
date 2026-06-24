@@ -242,7 +242,8 @@ def create_base_dataframe(year=2025):
     zeitindex = pd.date_range(
         start=f"{year}-01-01 00:00",
         end=f"{year}-12-31 23:45",
-        freq="15min" #auf 15 min
+        freq="15min",
+        tz="Europe/Zurich"
     )
     df = pd.DataFrame(index=zeitindex)
     df["Monat"] = df.index.month
@@ -782,8 +783,9 @@ def prepare_weather_for_simulation(df_weather, target_year):
     new_index = pd.date_range(
         start=f"{target_year}-01-01 00:00",
         periods=len(df),
-        freq="1h"
-    ) # neuer Index also einfach ein Jahr im Stundenabstand
+        freq="1h",
+        tz="Europe/Zurich"
+    )
     df.index = new_index
     return df
 def load_station_metadata(metadata_path="SIA4028_metadata_2023.csv"):
