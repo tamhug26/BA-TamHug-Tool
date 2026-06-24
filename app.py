@@ -1337,6 +1337,8 @@ def add_uploaded_load_profile(df_base, uploaded_file):
         lambda x: x.replace(year=df.index[0].year)
     )
     df_upload = df_upload.set_index("timestamp")
+    if df_upload.index.tz is None and df.index.tz is not None:
+        df_upload.index = df_upload.index.tz_localize(df.index.tz)
 
     df_upload = df_upload.resample("15min").sum()
 
