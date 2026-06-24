@@ -753,18 +753,18 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         xaxis_title="Zeit",
         yaxis=dict(
             title="Leistung [kW]",
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor="black",
-            showgrid=True
+            showgrid=True,
+            tickmode="array",
+            tickvals=[0, 2, 4, 6, 8, 10]
         ),
         yaxis2=dict(
             title="Batterie-SoC [%]",
             overlaying="y",
             side="right",
             range=[0, 100],
-            showgrid=False,
-            tickvals=[0, 20, 40, 60, 80, 100]
+            tickmode="array",
+            tickvals=[0, 20, 40, 60, 80, 100],
+            showgrid=False
         ),
         legend=dict(orientation="h", y=-0.25),
         height=600,
@@ -796,15 +796,17 @@ def create_weather_plot(df_plot):
         xaxis_title="Zeit",
         yaxis=dict(
             title="Temperatur [°C]",
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor="black",
-            showgrid=True
+            showgrid=True,
+            tickmode="array",
+            tickvals=[-10, 0, 10, 20, 30, 40]
         ),
         yaxis2=dict(
             title="Sonneneinstrahlung [W/m²]",
             overlaying="y",
             side="right",
+            range=[0, 1000],
+            tickmode="array",
+            tickvals=[0, 200, 400, 600, 800, 1000],
             showgrid=False
         ),
         legend=dict(orientation="h", y=-0.25),
