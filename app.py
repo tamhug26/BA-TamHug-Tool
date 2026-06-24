@@ -1092,7 +1092,7 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
             return (5 <= h < 7) or (17 <= h < 20)
         elif strategie == "Mittag + Abends":
             return (11 <= h < 15) or (17 <= h < 20)
-        elif strategie == "PV-Überschussgeführt":
+        elif strategie == "PV-Überschussgeführt (spätestens 12 Uhr)":
             return True
 
     if verbraucher == "E-Auto":
@@ -1203,8 +1203,13 @@ def simulate_ems(
 
                 max_step = ww_config["leistung_kw"] * delta_t
 
-                if ww_config["strategie"] == "PV-Überschussgeführt":
-                    ladung = min(max_step, ww_rest, pv_rest)
+                if ww_config["strategie"] == "PV-Überschussgeführt (spätestens 12 Uhr)":
+                    if pv_rest > 0:
+                        ladung = min(max_step, ww_rest, pv_rest)
+                    elif i.hour >= 12:
+                        ladung = min(max_step, ww_rest)
+                    else:
+                        ladung = 0
                 else:
                     ladung = min(max_step, ww_rest)
 
@@ -1966,20 +1971,21 @@ with col1:
             if ladezyklen_pro_tag <= 1:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["Mittag / PV-optimiert", "PV-Überschussgeführt", "Morgens", "Abends"],
+                    ["Mittag / PV-optimiert", "PV-Überschussgeführt (spätestens 12 Uhr)", "Morgens", "Abends"],
                     index=0
                 )
             else:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["Mittag + Abends", "PV-Überschussgeführt", "Morgens + Mittag", "Morgens + Abends"],
+                    ["Mittag + Abends", "PV-Überschussgeführt (spätestens 12 Uhr)", "Morgens + Mittag", "Morgens + Abends"],
                     index=0
                 )
 
-            if ww_strategie == "PV-Überschussgeführt":
+            if ww_strategie == "PV-Überschussgeführt (spätestens 12 Uhr)":
                 st.info(
-                    "Der Boiler wird nur geladen, wenn PV-Überschuss vorhanden ist. "
-                    "So wird Netzbezug möglichst vermieden."
+                    "Der Boiler wird bevorzugt mit PV-Überschuss geladen. "
+                    "Falls bis 12:00 Uhr nicht genügend PV-Energie verfügbar war, "
+                    "wird die Ladung ab 12:00 Uhr automatisch abgeschlossen."
                 )
         else:
             ww_strategie = "Abends"
