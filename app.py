@@ -2444,7 +2444,16 @@ if run_simulation:
         st.write("POA-Einstrahlung Maximum [W/m²]:", round(df_ts["poa_global"].max(), 1))
         if "pv_power_kW" in df_ts.columns:
             st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
-        
+        st.write(
+            "Jahresmaximum PV-Leistung [kW]:",
+            round(df_ts["pv_power_kW"].max(), 2)
+        )
+        jahres_peak = df_ts["pv_power_kW"].max()
+
+        if jahres_peak > 0.80 * gesamt_pv_peakleistung:
+            st.success("Jahres-Peak plausibel.")
+        else:
+            st.warning("Jahres-Peak wirkt tief.")
         # test ende
 
         ww_config = {
