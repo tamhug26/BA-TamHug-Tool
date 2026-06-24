@@ -2743,3 +2743,4 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_umweltwirkungen.csv",
             mime="text/csv"
         )
+        st.write(df_weather[["rad.global","rad.direct","rad.diffus"]].loc["2025-06-21"])
