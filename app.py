@@ -2404,6 +2404,36 @@ if run_simulation:
             df_ts["poa_global"] += df_tmp["poa_global"]
 
         #test
+        # TEST: PV-Plausibilität Sommer / Südanlage
+        testtag = "2025-06-21"
+        df_test = df_ts.loc[testtag].copy()
+
+        pv_nach_18 = df_test.loc[df_test.index.hour >= 18, "pv_power_kW"].max()
+        pv_peak = df_test["pv_power_kW"].max()
+        peak_zeit = df_test["pv_power_kW"].idxmax()
+        jahresertrag_pro_kwp = df_ts["pv_kWh"].sum() / gesamt_pv_peakleistung
+
+        st.subheader("PV-Plausibilitätscheck")
+
+        st.write("PV-Leistung Maximum am Testtag [kW]:", round(pv_peak, 2))
+        st.write("Zeitpunkt Maximum:", peak_zeit)
+        st.write("Max. PV-Leistung nach 18:00 [kW]:", round(pv_nach_18, 2))
+        st.write("Jahresertrag pro kWp [kWh/kWp]:", round(jahresertrag_pro_kwp, 1))
+
+        if pv_peak > 0.65 * gesamt_pv_peakleistung:
+            st.success("Peak-Leistung ist plausibel.")
+        else:
+            st.warning("Peak-Leistung wirkt tief. Wettertag oder Parameter prüfen.")
+
+        if pv_nach_18 > 0:
+            st.success("PV liefert nach 18:00 noch Leistung.")
+        else:
+            st.warning("Nach 18:00 kommt keine PV-Leistung. Zeitachse oder Wetterdaten prüfen.")
+
+        if 800 <= jahresertrag_pro_kwp <= 1400:
+            st.success("Jahresertrag pro kWp ist plausibel für die Schweiz.")
+        else:
+            st.warning("Jahresertrag pro kWp wirkt unplausibel.")
         st.write(
             "PV-Ertrag pro kWp:",
             df_ts["pv_kWh"].sum() / gesamt_pv_peakleistung
