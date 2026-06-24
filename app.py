@@ -559,7 +559,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         if start_datum is None:
             start_datum = df.index.min().date()
 
-        start = pd.Timestamp(start_datum)
+        start = pd.Timestamp(start_datum).tz_localize("Europe/Zurich")
         ende = start + pd.Timedelta(days=1)
 
         df_anzeige = df[(df.index >= start) & (df.index < ende)][spalten]
@@ -2401,6 +2401,10 @@ if run_simulation:
             df_ts["poa_global"] += df_tmp["poa_global"]
 
         #test
+        st.write(
+            "PV-Ertrag pro kWp:",
+            df_ts["pv_kWh"].sum() / gesamt_pv_peakleistung
+        )
         st.write(df_ts["pv_power_kW"].max())
         st.write(df_ts["poa_global"].max())
         st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
