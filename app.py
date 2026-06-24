@@ -537,6 +537,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         "ww_kWh",
         "ev_kWh",
         "soc_kWh",
+        "soc_prozent",
         "netzbezug_kWh",
         "netzeinspeisung_kWh",
         "abregelung_kWh",
@@ -611,7 +612,8 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
         if "soc_kWh" in df.columns:
             df_anzeige["soc_kWh"] = df["soc_kWh"].resample("MS").mean()
-
+        if "soc_prozent" in df.columns:
+            df_anzeige["soc_prozent"] = df["soc_prozent"].resample("MS").mean()
 
     else:
         df_anzeige = df[spalten]
@@ -677,13 +679,13 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     ))
 
     # Batterieladezustand / SoC
-    if "soc_kWh" in df_plot.columns:
+    if "soc_prozent" in df_plot.columns:
         fig.add_trace(go.Scatter(
             x=df_plot.index,
-            y=df_plot["soc_kWh"],
+            y=df_plot["soc_prozent"],
             mode="lines",
-            name="Batterie-SoC [kWh]",
-            line=dict(color="black", width=2),
+            name="Batterie-SoC [%]",
+            line=dict(color="black", width=3),
             yaxis="y2"
         ))
 
@@ -746,7 +748,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         xaxis_title="Zeit",
         yaxis_title=y_title,
         yaxis2=dict(
-            title="Batterie-SoC [kWh]",
+            title="Batterie [%]",
             overlaying="y",
             side="right"
         ),
@@ -1267,6 +1269,7 @@ def simulate_ems(
 
         df.at[i, "direktverbrauch_pv_kWh"] = direkt
         df.at[i, "soc_kWh"] = soc
+        df.at[i, "soc_prozent"] = soc / batteriekapazitaet * 100 if batteriekapazitaet > 0 else 0
         df.at[i, "netzbezug_kWh"] = netzbezug
         df.at[i, "unterdeckung_kWh"] = unterdeckung
 
