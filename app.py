@@ -1770,7 +1770,7 @@ with col4:
             accept_multiple_files=False,
             type=["csv", "xlsx"]
         )
-        st.info("""
+        st.caption("""
         CSV-Format: 15 Minuten Werte
         timestamp,verbrauch_kWh
         2025-01-01 00:00,0.42
@@ -1926,7 +1926,7 @@ with col2:
             value=40
         )
         #Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
-        st.info("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
+        st.caption("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
         elif wp_typ == "Sole/Wasser WP":
@@ -1976,10 +1976,10 @@ with col1:
     ww_strategie = "Abends"
 
     if not ww_aktiv:
-        st.info("Warmwasser wird nicht als elektrische Last simuliert.")
+        st.caption("Warmwasser wird nicht als elektrische Last simuliert.")
 
     else:
-        st.info(f"{ww_system} wird als elektrische Warmwasserlast berücksichtigt.")
+        st.caption(f"{ww_system} wird als elektrische Warmwasserlast berücksichtigt.")
 
         ww_speicher_liter = st.selectbox(
             "Warmwasserspeicher / Boiler [Liter]",
@@ -2051,7 +2051,7 @@ with col1:
                 )
 
             if ww_strategie == "PV-Überschussgeführt (spätestens 11 Uhr)":
-                st.info(
+                st.caption(
                     "Der Boiler wird bevorzugt mit PV-Überschuss geladen. "
                     "Falls bis 11:00 Uhr nicht genügend PV-Energie verfügbar war, "
                     "wird die Ladung ab 11:00 Uhr automatisch abgeschlossen."
@@ -2107,7 +2107,7 @@ with col2:
             step=5.0
         )
         
-        st.info("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
+        st.caption("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
 
         ev_ladeleistung_kw = st.number_input(
             "E-Auto Ladeleistung [kW]",
@@ -2127,7 +2127,7 @@ with col2:
             ],
             index=2
         )
-        st.info("Ladefenster: morgens 5–8 Uhr, mittags 11–15 Uhr, abends 17–22 Uhr")
+        st.caption("Ladefenster: morgens 5–8 Uhr, mittags 11–15 Uhr, abends 17–22 Uhr")
     else:
         ev_fahrtage = []
         ev_verbrauch_kWh_pro_100km = 0.0
@@ -2265,7 +2265,7 @@ for start in range(0, PVAnlagen, 3):
                 key=f"performance_ratio_{i}"
             )
             if i == 0:
-                st.info(
+                st.caption(
                     "NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. "
                     "Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung."
                 )
@@ -2287,7 +2287,7 @@ for start in range(0, PVAnlagen, 3):
                 key=f"ausrichtung_{i}"
             )
             if i == 0:
-                st.info("0 = Nord, 90 = Ost, 180 = Süd, 270 = West")
+                st.caption("0 = Nord, 90 = Ost, 180 = Süd, 270 = West")
             pv_anlagen_daten.append({
                 "Anlage": i + 1,
                 "Dachart": Dachart,
@@ -2314,7 +2314,7 @@ with col1:
         maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
         minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
         maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
-        st.info("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
+        st.caption("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
         batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie (%)", 80, 100, 95)
     else:
         batteriekapazität = 0
