@@ -754,6 +754,8 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         yaxis=dict(
             title="Leistung [kW]",
             showgrid=True,
+            gridcolor="rgba(200,200,200,0.35)",
+            range=[0, 10],
             tickmode="array",
             tickvals=[0, 2, 4, 6, 8, 10]
         ),
@@ -797,6 +799,8 @@ def create_weather_plot(df_plot):
         yaxis=dict(
             title="Temperatur [°C]",
             showgrid=True,
+            gridcolor="rgba(200,200,200,0.35)",
+            range=[-10, 40],
             tickmode="array",
             tickvals=[-10, 0, 10, 20, 30, 40]
         ),
