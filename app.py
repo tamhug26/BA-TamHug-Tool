@@ -2572,6 +2572,50 @@ if "df_ts" in st.session_state:
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze, zeitraum)
         st.plotly_chart(fig, use_container_width=True)
 
+        #wettergraphik
+
+        df_wetter_plot = df_plot.copy()
+
+        fig_wetter = go.Figure()
+
+        if "temp" in df_wetter_plot.columns:
+            fig_wetter.add_trace(go.Scatter(
+                x=df_wetter_plot.index,
+                y=df_wetter_plot["temp"],
+                mode="lines",
+                name="Aussentemperatur [°C]",
+                yaxis="y1"
+            ))
+
+        if "poa_global" in df_wetter_plot.columns:
+            fig_wetter.add_trace(go.Scatter(
+                x=df_wetter_plot.index,
+                y=df_wetter_plot["poa_global"],
+                mode="lines",
+                name="Sonneneinstrahlung auf PV-Fläche [W/m²]",
+                yaxis="y2"
+            ))
+
+        fig_wetter.update_layout(
+            title="Temperatur und Sonneneinstrahlung",
+            xaxis_title="Zeit",
+            yaxis=dict(
+                title="Temperatur [°C]",
+                side="left"
+            ),
+            yaxis2=dict(
+                title="Sonneneinstrahlung [W/m²]",
+                overlaying="y",
+                side="right"
+            ),
+            legend=dict(orientation="h", y=-0.2),
+            height=450,
+            margin=dict(l=40, r=40, t=60, b=80)
+        )
+
+        st.plotly_chart(fig_wetter, use_container_width=True)
+
+
         if zeitraum in ["Tag", "Woche"]:
             df_sum = get_raw_period_dataframe(df_ts, zeitraum, start_datum=start_datum)
 
