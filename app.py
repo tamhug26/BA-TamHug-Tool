@@ -2317,9 +2317,6 @@ if run_simulation:
 
         )
 
-        st.write(df_ts["pv_power_kW"].max())
-        st.write(df_ts["poa_global"].max())
-
         # Stromprofil
         if Stromnutzung == "Standartprofil":
             df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
@@ -2391,6 +2388,16 @@ if run_simulation:
             df_ts["pv_kWh"] += df_tmp["pv_kWh"]
             df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
             df_ts["poa_global"] += df_tmp["poa_global"]
+
+        #test
+        st.write(df_ts["pv_power_kW"].max())
+        st.write(df_ts["poa_global"].max())
+        st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+        st.write("POA-Einstrahlung Maximum [W/m²]:", round(df_ts["poa_global"].max(), 1))
+        if "pv_power_kW" in df_ts.columns:
+            st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
+        
+        # test ende
 
         ww_config = {
             "aktiv": ww_aktiv,
