@@ -1092,6 +1092,8 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
             return (5 <= h < 7) or (17 <= h < 20)
         elif strategie == "Mittag + Abends":
             return (11 <= h < 15) or (17 <= h < 20)
+        elif strategie == "PV-Überschussgeführt":
+            return True
 
     if verbraucher == "E-Auto":
         if strategie == "Morgens":
@@ -1192,10 +1194,21 @@ def simulate_ems(
         for element in prioritaeten:
 
             if element == "Warmwasser" and ww_rest > 0 and ww_config["steuerbar"]:
-                if ist_im_zeitfenster(i, ww_config["strategie"], "Warmwasser"):
-                    max_step = ww_config["leistung_kw"] * delta_t
+
+                laden_erlaubt = ist_im_zeitfenster(
+                    i,
+                    ww_config["strategie"],
+                    "Warmwasser"
+                )
+
+                max_step = ww_config["leistung_kw"] * delta_t
+
+                if ww_config["strategie"] == "PV-Überschussgeführt":
+                    ladung = min(max_step, ww_rest, pv_rest)
+                else:
                     ladung = min(max_step, ww_rest)
 
+                if laden_erlaubt and ladung > 0:
                     df.at[i, "ww_kWh"] += ladung
                     ww_rest -= ladung
 
@@ -1953,12 +1966,20 @@ with col1:
             if ladezyklen_pro_tag <= 1:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["Morgens", "Mittag / PV-optimiert", "Abends"]
+                    ["Mittag / PV-optimiert", "PV-Überschussgeführt", "Morgens", "Abends"],
+                    index=0
                 )
             else:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["Morgens + Mittag", "Morgens + Abends", "Mittag + Abends"]
+                    ["Mittag + Abends", "PV-Überschussgeführt", "Morgens + Mittag", "Morgens + Abends"],
+                    index=0
+                )
+
+            if ww_strategie == "PV-Überschussgeführt":
+                st.info(
+                    "Der Boiler wird nur geladen, wenn PV-Überschuss vorhanden ist. "
+                    "So wird Netzbezug möglichst vermieden."
                 )
         else:
             ww_strategie = "Abends"
