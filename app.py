@@ -658,15 +658,16 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             line=dict(color="green", width=2.5, dash="dashdot")
         ))
 
-    # SoC
-    # fig.add_trace(go.Scatter(
-    #     x=df_plot.index,
-    #     y=df_plot["soc_kWh"],
-    #     mode="lines",
-    #     name="Batterie-SoC",
-    #     line=dict(color="green", width=2),
-    #     yaxis="y2"
-    # ))
+    # Batterieladezustand / SoC
+    if "soc_kWh" in df_plot.columns:
+        fig.add_trace(go.Scatter(
+            x=df_plot.index,
+            y=df_plot["soc_kWh"],
+            mode="lines",
+            name="Batterie-SoC [kWh]",
+            line=dict(color="black", width=2),
+            yaxis="y2"
+        ))
 
     # Netzbezug
     fig.add_trace(go.Scatter(
@@ -744,11 +745,11 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         title="Zeitverlauf von PV, Last, Batterie und Netz",
         xaxis_title="Zeit",
         yaxis_title=y_title,
-        # yaxis2=dict(
-        #     title="SoC Batterie [kWh]",
-        #     overlaying="y",
-        #     side="right"
-        # ),
+        yaxis2=dict(
+            title="Batterie-SoC [kWh]",
+            overlaying="y",
+            side="right"
+        ),
         legend=dict(orientation="h", y=-0.2),
         height=600,
         margin=dict(l=40, r=40, t=60, b=80)
