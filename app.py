@@ -748,9 +748,10 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         xaxis_title="Zeit",
         yaxis_title=y_title,
         yaxis2=dict(
-            title="Batterie [%]",
+            title="Batterie-SoC [%]",
             overlaying="y",
-            side="right"
+            side="right",
+            range=[0, 100]
         ),
         legend=dict(orientation="h", y=-0.2),
         height=600,
