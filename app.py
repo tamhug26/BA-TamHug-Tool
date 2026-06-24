@@ -2300,6 +2300,21 @@ if run_simulation:
         df_weather_raw = load_weather_data(standort_auswahl)
         df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
+        st.write(
+            df_weather.loc["2025-06-21",
+            ["rad.global","rad.direct","rad.diffus"]]
+        )
+
+        testtag = "2025-06-21"
+
+        st.line_chart(
+
+            df_weather.loc[testtag,
+
+            ["rad.global","rad.direct","rad.diffus"]]
+
+        )
+
         # Stromprofil
         if Stromnutzung == "Standartprofil":
             df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
@@ -2744,12 +2759,3 @@ if "df_ts" in st.session_state:
             mime="text/csv"
         )
         
-        st.write(df_weather[["rad.global","rad.direct","rad.diffus"]].loc["2025-06-21"])
-        fig = go.Figure()
-
-        fig.add_trace(go.Scatter(
-            x=df_ts.loc["2025-06-21"].index,
-            y=df_ts.loc["2025-06-21","pv_power_kW"]
-        ))
-
-        st.plotly_chart(fig)
