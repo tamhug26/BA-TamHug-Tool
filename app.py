@@ -2156,8 +2156,11 @@ for start in range(0, PVAnlagen, 3):
                 step=0.5,
                 key=f"nmot_{i}"
             )
-            st.info("NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung.")
-        
+            if i == 0:
+                st.info(
+                    "NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. "
+                    "Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung."
+                )
             Dachneigung = st.number_input(
                 "Dachneigung [°]",
                 min_value=0,
@@ -2175,7 +2178,8 @@ for start in range(0, PVAnlagen, 3):
                 step=1,
                 key=f"ausrichtung_{i}"
             )
-            st.info ("0=Nord, 90=Ost, 180=Süd, 270=West")
+            if i == 0:
+                st.info("0 = Nord, 90 = Ost, 180 = Süd, 270 = West")
             pv_anlagen_daten.append({
                 "Anlage": i + 1,
                 "Dachart": Dachart,
