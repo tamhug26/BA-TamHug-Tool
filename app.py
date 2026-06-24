@@ -559,7 +559,9 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         if start_datum is None:
             start_datum = df.index.min().date()
 
-        start = pd.Timestamp(start_datum).tz_localize("Europe/Zurich")
+        start = pd.Timestamp(start_datum)
+        if df.index.tz is not None:
+            start = start.tz_localize(df.index.tz)
         ende = start + pd.Timedelta(days=1)
 
         df_anzeige = df[(df.index >= start) & (df.index < ende)][spalten]
@@ -572,6 +574,8 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
             start_datum = df.index.min().date()
 
         start = pd.Timestamp(start_datum)
+        if df.index.tz is not None:
+            start = start.tz_localize(df.index.tz)
         ende = start + pd.Timedelta(days=7)
 
         df_anzeige = df[(df.index >= start) & (df.index < ende)][spalten]
@@ -1341,13 +1345,21 @@ def add_uploaded_load_profile(df_base, uploaded_file):
 
     return df
 def get_raw_period_dataframe(df, zeitraum, start_datum=None, start_monat=None):
+    tz = df.index.tz
+
     if zeitraum == "Tag":
         start = pd.Timestamp(start_datum)
+        if tz is not None:
+            start = start.tz_localize(tz)
+
         ende = start + pd.Timedelta(days=1)
         return df[(df.index >= start) & (df.index < ende)]
 
     elif zeitraum == "Woche":
         start = pd.Timestamp(start_datum)
+        if tz is not None:
+            start = start.tz_localize(tz)
+
         ende = start + pd.Timedelta(days=7)
         return df[(df.index >= start) & (df.index < ende)]
 
