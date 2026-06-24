@@ -1756,7 +1756,54 @@ with col1:
 with col2:
     personen = st.number_input("Personen im Haushalt", 1, 10, 4)
 with col3:
-    jahresstromverbrauch = st.number_input("Jahresstrombedarf total(kWh/a)", 1000, 10000, 4500)
+    st.write("**Jahresstrombedarf**")
+
+    anzahl_stromjahre = st.number_input(
+        "Anzahl Jahre für Strombedarf",
+        min_value=1,
+        max_value=10,
+        value=1,
+        step=1
+    )
+
+    stromjahre_daten = []
+
+    for i in range(anzahl_stromjahre):
+        col_jahr, col_verbrauch = st.columns(2)
+
+        with col_jahr:
+            jahr = st.number_input(
+                f"Jahr {i+1}",
+                min_value=2000,
+                max_value=2100,
+                value=2024 - i,
+                step=1,
+                key=f"strom_jahr_{i}"
+            )
+
+        with col_verbrauch:
+            verbrauch = st.number_input(
+                f"Strombedarf {i+1} [kWh/a]",
+                min_value=0.0,
+                max_value=100000.0,
+                value=4500.0,
+                step=100.0,
+                key=f"strom_verbrauch_{i}"
+            )
+
+        stromjahre_daten.append({
+            "jahr": int(jahr),
+            "verbrauch_kWh": float(verbrauch)
+        })
+
+    jahresstromverbrauch = np.mean([
+        eintrag["verbrauch_kWh"]
+        for eintrag in stromjahre_daten
+    ])
+
+    st.caption(
+        f"Verwendeter Mittelwert für die Simulation: {jahresstromverbrauch:.0f} kWh/a"
+    )
 with col4:
     Stromnutzung = st.radio(
         "Stromprofil wählen",
