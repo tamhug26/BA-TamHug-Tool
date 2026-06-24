@@ -779,7 +779,7 @@ def create_weather_plot(df_plot):
         y=df_plot["temp"],
         mode="lines",
         name="Außentemperatur [°C]",
-        line=dict(color="blue", width=3, dash="dash")
+        line=dict(color="blue", width=3, dash="dashdot")
     ))
 
     fig.add_trace(go.Scatter(
