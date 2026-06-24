@@ -2310,10 +2310,6 @@ if run_simulation:
             df_weather["rad.global"].sum()
         )
         st.write(
-            "PV-Ertrag pro kWp:",
-            df_ts["pv_kWh"].sum() / gesamt_pv_peakleistung
-        )
-        st.write(
             df_weather.loc["2025-06-21",
             ["rad.global","rad.direct","rad.diffus"]]
         )
