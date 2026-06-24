@@ -2320,26 +2320,6 @@ if run_simulation:
         df_weather_raw = load_weather_data(standort_auswahl)
         df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
-        #test
-        st.write(
-            "Jährliche Globalstrahlung:",
-            df_weather["rad.global"].sum()
-        )
-        st.write(
-            df_weather.loc["2025-06-21",
-            ["rad.global","rad.direct","rad.diffus"]]
-        )
-
-        testtag = "2025-06-21"
-
-        st.line_chart(
-
-            df_weather.loc[testtag,
-
-            ["rad.global","rad.direct","rad.diffus"]]
-
-        )
-
         # Stromprofil
         if Stromnutzung == "Standartprofil":
             df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
