@@ -9,7 +9,7 @@ PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
 
-st.write("Prototyp 1 test 2")
+st.write("Prototyp 2")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
@@ -1635,7 +1635,7 @@ def autarkie_farbe(wert):
         return "#3f8f1f"
     
 
-st.header("Dimensionierungstool")
+st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 
 #profile
 st.subheader("Profile")
@@ -1748,11 +1748,11 @@ if vergleichsmodus:
 #allgemein
 col1, col2, col3, col4 = st.columns(4)
 with col1: 
-    EBFm2 = st.number_input("Energiebezugsfläche bzw m2", 50, 5000, 200)
-    # standort_auswahl = st.selectbox(
-    #     "Standort wählen",
-    #     list(Standort.keys())
-    # ) 
+    EBFm2 = st.number_input("Energiebezugsfläche (EBF) [m²]", 50, 5000, 200)
+    st.caption(
+        "Falls die Energiebezugsfläche nicht bekannt ist, kann näherungsweise die Wohnfläche verwendet werden. "
+        "Die EBF umfasst alle beheizten bzw. klimatisierten Bereiche eines Gebäudes."
+    ) 
 with col2:
     personen = st.number_input("Personen im Haushalt", 1, 10, 4)
 with col3:
