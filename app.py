@@ -691,7 +691,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             x=df_plot.index,
             y=df_plot["soc_prozent"],
             mode="lines",
-            name="Batterie-SoC [%]",
+            name="Batterie-SoC in %",
             line=dict(color="black", width=3),
             yaxis="y2"
         ))
@@ -747,12 +747,12 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             name="Unterdeckung",
             marker=dict(color="darkred", size=8, symbol="circle-open")
         ))
-    y_title = "Leistung [kW]"
+    y_title = "Leistung in kW"
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
         xaxis_title="Zeit",
         yaxis=dict(
-            title="Leistung [kW]",
+            title="Leistung in kW",
             showgrid=True,
             gridcolor="rgba(200,200,200,0.35)",
             range=[0, 10],
@@ -760,7 +760,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             tickvals=[0, 2, 4, 6, 8, 10]
         ),
         yaxis2=dict(
-            title="Batterie-SoC [%]",
+            title="Batterie-SoC in %",
             overlaying="y",
             side="right",
             range=[0, 100],
@@ -780,7 +780,7 @@ def create_weather_plot(df_plot):
         x=df_plot.index,
         y=df_plot["temp"],
         mode="lines",
-        name="Außentemperatur [°C]",
+        name="Außentemperatur in °C",
         line=dict(color="blue", width=3, dash="longdashdot")
     ))
 
@@ -788,7 +788,7 @@ def create_weather_plot(df_plot):
         x=df_plot.index,
         y=df_plot["poa_global"],
         mode="lines",
-        name="Sonneneinstrahlung [W/m²]",
+        name="Sonneneinstrahlung in W/m²",
         line=dict(color="orange", width=3, dash="dot"),
         yaxis="y2"
     ))
@@ -797,7 +797,7 @@ def create_weather_plot(df_plot):
         title="Temperatur und Sonneneinstrahlung",
         xaxis_title="Zeit",
         yaxis=dict(
-            title="Temperatur [°C]",
+            title="Temperatur in °C",
             showgrid=True,
             gridcolor="rgba(200,200,200,0.35)",
             range=[-10, 40],
@@ -805,7 +805,7 @@ def create_weather_plot(df_plot):
             tickvals=[-10, 0, 10, 20, 30, 40]
         ),
         yaxis2=dict(
-            title="Sonneneinstrahlung [W/m²]",
+            title="Sonneneinstrahlung in W/m²",
             overlaying="y",
             side="right",
             range=[0, 1000],
@@ -1354,7 +1354,7 @@ def simulate_ems(
     df["gesamtlast_kWh"] = df["gesamtlast_kWh"] + df["ww_kWh"] + df["ev_kWh"]
 
     return df
-def add_uploaded_load_profile(df_base, uploaded_file):
+def add_uploaded_load_profile(df_base, uploaded_file, lastprofil_einheit):
     df = df_base.copy()
 
     if uploaded_file.name.endswith(".csv"):
@@ -1383,7 +1383,10 @@ def add_uploaded_load_profile(df_base, uploaded_file):
     df_upload = df_upload.dropna(subset=["timestamp", "verbrauch_roh"])
     df_upload = df_upload.set_index("timestamp").sort_index()
 
-    df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"] / 4
+    if lastprofil_einheit == "Energie pro 15-Minuten-Intervall [kWh]":
+        df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"]
+    else:
+        df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"] * 0.25
 
     df_upload = df_upload[["verbrauch_kWh"]]
 
@@ -1550,8 +1553,8 @@ def berechne_umweltwirkung(
         # Wärmeerzeuger pauschal nach EBF
         add(
             "Wärmeerzeuger Herstellung",
-            UBP["Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²"] * ebf_m2 / lebensdauer_waermeerzeuger,
-            kgCO2eq["Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²"] * ebf_m2 / lebensdauer_waermeerzeuger
+            UBP["Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF in m²"] * ebf_m2 / lebensdauer_waermeerzeuger,
+            kgCO2eq["Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF in m²"] * ebf_m2 / lebensdauer_waermeerzeuger
         )
 
     # Wärmepumpe Herstellung
@@ -1731,7 +1734,7 @@ if vergleichsmodus:
     fig_vergleich.update_layout(
         title="Monatlicher Jahresverlauf im Profilvergleich",
         xaxis_title="Monat",
-        yaxis_title="Energie [kWh/Monat]",
+        yaxis_title="Energie in kWh/Monat",
         height=500,
         legend=dict(orientation="h", y=-0.2)
     )
@@ -1748,7 +1751,7 @@ if vergleichsmodus:
 #allgemein
 col1, col2, col3, col4 = st.columns(4)
 with col1: 
-    EBFm2 = st.number_input("Energiebezugsfläche (EBF) [m²]", 50, 5000, 200)
+    EBFm2 = st.number_input("Energiebezugsfläche (EBF) in m²", 50, 5000, 200)
     st.caption(
         "Falls die Energiebezugsfläche nicht bekannt ist, kann näherungsweise die Wohnfläche verwendet werden. "
         "Die EBF umfasst alle beheizten bzw. klimatisierten Bereiche eines Gebäudes."
@@ -1783,7 +1786,7 @@ with col3:
 
         with col_verbrauch:
             verbrauch = st.number_input(
-                f"Strombedarf {i+1} [kWh/a]",
+                f"Strombedarf {i+1} in kWh/a",
                 min_value=0.0,
                 max_value=100000.0,
                 value=4500.0,
@@ -1807,7 +1810,7 @@ with col3:
 with col4:
     Stromnutzung = st.radio(
         "Stromprofil wählen",
-        ["Standartprofil", "eigene Daten"],
+        ["Standardprofil", "eigene Daten"],
         horizontal=True
     )
     uploaded_file = None
@@ -1818,12 +1821,17 @@ with col4:
             type=["csv", "xlsx"]
         )
         st.caption("""
-        CSV-Format: 15 Minuten Werte
-        timestamp,verbrauch_kWh
+        CSV-/Excel-Format: 15-Minuten-Werte
+        timestamp,verbrauch
         2025-01-01 00:00,0.42
-        2025-01-01 00:15,0.38
-        2025-01-01 00:30,0.35
+        Bei Auswahl "Energie" bedeutet 0.42: Verbrauch von 00:00 bis 00:15 Uhr in kWh.
+        Bei Auswahl "Leistung" bedeutet 0.42: mittlere Leistung während 00:00 bis 00:15 Uhr in kW.
         """)
+        lastprofil_einheit = st.radio(
+            "Einheit der hochgeladenen Werte",
+            ["Energie pro 15-Minuten-Intervall in kWh", "mittlere Leistung im Intervall in kW"],
+            horizontal=False
+        )
 
 st.write("-----------------------")
 #Heizwärmebedarf-Ermittlung & Heizsystem
@@ -1836,9 +1844,9 @@ col1, col2 =st.columns(2)
 with col1:
     st.subheader("Heizwärmebedarf-Ermittlung")
     # aus Baujahr Heizwärmebedarf kWh/m2
-    m2 = st.number_input("Fläche des EFH [m2]", 50, 5000, 200)
+    m2 = st.number_input("Fläche des EFH in m2", 50, 5000, 200)
     bau_typ = st.selectbox(
-        "Gebäudestandart",
+        "Gebäudestandard",
         ["Baujahr", "Minergie", "Minergie-P"]
     )
     if bau_typ == "Baujahr":
@@ -1869,12 +1877,12 @@ with col1:
             else:
                 Heizwaermebedarf_total = Heizwaermebedarf
             Heizwaermebedarf_input = st.number_input(
-                "Heizwärmebedarf kWh/a",
+                "Heizwärmebedarf in kWh/a",
                 value=int(Heizwaermebedarf_total)
             )
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
 
-            st.write(f"Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+            st.write(f"Raumheizung in kWh/a: {raumheizung_waermebedarf_kWh:.0f}")
             ergebnis = Heizwaermebedarf_input
         else:
             st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
@@ -1888,7 +1896,7 @@ with col1:
             )
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
 
-            st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+            st.write(f"Anteil Raumheizung in kWh/a: {raumheizung_waermebedarf_kWh:.0f}")
             ergebnis = Heizwaermebedarf_input
         else:
             st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
@@ -1903,7 +1911,7 @@ with col1:
             ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
 
-            st.write(f"Anteil Raumheizung [kWh/a]: {raumheizung_waermebedarf_kWh:.0f}")
+            st.write(f"Anteil Raumheizung in kWh/a: {raumheizung_waermebedarf_kWh:.0f}")
             ergebnis = Heizwaermebedarf_input
         else:
             st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
@@ -1961,13 +1969,13 @@ with col2:
             step=0.1
         )
         Auslegetemperatur = st.number_input(
-            "Auslegetemperatur [°C]",
+            "Auslegetemperatur in °C",
             min_value=-25,
             max_value=10,
             value=-7
         )
         Vorlauftemperatur_Auslegung = st.number_input(
-            "Vorlauftemperatur bei Auslegetemperatur [°C]",
+            "Vorlauftemperatur bei Auslegetemperatur in °C",
             min_value=20,
             max_value=70,
             value=40
@@ -1986,12 +1994,12 @@ with col2:
         else:
             stromverbrauch = 0.0
         StromverbrauchWP_input = st.number_input(
-            "geschätzter Stromverbrauch [kWh/a]",
+            "geschätzter Stromverbrauch in kWh/a",
             value=int(stromverbrauch)
         )
         ergebnis = stromverbrauch
     raumtemperatur = st.number_input(
-        "Gewünschte Raumtemperatur [°C]",
+        "Gewünschte Raumtemperatur in °C",
         min_value=15.0,
         max_value=25.0,
         value=20.0,
@@ -2029,7 +2037,7 @@ with col1:
         st.caption(f"{ww_system} wird als elektrische Warmwasserlast berücksichtigt.")
 
         ww_speicher_liter = st.selectbox(
-            "Warmwasserspeicher / Boiler [Liter]",
+            "Warmwasserspeicher / Boiler in Liter",
             list(range(50, 401, 50)),
             index=3
         )
@@ -2048,7 +2056,7 @@ with col1:
                 ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr
             ) / 365
 
-            ww_label = "Elektrischer Warmwasserbedarf Elektroboiler [kWh/Tag]"
+            ww_label = "Elektrischer Warmwasserbedarf Elektroboiler in kWh/Tag"
 
         elif ww_system == "Wärmepumpenboiler":
             jaz_ww = st.number_input(
@@ -2063,7 +2071,7 @@ with col1:
                 (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz_ww
             ) / 365
 
-            ww_label = "Elektrischer Warmwasserbedarf Wärmepumpenboiler [kWh/Tag]"
+            ww_label = "Elektrischer Warmwasserbedarf Wärmepumpenboiler in kWh/Tag"
 
         ww_bedarf_kWh_tag = st.number_input(
             ww_label,
@@ -2074,7 +2082,7 @@ with col1:
         )
 
         ww_ladeleistung_kw = st.number_input(
-            "WW-/Boiler-Leistung [kW]",
+            "WW-/Boiler-Leistung in kW",
             min_value=0.1,
             max_value=20.0,
             value=3.0,
@@ -2131,7 +2139,7 @@ with col2:
         ev_fahrtage = [tag_mapping[tag] for tag in ev_fahrtage_namen]
 
         ev_verbrauch_kWh_pro_100km = st.number_input(
-            "Verbrauch [kWh/100 km]",
+            "Verbrauch in kWh/100 km",
             min_value=5.0,
             max_value=35.0,
             value=18.0,
@@ -2139,7 +2147,7 @@ with col2:
         )
 
         ev_km_pro_fahrtag = st.number_input(
-            "Fahrstrecke pro Fahrtag [km]",
+            "Fahrstrecke pro Fahrtag in km",
             min_value=0.0,
             max_value=300.0,
             value=50.0,
@@ -2147,7 +2155,7 @@ with col2:
         )
 
         ev_km_nicht_fahrtag = st.number_input(
-            "Fahrstrecke an Nicht-Fahrtagen [km/Tag]",
+            "Fahrstrecke an Nicht-Fahrtagen in km/Tag",
             min_value=0.0,
             max_value=300.0,
             value=0.0,
@@ -2157,7 +2165,7 @@ with col2:
         st.caption("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
 
         ev_ladeleistung_kw = st.number_input(
-            "E-Auto Ladeleistung [kW]",
+            "E-Auto Ladeleistung in kW",
             min_value=0.1,
             max_value=22.0,
             value=3.7,
@@ -2198,7 +2206,7 @@ with col2:
         )
 
         auto_km_woche = st.number_input(
-            "Gefahrene Kilometer pro Woche [km/Woche]",
+            "Gefahrene Kilometer pro Woche in km/Woche",
             min_value=0.0,
             max_value=100000.0,
             value=100.0,
@@ -2268,7 +2276,7 @@ for start in range(0, PVAnlagen, 3):
             )
 
             PV_Wirkungsgrad = st.number_input(
-                "PV Wirkungsgrad [%]",
+                "PV Wirkungsgrad in %",
                 min_value=0.1,
                 max_value=100.0,
                 value=20.0,
@@ -2277,7 +2285,7 @@ for start in range(0, PVAnlagen, 3):
             )
 
             pv_Peakleistung = st.number_input(
-                "PV-Peakleistung [kWp]",
+                "PV-Peakleistung in kWp",
                 min_value=0.0,
                 max_value=1000.0,
                 value=10.0,
@@ -2286,7 +2294,7 @@ for start in range(0, PVAnlagen, 3):
             )
 
             gamma_pdc_input = st.number_input(
-                "Temperaturkoeffizient Pmax [1/°C]",
+                "Temperaturkoeffizient Pmax in 1/°C",
                 min_value=-0.02,
                 max_value=0.0,
                 value=-0.0040,
@@ -2296,7 +2304,7 @@ for start in range(0, PVAnlagen, 3):
             )
 
             nmot_input = st.number_input(
-                "NMOT / NOCT [°C]",
+                "NMOT / NOCT in °C",
                 min_value=20.0,
                 max_value=80.0,
                 value=45.0,
@@ -2304,7 +2312,7 @@ for start in range(0, PVAnlagen, 3):
                 key=f"nmot_{i}"
             )
             performance_ratio_input = st.number_input(
-                "Performance Ratio [-]",
+                "Performance Ratio",
                 min_value=0.5,
                 max_value=1.1,
                 value=0.85,
@@ -2317,7 +2325,7 @@ for start in range(0, PVAnlagen, 3):
                     "Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung."
                 )
             Dachneigung = st.number_input(
-                "Dachneigung [°]",
+                "Dachneigung in °",
                 min_value=0,
                 max_value=90,
                 value=45,
@@ -2326,7 +2334,7 @@ for start in range(0, PVAnlagen, 3):
             )
 
             Dachausrichtung = st.number_input(
-                "Dachausrichtung / Azimut [°]",
+                "Dachausrichtung / Azimut in °",
                 min_value=0,
                 max_value=380,
                 value=180,
@@ -2413,7 +2421,7 @@ with col2:
     )
     CO2Emmisionen = EVU[EVU_name]
     CO2Emmisionen_input = st.number_input(
-        "CO2 Emmisionen [kg CO2e/MWh]",
+        "CO2 Emmisionen in kg CO2e/MWh",
         value=int(CO2Emmisionen)
     )
     ergebnis = CO2Emmisionen
@@ -2434,12 +2442,12 @@ if run_simulation:
         df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
         # Stromprofil
-        if Stromnutzung == "Standartprofil":
+        if Stromnutzung == "Standardprofil":
             df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
         elif Stromnutzung == "eigene Daten":
             if uploaded_file is not None:
-                df_ts = add_uploaded_load_profile(df_ts, uploaded_file)
-                st.write("Hochgeladener Jahresverbrauch [kWh]:", round(df_ts["hauslast_kWh"].sum(), 1))
+                df_ts = add_uploaded_load_profile(df_ts, uploaded_file, lastprofil_einheit)
+                st.write("Hochgeladener Jahresverbrauch in kWh:", round(df_ts["hauslast_kWh"].sum(), 1))
             else:
                 st.info("Bitte entweder Standardprofil wählen oder eine gültige CSV-/Excel-Datei hochladen.")
                 st.stop()
@@ -2776,7 +2784,7 @@ if "df_ts" in st.session_state:
             fig_year.update_layout(
                 title="Gesamtlast im Jahresverlauf",
                 xaxis_title="Monat",
-                yaxis_title="Energie [kWh pro Monat]",
+                yaxis_title="Energie in kWh pro Monat",
                 height=450
             )
             fig_year.update_xaxes(
@@ -2787,10 +2795,10 @@ if "df_ts" in st.session_state:
 
             st.plotly_chart(fig_year, use_container_width=True)
             
-            st.write("PV-Produktion Jahreswert [kWh]:", round(df_ts["pv_kWh"].sum(), 1))
-            st.write("PV-Leistung Maximum [kW]:", round(df_ts["pv_power_kW"].max(), 2))
-            st.write("Netzeinspeisung Jahreswert [kWh]:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
-            st.write("Gesamtlast Jahreswert [kWh]:", round(df_ts["gesamtlast_kWh"].sum(), 1))
+            st.write("PV-Produktion Jahreswert in kWh:", round(df_ts["pv_kWh"].sum(), 1))
+            st.write("PV-Leistung Maximum in kW:", round(df_ts["pv_power_kW"].max(), 2))
+            st.write("Netzeinspeisung Jahreswert in kWh:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
+            st.write("Gesamtlast Jahreswert in kWh:", round(df_ts["gesamtlast_kWh"].sum(), 1))
             pv_monat = df_ts["pv_kWh"].resample("MS").sum()
 
         with col2: 
@@ -2804,7 +2812,7 @@ if "df_ts" in st.session_state:
             fig_pv_monat.update_layout(
                 title="Monatliche PV-Produktion",
                 xaxis_title="Monat",
-                yaxis_title="PV-Produktion [kWh pro Monat]",
+                yaxis_title="PV-Produktion in kWh pro Monat",
                 height=450
             )
 
