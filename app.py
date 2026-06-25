@@ -1757,7 +1757,7 @@ with col1:
         "Die EBF umfasst alle beheizten bzw. klimatisierten Bereiche eines Gebäudes."
     ) 
 with col2:
-    personen = st.number_input("Personen im Haushalt", 1, 10, 4)
+    personen = st.number_input("Anzahl Personen im Haushalt", 1, 10, 4)
 with col3:
     st.write("**Jahresstrombedarf**")
 
@@ -1881,8 +1881,7 @@ with col1:
                 value=int(Heizwaermebedarf_total)
             )
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
-
-            st.write(f"Raumheizung in kWh/a: {raumheizung_waermebedarf_kWh:.0f}")
+            st.caption("Vorschlagswert basierend auf dem Baujahr des Gebäudes und den typischen Heizwärmebedarfskennwerten nach GEAK in kWh/m²·a")
             ergebnis = Heizwaermebedarf_input
         else:
             st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
@@ -1931,21 +1930,21 @@ with col2:
         if fossil_typ == "Gas":
             gas = Heizwaermebedarf / 10
             Gasverbrauch_input = st.number_input(
-                "Gasverbrauch m³/a",
+                "Gasverbrauch in m³/a",
                 value=int(gas)
             )
             ergebnis = Gasverbrauch_input
         elif fossil_typ == "Öl":
             oel = Heizwaermebedarf / 10
             Oelverbrauch_input = st.number_input(
-                "Ölverbrauch L/a",
+                "Ölverbrauch in L/a",
                 value=int(oel)
             )
             ergebnis = Oelverbrauch_input
         elif fossil_typ == "Pellets":
             pellets = Heizwaermebedarf / 5
             Pelletsverbrauch_input = st.number_input(
-                "Pelletsverbrauch kg/a",
+                "Pelletsverbrauch in kg/a",
                 value=int(pellets)
             )
             ergebnis = Pelletsverbrauch_input
@@ -1962,7 +1961,7 @@ with col2:
             horizontal=True
         )
         WPkW = st.number_input(
-            "Wärmepumpe kW",
+            "Wärmepumpe in kW",
             min_value=1.0,
             max_value=100.0,
             value=7.0,
@@ -1985,7 +1984,7 @@ with col2:
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
         elif wp_typ == "Sole/Wasser WP":
-            Erdsondentiefe = st.number_input("Gesamt Erdsondenlänge m", min_value=0.1, max_value=500.0, value= 150.0, step=0.1)
+            Erdsondentiefe = st.number_input("Gesamt Erdsondenlänge in m", min_value=0.1, max_value=500.0, value= 150.0, step=0.1)
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
         else:
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
@@ -2232,7 +2231,7 @@ with col1:
     )
 with col2:
     Höhenmeter_standort = st.number_input(
-        "Höhenmeter am Standort",
+        "Höhenmeter am Standort in m ü. M.",
         50, 5000, int(station_info_ui["altitude"])
     )
     st.caption(
@@ -2240,7 +2239,7 @@ with col2:
     )
 with col3:
     WechselrichterkW = st.number_input(
-        "Wechselrichter kW",
+        "Wechselrichter in kW",
         min_value=1,
         max_value=50,
         value=5,
@@ -2364,13 +2363,13 @@ with col1:
     batterie_aktiv = st.checkbox("Batterie vorhanden", value=True)
 
     if batterie_aktiv:
-        batteriekapazität = st.slider("Batteriekapazität (kWh)", 1, 50, 10)
-        maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie (kW)", 1, 20, 10)
-        maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie (kW)", 1, 20, 10)
-        minSoC = st.number_input("Min. SoC (%)", 0, 50, 20)
-        maxSoC = st.number_input("Max. SoC (%)", 60, 100, 80)
+        batteriekapazität = st.slider("Batteriekapazität in kWh", 1, 50, 10)
+        maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie in kW", 1, 20, 10)
+        maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie in kW", 1, 20, 10)
+        minSoC = st.number_input("Min. SoC in %", 0, 50, 20)
+        maxSoC = st.number_input("Max. SoC in %", 60, 100, 80)
         st.caption("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
-        batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie (%)", 80, 100, 95)
+        batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie in %", 80, 100, 95)
     else:
         batteriekapazität = 0
         maxLadeleistungBatterie = 0
@@ -2405,14 +2404,14 @@ with col2:
     
     st.subheader("Einspeisen")
     # regel einbauen minSoC muss < sein als maxSoC
-    Einspeisegrenze = st.number_input("Einspeisegrenze (%) bezogen auf die Peak-Leistung der PV-Anlage", 60, 100, 70)
+    Einspeisegrenze = st.number_input("Einspeisegrenze in % bezogen auf die Peak-Leistung der PV-Anlage", 60, 100, 70)
     gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
     EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
     
     st.subheader("Netzbezug")
-    Bezugsgrenze = st.number_input("Bezugsgrenze (kW) bezieht sich auf die Absicherung des Gebäudes", 5, 100, 80)
+    Bezugsgrenze = st.number_input("Bezugsgrenze in kW bezieht sich auf die Absicherung des Gebäudes", 5, 100, 80)
     Strompreis = st.selectbox(
-        "Strompreis (Rp./kWh)", 
+        "Strompreis in Rp./kWh", 
         list(strompreis_mapping.keys())
     )
     EVU_name = st.selectbox(
