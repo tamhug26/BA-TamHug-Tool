@@ -231,6 +231,16 @@ reduktionen = {
                 "Dämmmung Kellerdecke": 0.1
             }
 
+EV_MORGEN = "Morgens (05:00–08:00 Uhr)"
+EV_PV = "PV-Überschussgeführt (11:00–15:00 Uhr)"
+EV_ABEND = "Abends (17:00–22:00 Uhr)"
+EV_KOMBI = "Kombiniert (05:00–08:00 Uhr und 17:00–22:00 Uhr)"
+
+WW_PV = "PV-Überschussgeführt (spätestens 11:00 Uhr)"
+WW_MORGEN = "Morgens (05:00–07:00 Uhr)"
+WW_ABEND = "Abends (17:00–20:00 Uhr)"
+WW_KOMBI = "Morgens + Abends (05:00–07:00 Uhr und 17:00–20:00 Uhr)"
+
 #Standartlastprofile
 slp_df = pd.read_excel("Standartprofil H25.xlsx")
 slp_df.columns = slp_df.columns.str.strip()
@@ -1145,24 +1155,24 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
     h = timestamp.hour
 
     if verbraucher == "Warmwasser":
-        if strategie == "Morgens":
+        if strategie == WW_MORGEN:
             return 5 <= h < 7
-        elif strategie == "Abends":
+        elif strategie == WW_ABEND:
             return 17 <= h < 20
-        elif strategie == "Morgens + Abends":
+        elif strategie == WW_KOMBI:
             return (5 <= h < 7) or (17 <= h < 20)
-        elif strategie == "PV-Überschussgeführt (spätestens 11 Uhr)":
+        elif strategie == WW_PV:
             return 5 <= h < 15
 
     if verbraucher == "E-Auto":
-        if strategie == "Morgens":
+        if strategie == EV_MORGEN:
             return 5 <= h < 8
-        elif strategie == "Mittag / PV-optimiert":
+        elif strategie == EV_PV:
             return 11 <= h < 15
-        elif strategie == "Abends":
+        elif strategie == EV_ABEND:
             return 17 <= h < 22
-        elif strategie == "Kombiniert (mittags + abends)":
-            return (11 <= h < 15) or (17 <= h < 22)
+        elif strategie == EV_KOMBI:
+            return (5 <= h < 8) or (17 <= h < 22)
 
     return False
 def get_ev_fahrbedarf(timestamp, ev_config):
@@ -1283,14 +1293,19 @@ def simulate_ems(
             elif element == "E-Auto" and ev_rest > 0:
                 if ist_im_zeitfenster(i, ev_config["strategie"], "E-Auto"):
                     max_step = ev_config["leistung_kw"] * delta_t
-                    ladung = min(max_step, ev_rest)
 
-                    df.at[i, "ev_kWh"] += ladung
-                    ev_rest -= ladung
+                    if ev_config["strategie"] == EV_PV:
+                        ladung = min(max_step, ev_rest, pv_rest)
+                    else:
+                        ladung = min(max_step, ev_rest)
 
-                    pv_anteil = min(pv_rest, ladung)
-                    pv_rest -= pv_anteil
-                    restlast += ladung - pv_anteil
+                    if ladung > 0:
+                        df.at[i, "ev_kWh"] += ladung
+                        ev_rest -= ladung
+
+                        pv_anteil = min(pv_rest, ladung)
+                        pv_rest -= pv_anteil
+                        restlast += ladung - pv_anteil
 
             elif element == "Batterie" and batteriekapazitaet > 0:
                 freie_kapazitaet = soc_max - soc
@@ -1383,7 +1398,7 @@ def add_uploaded_load_profile(df_base, uploaded_file, lastprofil_einheit):
     df_upload = df_upload.dropna(subset=["timestamp", "verbrauch_roh"])
     df_upload = df_upload.set_index("timestamp").sort_index()
 
-    if lastprofil_einheit == "Energie pro 15-Minuten-Intervall [kWh]":
+    if lastprofil_einheit == "Energie pro 15-Minuten-Intervall in kWh":
         df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"]
     else:
         df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"] * 0.25
@@ -1791,7 +1806,8 @@ with col3:
                 max_value=100000.0,
                 value=4500.0,
                 step=100.0,
-                key=f"strom_verbrauch_{i}"
+                key=f"strom_verbrauch_{i}",
+                format="%.1f"
             )
 
         stromjahre_daten.append({
@@ -1844,7 +1860,7 @@ col1, col2 =st.columns(2)
 with col1:
     st.subheader("Heizwärmebedarf-Ermittlung")
     # aus Baujahr Heizwärmebedarf kWh/m2
-    m2 = st.number_input("Fläche des EFH in m2", 50, 5000, 200)
+    m2 = st.number_input("Fläche des EFH in m²", 50, 5000, 200)
     bau_typ = st.selectbox(
         "Gebäudestandard",
         ["Baujahr", "Minergie", "Minergie-P"]
@@ -1890,7 +1906,7 @@ with col1:
         if not treffer.empty:
             Heizwaermebedarf = treffer.iloc[0] * m2
             Heizwaermebedarf_input = st.number_input(
-                "Heizwärmebedarf kWh/m2",
+                "Heizwärmebedarf kWh/²",
                 value=int(Heizwaermebedarf)
             )
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
@@ -1904,7 +1920,7 @@ with col1:
         if not treffer.empty:
             Heizwaermebedarf = treffer.iloc[0] * m2
             Heizwaermebedarf_input = st.number_input(
-                "Heizwärmebedarf kWh/m2",
+                "Heizwärmebedarf kWh/m²",
                 value=int(Heizwaermebedarf)
             )
             ww_waermebedarf_kWh = 15 * m2 # 15 kWh/m²a × Wohnfläche wert noch nach quelle finden
@@ -1965,7 +1981,8 @@ with col2:
             min_value=1.0,
             max_value=100.0,
             value=7.0,
-            step=0.1
+            step=0.1,
+            format="%.1f"
         )
         Auslegetemperatur = st.number_input(
             "Auslegetemperatur in °C",
@@ -1980,20 +1997,19 @@ with col2:
             value=40
         )
         #Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
-        st.caption("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
         if wp_typ == "Luft/Wasser WP":
-            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1)
+            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1, format="%.1f")
         elif wp_typ == "Sole/Wasser WP":
-            Erdsondentiefe = st.number_input("Gesamt Erdsondenlänge in m", min_value=0.1, max_value=500.0, value= 150.0, step=0.1)
-            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1)
+            Erdsondentiefe = st.number_input("Gesamt Erdsondenlänge in m", min_value=0.1, max_value=500.0, value= 150.0, step=0.1, format="%.1f")
+            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.5, step=0.1, format="%.1f")
         else:
-            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1)
+            jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1, format="%.1f")
         if "Heizwaermebedarf_input" in locals():
             stromverbrauch = Heizwaermebedarf_input / jaz
         else:
             stromverbrauch = 0.0
         StromverbrauchWP_input = st.number_input(
-            "geschätzter Stromverbrauch in kWh/a",
+            "geschätzter Stromverbrauch Wärmepumpe in kWh/a",
             value=int(stromverbrauch)
         )
         ergebnis = stromverbrauch
@@ -2002,20 +2018,21 @@ with col2:
         min_value=15.0,
         max_value=25.0,
         value=20.0,
-        step=0.5
+        step=0.5, 
+        format="%.1f"
     )
-        
+    st.caption("JAZ = Jahresarbeitszahl. Verhältnis von erzeugter Wärme zu elektrischem Energiebedarf über ein Jahr.")
 st.write("------------------------------")
 #Warmwasser & EAuto
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("Warmwasser")
+    st.subheader("Warmwasser (WW)")
 
     ww_liter_pro_person_tag = 40
     ww_tagesbedarf_liter = personen * ww_liter_pro_person_tag
 
     ww_system = st.selectbox(
-        "Warmwasser-System",
+        "WW-System",
         [
             "nicht elektrisch",
             "Elektroboiler",
@@ -2030,20 +2047,20 @@ with col1:
     ww_strategie = "Abends"
 
     if not ww_aktiv:
-        st.caption("Warmwasser wird nicht als elektrische Last simuliert.")
+        st.caption("WW wird nicht als elektrische Last simuliert.")
 
     else:
-        st.caption(f"{ww_system} wird als elektrische Warmwasserlast berücksichtigt.")
+        st.caption(f"{ww_system} wird als elektrische WWlast berücksichtigt.")
 
         ww_speicher_liter = st.selectbox(
-            "Warmwasserspeicher / Boiler in Liter",
+            "WWspeicher / Boiler in Liter",
             list(range(50, 401, 50)),
             index=3
         )
 
         ladezyklen_pro_tag = int(np.ceil(ww_tagesbedarf_liter / ww_speicher_liter))
 
-        st.write(f"Geschätzter Tagesbedarf Warmwasser: {ww_tagesbedarf_liter:.0f} Liter/Tag")
+        st.write(f"Geschätzter Tagesbedarf WW für Haushalt (40L/p/Tag): {ww_tagesbedarf_liter:.0f} Liter/Tag")
         st.write(f"Gewählter Speicher: {ww_speicher_liter:.0f} Liter")
         st.write(f"Erforderliche Speicherladung: {ladezyklen_pro_tag}× pro Tag")
 
@@ -2055,29 +2072,31 @@ with col1:
                 ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr
             ) / 365
 
-            ww_label = "Elektrischer Warmwasserbedarf Elektroboiler in kWh/Tag"
+            ww_label = "Strombedarf Elektroboiler in kWh/Tag"
 
         elif ww_system == "Wärmepumpenboiler":
             jaz_ww = st.number_input(
-                "JAZ Warmwasser-Wärmepumpe",
+                "JAZ WW-Wärmepumpe",
                 min_value=0.1,
                 max_value=10.0,
                 value=2.5,
-                step=0.1
+                step=0.1,
+                format="%.1f"
             )
 
             ww_bedarf_kWh_tag_berechnet = (
                 (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz_ww
             ) / 365
 
-            ww_label = "Elektrischer Warmwasserbedarf Wärmepumpenboiler in kWh/Tag"
+            ww_label = "Strombedarf Elektroboiler in kWh/Tag"
 
         ww_bedarf_kWh_tag = st.number_input(
             ww_label,
             min_value=0.0,
             max_value=30.0,
             value=float(round(ww_bedarf_kWh_tag_berechnet, 2)),
-            step=0.1
+            step=0.1,
+            format="%.1f"
         )
 
         ww_ladeleistung_kw = st.number_input(
@@ -2085,22 +2104,23 @@ with col1:
             min_value=0.1,
             max_value=20.0,
             value=3.0,
-            step=0.1
+            step=0.1,
+            format="%.1f"
         )
 
-        ww_steuerbar = st.checkbox("Warmwasser steuerbar", value=True)
+        ww_steuerbar = st.checkbox("Warmwasser zeitgesteuert", value=True)
 
         if ww_steuerbar:
             if ladezyklen_pro_tag <= 1:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens", "Abends"],
+                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens (5:00-07:00)", "Abends (17:00-20:00)"],
                     index=0
                 )
             else:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens + Abends"],
+                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens (5:00-07:00) + Abends (17:00-20:00)"],
                     index=0
                 )
 
@@ -2142,7 +2162,8 @@ with col2:
             min_value=5.0,
             max_value=35.0,
             value=18.0,
-            step=0.5
+            step=0.5,
+            format="%.1f"
         )
 
         ev_km_pro_fahrtag = st.number_input(
@@ -2150,7 +2171,8 @@ with col2:
             min_value=0.0,
             max_value=300.0,
             value=50.0,
-            step=5.0
+            step=5.0,
+            format="%.1f"
         )
 
         ev_km_nicht_fahrtag = st.number_input(
@@ -2158,7 +2180,8 @@ with col2:
             min_value=0.0,
             max_value=300.0,
             value=0.0,
-            step=5.0
+            step=5.0,
+            format="%.1f"
         )
         
         st.caption("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
@@ -2168,20 +2191,20 @@ with col2:
             min_value=0.1,
             max_value=22.0,
             value=3.7,
-            step=0.1
+            step=0.1,
+            format="%.1f"
         )
 
         ev_strategie = st.selectbox(
             "Wann steht das E-Auto zuhause und kann geladen werden?",
             [
-                "Morgens",
-                "Mittag / PV-optimiert",
-                "Abends",
-                "Kombiniert (mittags + abends)"
+                EV_MORGEN,
+                EV_PV,
+                EV_ABEND,
+                EV_KOMBI
             ],
             index=2
         )
-        st.caption("Ladefenster: morgens 5–8 Uhr, mittags 11–15 Uhr, abends 17–22 Uhr")
     else:
         ev_fahrtage = []
         ev_verbrauch_kWh_pro_100km = 0.0
@@ -2209,7 +2232,8 @@ with col2:
             min_value=0.0,
             max_value=100000.0,
             value=100.0,
-            step=500.0
+            step=500.0,
+            format="%.1f"
         )
         auto_km_jahr = auto_km_woche * 52
 
@@ -2280,7 +2304,8 @@ for start in range(0, PVAnlagen, 3):
                 max_value=100.0,
                 value=20.0,
                 step=0.1,
-                key=f"PV_Wirkungsgrad_{i}"
+                key=f"PV_Wirkungsgrad_{i}",
+                format="%.1f"
             )
 
             pv_Peakleistung = st.number_input(
@@ -2289,7 +2314,8 @@ for start in range(0, PVAnlagen, 3):
                 max_value=1000.0,
                 value=10.0,
                 step=0.1,
-                key=f"peakleistung_{i}"
+                key=f"peakleistung_{i}",
+                format="%.1f"
             )
 
             gamma_pdc_input = st.number_input(
@@ -2308,7 +2334,8 @@ for start in range(0, PVAnlagen, 3):
                 max_value=80.0,
                 value=45.0,
                 step=0.5,
-                key=f"nmot_{i}"
+                key=f"nmot_{i}",
+                format="%.1f"
             )
             performance_ratio_input = st.number_input(
                 "Performance Ratio",
