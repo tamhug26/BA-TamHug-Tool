@@ -2899,7 +2899,17 @@ if "df_ts" in st.session_state:
             st.write("")
             st.write("**Treibhausgasemmissionen Data**")
             st.write("")
-            st.dataframe(df_umwelt.round(2), use_container_width=True)
+            df_umwelt_anzeige = df_umwelt.copy()
+
+            df_umwelt_anzeige["UBP/a"] = df_umwelt_anzeige["UBP/a"].map(
+                lambda x: f"{x:,.0f}".replace(",", "'")
+            )
+
+            df_umwelt_anzeige["kg CO2-eq/a"] = df_umwelt_anzeige["kg CO2-eq/a"].map(
+                lambda x: f"{x:,.0f}".replace(",", "'")
+            )
+
+            st.dataframe(df_umwelt_anzeige, use_container_width=True)
 
         with col2:
             fig_umwelt = go.Figure()
