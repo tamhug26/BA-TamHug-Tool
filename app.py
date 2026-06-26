@@ -2893,7 +2893,7 @@ if "df_ts" in st.session_state:
 
         col1, col2 = st.columns(2)
 
-        with col1: $
+        with col1:
             st.write("")
             st.write("")
             st.write("")
