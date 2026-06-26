@@ -2934,7 +2934,11 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_umweltwirkungen.csv",
             mime="text/csv"
         )
-        st.write(df_ts["poa_global"].max())
-        st.write(df_ts["temp_cell"].loc[df_ts["pv_power_kW"].idxmax()])
-        st.write(df_ts["temp_factor"].loc[df_ts["pv_power_kW"].idxmax()])
+        idx_max = df_ts["pv_power_kW"].idxmax()
+
+        st.write("Zeitpunkt max. PV-Leistung:", idx_max)
+        st.write("PV-Leistung max. in kW:", round(df_ts.loc[idx_max, "pv_power_kW"], 2))
+        st.write("POA Einstrahlung in W/m²:", round(df_ts.loc[idx_max, "poa_global"], 1))
+        st.write("Zelltemperatur in °C:", round(df_ts.loc[idx_max, "temp_cell"], 1))
+        st.write("Temperaturfaktor:", round(df_ts.loc[idx_max, "temp_factor"], 3))
                 
