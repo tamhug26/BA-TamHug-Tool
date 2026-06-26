@@ -1693,13 +1693,13 @@ if vergleichsmodus:
 
         with col:
             st.markdown(f"### {p['name']}")
-            st.metric("Autarkiegrad", f"{profil['jahreskennzahlen']['Autarkiegrad_%']:.1f} %")
-            st.metric("Eigenverbrauchsquote", f"{profil['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %")
-            st.metric("PV-Produktion", f"{profil['jahreskennzahlen']['PV_Produktion_kWh']:.0f} kWh")
-            st.metric("Netzbezug", f"{profil['jahreskennzahlen']['Netzbezug_kWh']:.0f} kWh")
-            st.metric("Abregelung", f"{profil['jahreskennzahlen']['Abgeregelte_Energie_kWh']:.1f} kWh")
+            st.metric("Autarkiegrad", f"{profil['jahreskennzahlen']['Autarkiegrad_%']:.1f} %".replace(",", "'"))
+            st.metric("Eigenverbrauchsquote", f"{profil['jahreskennzahlen']['Eigenverbrauchsquote_%']:.1f} %".replace(",", "'"))
+            st.metric("PV-Produktion", f"{profil['jahreskennzahlen']['PV_Produktion_kWh']:.0f} kWh".replace(",", "'"))
+            st.metric("Netzbezug", f"{profil['jahreskennzahlen']['Netzbezug_kWh']:.0f} kWh".replace(",", "'"))
+            st.metric("Abregelung", f"{profil['jahreskennzahlen']['Abgeregelte_Energie_kWh']:.1f} kWh".replace(",", "'"))
             st.metric("Total UBP", f"{p['total_ubp']:,.0f} UBP/a".replace(",", "'"))
-            st.metric("Total CO₂", f"{p['total_co2']:,.1f} kg CO₂-eq/a".replace(",", "'"))
+            st.metric("Total CO₂", f"{p['total_co2']:,.0f} kg CO₂-eq/a".replace(",", "'"))
 
     st.write("------------------------------")
     st.subheader("Jahresverlauf im Vergleich")
@@ -2746,16 +2746,16 @@ if "df_ts" in st.session_state:
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.metric("PV-Produktion", f"{df_sum['pv_kWh'].sum():.1f} kWh")
-            st.metric("Gesamtlast", f"{df_sum['gesamtlast_kWh'].sum():.1f} kWh")
+            st.metric("PV-Produktion", f"{df_sum['pv_kWh'].sum():.1f} kWh".replace(",", "'"))
+            st.metric("Gesamtlast", f"{df_sum['gesamtlast_kWh'].sum():.1f} kWh".replace(",", "'"))
 
         with col2:
-            st.metric("Netzbezug", f"{df_sum['netzbezug_kWh'].sum():.1f} kWh")
-            st.metric("Netzeinspeisung", f"{df_sum['netzeinspeisung_kWh'].sum():.1f} kWh")
+            st.metric("Netzbezug", f"{df_sum['netzbezug_kWh'].sum():.1f} kWh".replace(",", "'"))
+            st.metric("Netzeinspeisung", f"{df_sum['netzeinspeisung_kWh'].sum():.1f} kWh".replace(",", "'"))
 
         with col3:
-            st.metric("Abregelung", f"{df_sum['abregelung_kWh'].sum():.1f} kWh")
-            st.metric("Unterdeckung", f"{df_sum['unterdeckung_kWh'].sum():.1f} kWh")
+            st.metric("Abregelung", f"{df_sum['abregelung_kWh'].sum():.1f} kWh".replace(",", "'"))
+            st.metric("Unterdeckung", f"{df_sum['unterdeckung_kWh'].sum():.1f} kWh".replace(",", "'"))
 
         with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
             st.dataframe(
@@ -2801,10 +2801,10 @@ if "df_ts" in st.session_state:
                 unsafe_allow_html=True
             )
         with col2:
-            st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %")
+            st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:.1f} %".replace(",", "'"))
 
         with col3:
-            st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
+            st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh".replace(",", "'"))
         with col4:
             st.metric(
                 "Eingesparte Stromkosten",
@@ -2889,7 +2889,7 @@ if "df_ts" in st.session_state:
             st.metric("Total UBP pro Jahr", f"{total_ubp:,.0f} UBP/a".replace(",", "'"))
 
         with col2:
-            st.metric("Total Treibhausgasemissionen", f"{total_co2:,.1f} kg CO₂-eq/a".replace(",", "'"))
+            st.metric("Total Treibhausgasemissionen", f"{total_co2:,.0f} kg CO₂-eq/a".replace(",", "'"))
 
         col1, col2 = st.columns(2)
 
