@@ -2828,9 +2828,9 @@ if "df_ts" in st.session_state:
                 name="Gesamtlast"
             ))
             fig_year.update_layout(
-                title="Gesamtlast im Jahresverlauf",
+                title="Monatliche Gesamtlast Strom (kWh/Monat)",
                 xaxis_title="Monat",
-                yaxis_title="Energie in kWh pro Monat",
+                yaxis_title="Elektrische Gesamtlast in kWh pro Monat",
                 height=450
             )
             fig_year.update_xaxes(
@@ -2841,10 +2841,10 @@ if "df_ts" in st.session_state:
 
             st.plotly_chart(fig_year, use_container_width=True)
             
-            st.write("PV-Produktion Jahreswert in kWh:", round(df_ts["pv_kWh"].sum(), 1))
+            st.write("PV-Produktion Jahreswert in kWh/Jahr:", round(df_ts["pv_kWh"].sum(), 1))
             st.write("PV-Leistung Maximum in kW:", round(df_ts["pv_power_kW"].max(), 2))
-            st.write("Netzeinspeisung Jahreswert in kWh:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
-            st.write("Gesamtlast Jahreswert in kWh:", round(df_ts["gesamtlast_kWh"].sum(), 1))
+            st.write("Netzeinspeisung Jahreswert in kWh/Jahr:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
+            st.write("Jahresstrombedarf in kWh:", round(df_ts["gesamtlast_kWh"].sum(), 1))
             pv_monat = df_ts["pv_kWh"].resample("MS").sum()
 
         with col2: 
@@ -2934,4 +2934,7 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_umweltwirkungen.csv",
             mime="text/csv"
         )
-        
+        st.write(df_ts["poa_global"].max())
+        st.write(df_ts["temp_cell"].loc[df_ts["pv_power_kW"].idxmax()])
+        st.write(df_ts["temp_factor"].loc[df_ts["pv_power_kW"].idxmax()])
+                
