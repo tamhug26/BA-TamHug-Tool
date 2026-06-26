@@ -80,9 +80,9 @@ UBP = {
     "Wechselrichter 10 kW, Max. Leistung kWp": 343000,
     "Wechselrichter 20 kW, Max. Leistung kWp": 274000,
     "Elektroinstallation Photovoltaikanlage": 167000,
-    "Wärmeerzeuger spez. Leistungsbedarf 10 W/m², EBF m²": 1810,
-    "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²": 5420,
-    "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF m²": 9030,
+    "Wärmeerzeuger spez. Leistungsbedarf 10 W/m², EBF in m²": 1810,
+    "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF in m²": 5420,
+    "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF in m²": 9030,
 }
 #Herstellung und Entsorgung
 kgCO2eq = {
