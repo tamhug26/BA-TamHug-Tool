@@ -108,9 +108,9 @@ kgCO2eq = {
     "Wechselrichter 10 kW, Max. Leistung kWp": 92.50,
     "Wechselrichter 20 kW, Max. Leistung kWp": 74.10,
     "Elektroinstallation Photovoltaikanlage": 42.10,
-    "Wärmeerzeuger spez. Leistungsbedarf 10 W/m², EBF m²": 0.86,
-    "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF m²": 2.58,
-    "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF m²": 4.29,
+    "Wärmeerzeuger spez. Leistungsbedarf 10 W/m², EBF in m²": 0.86,
+    "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF in m²": 2.58,
+    "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF in m²": 4.29,
 }
 #lebenszeit Hausgeräte
 LebenszeitJahre = {
