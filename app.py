@@ -2723,7 +2723,16 @@ if "df_ts" in st.session_state:
             df_sum = get_raw_period_dataframe(df_ts, zeitraum)
 
 
-        st.write("Zusammenfassung für den ausgewählten Zeitraum:")
+        if zeitraum == "Tag":
+            titel = "Zusammenfassung des ausgewählten Tages"
+        elif zeitraum == "Woche":
+            titel = "Zusammenfassung der ausgewählten Woche"
+        elif zeitraum == "Monat":
+            titel = "Zusammenfassung des ausgewählten Monats"
+        else:
+            titel = "Zusammenfassung des gesamten Jahres"
+
+        st.subheader(titel)
 
         col1, col2, col3 = st.columns(3)
 
@@ -2757,7 +2766,7 @@ if "df_ts" in st.session_state:
         st.write("------------------------------")
         st.subheader("Jahreskennzahlen")
 
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5 = st.columns(5)
 
         with col1:
             
@@ -2792,7 +2801,11 @@ if "df_ts" in st.session_state:
                 "Stromkosten",
                 f"{jahreskennzahlen.get('Stromkosten_CHF', 0):,.0f} CHF/a".replace(",", "'")
             )
-
+        with col5:
+            st.metric(
+                "PV-Jahresproduktion",
+                f"{jahreskennzahlen['PV_Produktion_kWh']:,.0f} kWh/a".replace(",", "'")
+            )
 
         st.write("---------------------")
 
