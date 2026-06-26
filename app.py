@@ -128,15 +128,10 @@ Auto_Faktoren = {
 }
 
 strompreis_mapping = {
-
-    "9,64 Rp./kWh": 9.64,
-
-    "20,96 Rp./kWh": 20.96,
-
-    "32,29 Rp./kWh": 32.29,
-
-    "43,61 Rp./kWh": 43.61
-
+    "9,64": 9.64,
+    "20,96": 20.96,
+    "32,29": 32.29,
+    "43,61": 43.61
 }
 
 basis_pfad_weather = "Weather_data"
@@ -2167,7 +2162,7 @@ with col2:
         )
 
         ev_km_pro_fahrtag = st.number_input(
-            "Fahrstrecke pro Fahrtag in km",
+            "Durchschnittliche Fahrstrecke pro Fahrtag in km",
             min_value=0.0,
             max_value=300.0,
             value=50.0,
@@ -2176,16 +2171,18 @@ with col2:
         )
 
         ev_km_nicht_fahrtag = st.number_input(
-            "Fahrstrecke an Nicht-Fahrtagen in km/Tag",
+            "Fahrstrecke außerhalb der gewählten Fahrtage in km/Tag",
             min_value=0.0,
             max_value=300.0,
             value=0.0,
             step=5.0,
             format="%.1f"
         )
-        
-        st.caption("Morgens (Mitternacht) entsteht ein zusätzlicher Energiebedarf. Geladen wird dann innerhalb des gewählten Ladefensters.")
-
+        st.caption("Für Tage, die nicht als regelmäßige Fahrtage ausgewählt wurden (z. B. Wochenenden, Freizeit oder Ferien)")
+        st.caption(
+            "Der Ladebedarf wird an Nicht-Fahrtagen zu Tagesbeginn und an den ausgewählten Fahrtagen nach der Rückkehr (17:00 Uhr) erzeugt. "
+            "Die Ladung erfolgt anschließend innerhalb des gewählten Ladefensters."
+        )
         ev_ladeleistung_kw = st.number_input(
             "E-Auto Ladeleistung in kW",
             min_value=0.1,
@@ -2266,7 +2263,7 @@ with col3:
         "Wechselrichter in kW",
         min_value=1,
         max_value=50,
-        value=5,
+        value=10,
         step=1
     )
 with col4:
@@ -2327,6 +2324,7 @@ for start in range(0, PVAnlagen, 3):
                 format="%.4f",
                 key=f"gamma_pdc_{i}"
             )
+            st.caption("Der Temperaturkoeffizient beschreibt die Änderung der maximalen Modulleistung pro 1 °C Zelltemperatur. Der Standardwert von −0,004 1/°C entspricht einer Leistungsabnahme von 0,4 % pro °C über den Standard-Testbedingungen (25 °C Zelltemperatur).")
 
             nmot_input = st.number_input(
                 "NMOT / NOCT in °C",
@@ -2349,6 +2347,9 @@ for start in range(0, PVAnlagen, 3):
                 st.caption(
                     "NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. "
                     "Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung."
+                )
+                st.caption(
+                    "Standardwert: 45 °C. Typischer NMOT-/NOCT-Wert moderner PV-Module gemäss Herstellerdatenblättern."
                 )
             Dachneigung = st.number_input(
                 "Dachneigung in °",
@@ -2391,10 +2392,10 @@ with col1:
 
     if batterie_aktiv:
         batteriekapazität = st.slider("Batteriekapazität in kWh", 1, 50, 10)
-        maxLadeleistungBatterie = st.slider("max. Ladeleistung der Batterie in kW", 1, 20, 10)
-        maxEntladeleistungBatterie = st.slider("max. Entladeleistung der Batterie in kW", 1, 20, 10)
-        minSoC = st.number_input("Min. SoC in %", 0, 50, 20)
-        maxSoC = st.number_input("Max. SoC in %", 60, 100, 80)
+        maxLadeleistungBatterie = st.slider("Maximale Ladeleistung der Batterie in kW", 1, 20, 10)
+        maxEntladeleistungBatterie = st.slider("Maximale Entladeleistung der Batterie in kW", 1, 20, 10)
+        minSoC = st.number_input("Mininmal SoC in %", 0, 50, 20)
+        maxSoC = st.number_input("Maximal SoC in %", 60, 100, 80)
         st.caption("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
         batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie in %", 80, 100, 95)
     else:
@@ -2406,7 +2407,7 @@ with col1:
         batterieWirkungsgrad = 95
     
 with col2:
-    st.subheader("EMS")
+    st.subheader("Energiemanagementsystem (EMS)")
 
     ems_optionen = []
 
@@ -2420,7 +2421,7 @@ with col2:
         ems_optionen.append("Batterie")
 
     prioritaeten = st.multiselect(
-        "EMS-Priorität auswählen",
+        "EMS-Priorität auswählen (1 links = höchste Priorität))",
         ems_optionen,
         default=ems_optionen
     )
@@ -2447,7 +2448,7 @@ with col2:
     )
     CO2Emmisionen = EVU[EVU_name]
     CO2Emmisionen_input = st.number_input(
-        "CO2 Emmisionen in kg CO2e/MWh",
+        "CO2 Emmisionen in kg CO2e/MWh der vom EVU bezogenen Elektrizität",
         value=int(CO2Emmisionen)
     )
     ergebnis = CO2Emmisionen
