@@ -2519,6 +2519,8 @@ if run_simulation:
         df_ts["pv_kWh"] = 0.0
         df_ts["pv_power_kW"] = 0.0
         df_ts["poa_global"] = 0.0
+        df_ts["temp_cell"] = 0.0
+        df_ts["temp_factor"] = 0.0
 
         for anlage in pv_anlagen_daten:
             df_tmp = add_pv_profile_weather_based(
@@ -2539,6 +2541,8 @@ if run_simulation:
             df_ts["pv_kWh"] += df_tmp["pv_kWh"]
             df_ts["pv_power_kW"] += df_tmp["pv_power_kW"]
             df_ts["poa_global"] += df_tmp["poa_global"]
+            df_ts["temp_cell"] += df_tmp["temp_cell"]
+            df_ts["temp_factor"] += df_tmp["temp_factor"]
 
         ww_config = {
             "aktiv": ww_aktiv,
