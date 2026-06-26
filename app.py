@@ -2587,6 +2587,11 @@ if run_simulation:
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
         stromkosten_chf = df_ts["netzbezug_kWh"].sum() * strompreis_chf_kWh
         jahreskennzahlen["Stromkosten_CHF"] = stromkosten_chf
+        eingesparte_stromkosten = (
+            jahreskennzahlen["Eigenverbrauch_kWh"] * strompreis_chf_kWh
+        )
+
+        jahreskennzahlen["Eingesparte_Stromkosten_CHF"] = eingesparte_stromkosten
         if heizsystem != "Wärmepumpe":
             wp_typ_use = None
             WPkW_use = 0
@@ -2798,9 +2803,10 @@ if "df_ts" in st.session_state:
             st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:.1f} kWh")
         with col4:
             st.metric(
-                "Stromkosten",
-                f"{jahreskennzahlen.get('Stromkosten_CHF', 0):,.0f} CHF/a".replace(",", "'")
+                "Eingesparte Stromkosten",
+                f"{jahreskennzahlen['Eingesparte_Stromkosten_CHF']:,.0f} CHF/a".replace(",", "'")
             )
+            st.caption("Entspricht den vermiedenen Strombezugskosten durch den direkten PV-Eigenverbrauch. Eine Einspeisevergütung wird nicht berücksichtigt.")
         with col5:
             st.metric(
                 "PV-Jahresproduktion",
