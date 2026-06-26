@@ -2049,7 +2049,7 @@ with col1:
 
         ww_speicher_liter = st.selectbox(
             "WWspeicher / Boiler in Liter",
-            list(range(50, 401, 50)),
+            list(range(50, 1001, 50)),
             index=3
         )
 
@@ -2893,7 +2893,7 @@ if "df_ts" in st.session_state:
 
         col1, col2 = st.columns(2)
 
-        with col1: 
+        with col1: $
             st.write("")
             st.write("")
             st.write("")
@@ -2948,11 +2948,4 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_umweltwirkungen.csv",
             mime="text/csv"
         )
-        idx_max = df_ts["pv_power_kW"].idxmax()
-
-        st.write("Zeitpunkt max. PV-Leistung:", idx_max)
-        st.write("PV-Leistung max. in kW:", round(df_ts.loc[idx_max, "pv_power_kW"], 2))
-        st.write("POA Einstrahlung in W/m²:", round(df_ts.loc[idx_max, "poa_global"], 1))
-        st.write("Zelltemperatur in °C:", round(df_ts.loc[idx_max, "temp_cell"], 1))
-        st.write("Temperaturfaktor:", round(df_ts.loc[idx_max, "temp_factor"], 3))
-                
+        idx_max = df_ts["pv_power_kW"].idxmax()     
