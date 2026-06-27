@@ -2821,6 +2821,19 @@ if "df_ts" in st.session_state:
 
         with col3:
             st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:,.1f} kWh".replace(",", "'"))
+            if jahreskennzahlen["Abgeregelte_Energie_kWh"] > 0:
+                st.info(
+                    f"Im Jahresverlauf wurden insgesamt {jahreskennzahlen["Abgeregelte_Energie_kWh"]:.1f} kWh aufgrund der "
+                    f"Einspeisebegrenzung abgeregelt."
+                )
+            else:
+                st.success(
+                    "Die Abregelung tritt nur auf, wenn der PV-Überschuss nach Eigenverbrauch und Batterieladung " \
+                    "die Einspeisegrenze überschreitet. Die Einspeisegrenze beträgt hier "
+                    f"{EinspeisegrenzekW:.2f} kW. Da die maximale PV-Leistung bei "
+                    f"{df_ts['pv_power_kW'].max():.2f} kW liegt und zusätzlich ein Teil direkt verbraucht oder gespeichert wird, "
+                    "entsteht in diesem Szenario keine Abregelung."
+                )
         with col4:
             st.metric(
                 "Eingesparte Stromkosten",
