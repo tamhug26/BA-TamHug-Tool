@@ -1181,17 +1181,24 @@ def get_ev_fahrbedarf(timestamp, ev_config):
 def pruefe_ev_plausibilitaet(ev_config):
     if not ev_config["aktiv"]:
         return None
-    
 
     ladefenster_stunden = {
-        "Morgens": 3,                       # 5–8 Uhr
-        "Mittag / PV-optimiert": 4,          # 11–15 Uhr
-        "Abends": 5,                         # 17–22 Uhr
-        "Kombiniert (mittags + abends)": 9   # 11–15 + 17–22 Uhr
+        EV_MORGEN: 3,   # 05:00–08:00
+        EV_PV: 4,       # 11:00–15:00
+        EV_ABEND: 5,    # 17:00–22:00
+        EV_KOMBI: 8     # 05:00–08:00 + 17:00–22:00
     }
 
-    fahrbedarf_kWh = ev_config["km_pro_fahrtag"] * ev_config["verbrauch_pro_100km"] / 100
-    max_ladung_kWh = ev_config["leistung_kw"] * ladefenster_stunden[ev_config["strategie"]]
+    fahrbedarf_kWh = (
+        ev_config["km_pro_fahrtag"]
+        * ev_config["verbrauch_pro_100km"]
+        / 100
+    )
+
+    max_ladung_kWh = (
+        ev_config["leistung_kw"]
+        * ladefenster_stunden[ev_config["strategie"]]
+    )
 
     return {
         "fahrbedarf_kWh": fahrbedarf_kWh,
@@ -2109,24 +2116,24 @@ with col1:
             if ladezyklen_pro_tag <= 1:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens (5:00-07:00)", "Abends (17:00-20:00)"],
+                    [WW_PV, WW_MORGEN, WW_ABEND],
                     index=0
                 )
             else:
                 ww_strategie = st.selectbox(
                     "WW-Strategie",
-                    ["PV-Überschussgeführt (spätestens 11 Uhr)", "Morgens (5:00-07:00) + Abends (17:00-20:00)"],
+                    [WW_PV, WW_KOMBI],
                     index=0
                 )
 
-            if ww_strategie == "PV-Überschussgeführt (spätestens 11 Uhr)":
+            if ww_strategie == WW_PV:
                 st.caption(
                     "Der Boiler wird bevorzugt mit PV-Überschuss geladen. "
                     "Falls bis 11:00 Uhr nicht genügend PV-Energie verfügbar war, "
                     "wird die Ladung ab 11:00 Uhr automatisch abgeschlossen."
                 )
         else:
-            ww_strategie = "Abends"
+            ww_strategie = WW_ABEND
             st.caption("Nicht steuerbares Warmwasser wird standartmässig abends geladen.")
 with col2:
     st.subheader("E-Auto")
@@ -2208,7 +2215,7 @@ with col2:
         ev_km_pro_fahrtag = 0.0
         ev_km_nicht_fahrtag = 0.0
         ev_ladeleistung_kw = 0.0
-        ev_strategie = "Abends" 
+        ev_strategie = EV_ABEND
 
     #fossil auto
     auto_aktiv = st.checkbox("Auto vorhanden, aber kein-E Auto", value=False)
