@@ -2944,11 +2944,6 @@ if "df_ts" in st.session_state:
             )
 
             st.plotly_chart(fig_umwelt, use_container_width=True)
-        #zur Kontrolle:
-        st.write("Kontrolle Bilanz:")
-        st.write("PV + Netzbezug:", round(df_ts["pv_kWh"].sum() + df_ts["netzbezug_kWh"].sum(), 1))
-        st.write("Gesamtlast + Einspeisung + Abregelung:", 
-                round(df_ts["gesamtlast_kWh"].sum() + df_ts["netzeinspeisung_kWh"].sum() + df_ts["abregelung_kWh"].sum(), 1))
 
         csv = df_ts.to_csv().encode("utf-8")
         st.download_button(
