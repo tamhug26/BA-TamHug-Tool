@@ -753,6 +753,15 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             marker=dict(color="darkred", size=8, symbol="circle-open")
         ))
     y_title = "Leistung in kW"
+    max_y = max(
+        df_plot["pv_kW"].max(),
+        df_plot["gesamtlast_kW"].max(),
+        df_plot["netzbezug_kW"].max(),
+        df_plot["netzeinspeisung_kW"].max(),
+        df_plot["abregelung_kW"].max() if "abregelung_kW" in df_plot.columns else 0,
+        einspeisegrenze_kw
+    )
+
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
         xaxis_title="Zeit",
@@ -760,17 +769,13 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             title="Leistung in kW",
             showgrid=True,
             gridcolor="rgba(200,200,200,0.35)",
-            range=[0, 10],
-            tickmode="array",
-            tickvals=[0, 2, 4, 6, 8, 10]
+            range=[0, max_y * 1.15]
         ),
         yaxis2=dict(
             title="Batterie-SoC in %",
             overlaying="y",
             side="right",
             range=[0, 100],
-            tickmode="array",
-            tickvals=[0, 20, 40, 60, 80, 100],
             showgrid=False
         ),
         legend=dict(orientation="h", y=-0.25),
