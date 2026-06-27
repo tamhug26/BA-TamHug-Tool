@@ -626,7 +626,11 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
             df_anzeige["soc_kWh"] = df["soc_kWh"].resample("MS").mean()
         if "soc_prozent" in df.columns:
             df_anzeige["soc_prozent"] = df["soc_prozent"].resample("MS").mean()
+        if "temp" in df.columns:
+            df_anzeige["temp"] = df["temp"].resample("MS").mean()
 
+        if "poa_global" in df.columns:
+            df_anzeige["poa_global"] = df["poa_global"].resample("MS").mean()
     else:
         df_anzeige = df[spalten]
 
