@@ -1915,19 +1915,20 @@ with col3:
     )
     strombedarf_typ = st.radio(
 
-    "Was enthält der eingegebene Jahresstrombedarf?",
+        "Was enthält der eingegebene Jahresstrombedarf?",
 
-    [
+        [
 
-        "Komplette Gesamtlast inkl. WP/WW/E-Auto",
+            "Komplette Gesamtlast inkl. WP/WW/E-Auto",
 
-        "Nur Haushaltsstrom ohne WP/WW/E-Auto"
+            "Nur Haushaltsstrom ohne WP/WW/E-Auto"
 
-    ],
+        ],
 
-    horizontal=False
+        horizontal=False
 
-)
+    )
+    
 with col4:
     Stromnutzung = st.radio(
         "Stromprofil wählen",
