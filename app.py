@@ -242,6 +242,13 @@ slp_df.columns = slp_df.columns.str.strip()
 slp_df["Monat"] = slp_df["Monat"].astype(int)
 slp_df["Zeit"] = pd.to_datetime(slp_df["Zeit"], format="%H:%M:%S").dt.strftime("%H:%M")
 
+g25_df = pd.read_excel("Standartprofil G25.xlsx")
+g25_df.columns = g25_df.columns.str.strip()
+g25_df["Monat"] = g25_df["Monat"].astype(int)
+g25_df["Zeit"] = pd.to_datetime(
+    g25_df["Zeit"], format="%H:%M:%S"
+).dt.strftime("%H:%M")
+
 #def Zeitdimension mit Dataframe
 def create_base_dataframe(year=2025):
     zeitindex = pd.date_range(
@@ -1864,10 +1871,6 @@ with col4:
         horizontal=True
     )
     fallstudie_gewerbe = st.checkbox("Fallstudie Gewerbehaus verwenden", value=False)
-    if fallstudie_gewerbe:
-        df_ts = add_g25_profile(df_ts, g25_df, jahresstromverbrauch)
-    else:
-        df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
     uploaded_file = None
     if Stromnutzung == "eigene Daten":
         uploaded_file = st.file_uploader(
@@ -2514,7 +2517,10 @@ if run_simulation:
 
         # Stromprofil
         if Stromnutzung == "Standardprofil":
-            df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
+            if fallstudie_gewerbe:
+                df_ts = add_g25_profile(df_ts, g25_df, jahresstromverbrauch)
+            else:
+                df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
         elif Stromnutzung == "eigene Daten":
             if uploaded_file is not None:
                 df_ts = add_uploaded_load_profile(df_ts, uploaded_file, lastprofil_einheit)
@@ -2851,7 +2857,7 @@ if "df_ts" in st.session_state:
             st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:,.1f} kWh".replace(",", "'"))
             if jahreskennzahlen["Abgeregelte_Energie_kWh"] > 0:
                 st.info(
-                    f"Im Jahresverlauf wurden insgesamt {jahreskennzahlen["Abgeregelte_Energie_kWh"]:.1f} kWh aufgrund der "
+                    f"Im Jahresverlauf wurden insgesamt {jahreskennzahlen['Abgeregelte_Energie_kWh']:,.1f} kWh aufgrund der "
                     f"Einspeisebegrenzung abgeregelt."
                 )
             else:
