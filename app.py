@@ -1913,6 +1913,21 @@ with col3:
     st.caption(
         f"Verwendeter Mittelwert für die Simulation: {jahresstromverbrauch:.0f} kWh/a"
     )
+    strombedarf_typ = st.radio(
+
+    "Was enthält der eingegebene Jahresstrombedarf?",
+
+    [
+
+        "Komplette Gesamtlast inkl. WP/WW/E-Auto",
+
+        "Nur Haushaltsstrom ohne WP/WW/E-Auto"
+
+    ],
+
+    horizontal=False
+
+)
 with col4:
     Stromnutzung = st.radio(
         "Stromprofil wählen",
@@ -1937,6 +1952,9 @@ with col4:
             "Einheit der hochgeladenen Werte",
             ["Energie pro 15-Minuten-Intervall in kWh", "mittlere Leistung im Intervall in kW"],
             horizontal=False
+        )
+        strombedarf_ist_gesamt = (
+            strombedarf_typ == "Komplette Gesamtlast inkl. WP/WW/E-Auto"
         )
 
 st.write("-----------------------")
@@ -2600,13 +2618,17 @@ if run_simulation:
         )
 
 
-        df_ts = add_heatpump_consumption(
-            df_ts,
-            heizsystem,
-            jaz=jaz if heizsystem == "Wärmepumpe" else None,
-            wp_typ=wp_typ if heizsystem == "Wärmepumpe" else None,
-            wp_strom_jahr=StromverbrauchWP_input if heizsystem == "Wärmepumpe" else None
-        )
+        if strombedarf_ist_gesamt:
+            df_ts["wp_strom_kWh"] = 0.0
+            df_ts["gesamtlast_kWh"] = df_ts["hauslast_kWh"]
+        else:
+            df_ts = add_heatpump_consumption(
+                df_ts,
+                heizsystem,
+                jaz=jaz if heizsystem == "Wärmepumpe" else None,
+                wp_typ=wp_typ if heizsystem == "Wärmepumpe" else None,
+                wp_strom_jahr=StromverbrauchWP_input if heizsystem == "Wärmepumpe" else None
+            )
 
 
         
@@ -2645,8 +2667,15 @@ if run_simulation:
             df_ts["temp_cell"] += df_tmp["temp_cell"]
             df_ts["temp_factor"] += df_tmp["temp_factor"]
 
+        if strombedarf_ist_gesamt:
+            ww_aktiv_sim = False
+            ev_aktiv_sim = False
+        else:
+            ww_aktiv_sim = ww_aktiv
+            ev_aktiv_sim = ev_aktiv
+
         ww_config = {
-            "aktiv": ww_aktiv,
+            "aktiv": ww_aktiv_sim,
             "steuerbar": ww_steuerbar,
             "bedarf_tag": ww_bedarf_kWh_tag,
             "leistung_kw": ww_ladeleistung_kw,
@@ -2654,7 +2683,7 @@ if run_simulation:
         }
 
         ev_config = {
-            "aktiv": ev_aktiv,
+            "aktiv": ev_aktiv_sim,
             "leistung_kw": ev_ladeleistung_kw,
             "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
             "km_pro_fahrtag": ev_km_pro_fahrtag,
@@ -3065,3 +3094,9 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
         ) 
+        st.write("DEBUG Gesamtlast")
+        st.write("Hauslast:", round(df_ts["hauslast_kWh"].sum(), 1))
+        st.write("WP-Strom:", round(df_ts["wp_strom_kWh"].sum(), 1))
+        st.write("WW-Strom:", round(df_ts["ww_kWh"].sum(), 1))
+        st.write("EV-Strom:", round(df_ts["ev_kWh"].sum(), 1))
+        st.write("Gesamtlast final:", round(df_ts["gesamtlast_kWh"].sum(), 1))
