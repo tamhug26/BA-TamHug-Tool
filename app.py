@@ -2542,7 +2542,7 @@ with col2:
     
     st.subheader("Einspeisen")
     # regel einbauen minSoC muss < sein als maxSoC
-    Einspeisegrenze = st.number_input("Einspeisegrenze in % bezogen auf die Peak-Leistung der PV-Anlage", 60, 100, 70)
+    Einspeisegrenze = st.number_input("Einspeisegrenze in % bezogen auf die Peak-Leistung der PV-Anlage", 1, 100, 70)
     gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
     EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
     
