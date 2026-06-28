@@ -1867,10 +1867,9 @@ with col3:
 with col4:
     Stromnutzung = st.radio(
         "Stromprofil wählen",
-        ["Standardprofil", "eigene Daten"],
+        ["Standardprofil EFH", "Standardprofil Gewerbe (G25, nur Fallstudie)", "eigene Daten"],
         horizontal=True
     )
-    fallstudie_gewerbe = st.checkbox("Fallstudie Gewerbehaus verwenden", value=False)
     uploaded_file = None
     if Stromnutzung == "eigene Daten":
         uploaded_file = st.file_uploader(
@@ -2516,17 +2515,18 @@ if run_simulation:
         df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
         # Stromprofil
-        if Stromnutzung == "Standardprofil":
-            if fallstudie_gewerbe:
-                df_ts = add_g25_profile(df_ts, g25_df, jahresstromverbrauch)
-            else:
-                df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
+        if Stromnutzung == "Standardprofil EFH":
+            df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
+
+        elif Stromnutzung == "Standardprofil Gewerbe (G25, nur Fallstudie)":
+            df_ts = add_g25_profile(df_ts, g25_df, jahresstromverbrauch)
+
         elif Stromnutzung == "eigene Daten":
             if uploaded_file is not None:
                 df_ts = add_uploaded_load_profile(df_ts, uploaded_file, lastprofil_einheit)
                 st.write("Hochgeladener Jahresverbrauch in kWh:", round(df_ts["hauslast_kWh"].sum(), 1))
             else:
-                st.info("Bitte entweder Standardprofil wählen oder eine gültige CSV-/Excel-Datei hochladen.")
+                st.info("Bitte eine gültige CSV-/Excel-Datei hochladen.")
                 st.stop()
 
         # Raumheizung übernehmen (ohne Warmwasser)
