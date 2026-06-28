@@ -1662,7 +1662,30 @@ def autarkie_farbe(wert):
         return "#63a827"
     else:
         return "#3f8f1f"
-    
+def add_g25_profile(df, g25_df, jahresstromverbrauch):
+    df = df.copy()
+
+    df["Zeit"] = df.index.strftime("%H:%M")
+    df["Monat"] = df.index.month
+
+    g25 = g25_df.copy()
+    g25["Monat"] = g25["Monat"].astype(int)
+    g25["Zeit"] = g25["Zeit"].astype(str).str[:5]
+
+    g25_lookup = g25.set_index(["Monat", "Zeit"])
+
+    df["g25_wert"] = [
+        g25_lookup.loc[(m, z), "G25"]
+        for m, z in zip(df["Monat"], df["Zeit"])
+    ]
+
+    faktor_summe = df["g25_wert"].sum()
+
+    df["hauslast_kWh"] = (
+        df["g25_wert"] / faktor_summe * jahresstromverbrauch
+    )
+
+    return df
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 
@@ -1840,6 +1863,11 @@ with col4:
         ["Standardprofil", "eigene Daten"],
         horizontal=True
     )
+    fallstudie_gewerbe = st.checkbox("Fallstudie Gewerbehaus verwenden", value=False)
+    if fallstudie_gewerbe:
+        df_ts = add_g25_profile(df_ts, g25_df, jahresstromverbrauch)
+    else:
+        df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
     uploaded_file = None
     if Stromnutzung == "eigene Daten":
         uploaded_file = st.file_uploader(
