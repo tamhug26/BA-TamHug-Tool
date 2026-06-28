@@ -5,6 +5,9 @@ import plotly.graph_objects as go
 import pvlib
 import os
 import json
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
@@ -1682,6 +1685,63 @@ def add_g25_profile(df, g25_df, jahresstromverbrauch):
     )
 
     return df
+def create_values_pdf(jahreskennzahlen, df_umwelt, df_ts):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    y = height - 50
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "Export Simulationsergebnisse")
+    y -= 40
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Jahreskennzahlen")
+    y -= 25
+
+    c.setFont("Helvetica", 10)
+
+    werte = {
+        "PV-Produktion kWh/a": jahreskennzahlen["PV_Produktion_kWh"],
+        "Gesamtlast kWh/a": df_ts["gesamtlast_kWh"].sum(),
+        "Netzbezug kWh/a": jahreskennzahlen["Netzbezug_kWh"],
+        "Netzeinspeisung kWh/a": jahreskennzahlen["Netzeinspeisung_kWh"],
+        "Eigenverbrauch kWh/a": jahreskennzahlen["Eigenverbrauch_kWh"],
+        "Autarkiegrad %": jahreskennzahlen["Autarkiegrad_%"],
+        "Eigenverbrauchsquote %": jahreskennzahlen["Eigenverbrauchsquote_%"],
+        "Abgeregelte Energie kWh/a": jahreskennzahlen["Abgeregelte_Energie_kWh"],
+        "Unterdeckung kWh/a": jahreskennzahlen["Unterdeckung_kWh"],
+        "Eingesparte Stromkosten CHF/a": jahreskennzahlen["Eingesparte_Stromkosten_CHF"],
+    }
+
+    for name, wert in werte.items():
+        c.drawString(50, y, f"{name}: {wert:,.2f}".replace(",", "'"))
+        y -= 18
+
+    y -= 20
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Umweltwirkungen")
+    y -= 25
+
+    c.setFont("Helvetica", 10)
+
+    for _, row in df_umwelt.iterrows():
+        if y < 60:
+            c.showPage()
+            y = height - 50
+            c.setFont("Helvetica", 10)
+
+        c.drawString(
+            50,
+            y,
+            f"{row['Kategorie']}: {row['UBP/a']:,.0f} UBP/a, {row['kg CO2-eq/a']:,.0f} kg CO2-eq/a".replace(",", "'")
+        )
+        y -= 18
+
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 
@@ -2997,4 +3057,11 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_umweltwirkungen.csv",
             mime="text/csv"
         )
-        idx_max = df_ts["pv_power_kW"].idxmax()     
+        idx_max = df_ts["pv_power_kW"].idxmax()    
+        pdf_buffer = create_values_pdf(jahreskennzahlen, df_umwelt, df_ts)
+        st.download_button(
+            label="Alle Kennzahlen als PDF herunterladen",
+            data=pdf_buffer,
+            file_name=f"{profil_name}_kennzahlen.pdf",
+            mime="application/pdf"
+        ) 
