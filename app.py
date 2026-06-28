@@ -359,32 +359,21 @@ def berechne_vorlauftemperatur(temp_aussen, auslegetemperatur=-7, vorlauf_ausleg
         lower=raumtemperatur,
         upper=vorlauf_auslegung
     )
-def add_heatpump_consumption(df, heizsystem, jaz=None, wp_typ=None):
+def add_heatpump_consumption(df, heizsystem, jaz=None, wp_typ=None, wp_strom_jahr=None):
     df = df.copy()
+    if heizsystem == "Wärmepumpe" and wp_strom_jahr is not None:
+        faktor_summe = df["heizwaerme_kWh"].sum()
 
-    if heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0:
-        if "vorlauftemperatur_C" in df.columns:
-            # Referenz: eingegebene JAZ gilt ungefähr bei 35 °C Vorlauf
-            referenz_vorlauf = 35
-
-            # Pro 1 °C höherer Vorlauf sinkt die Effizienz grob um 2 %
-            korrekturfaktor = 1 - 0.02 * (df["vorlauftemperatur_C"] - referenz_vorlauf)
-
-            # Begrenzen, damit keine unrealistischen Werte entstehen
-            korrekturfaktor = korrekturfaktor.clip(lower=0.5, upper=1.3)
-
-            df["jaz_dynamisch"] = jaz * korrekturfaktor
-            df["wp_strom_kWh"] = df["heizwaerme_kWh"] / df["jaz_dynamisch"]
-
+        if faktor_summe > 0:
+            df["wp_strom_kWh"] = df["heizwaerme_kWh"] / faktor_summe * wp_strom_jahr
         else:
-            df["jaz_dynamisch"] = jaz
-            df["wp_strom_kWh"] = df["heizwaerme_kWh"] / jaz
-
+            df["wp_strom_kWh"] = 0.0
+    elif heizsystem == "Wärmepumpe" and jaz is not None and jaz > 0:
+        df["wp_strom_kWh"] = df["heizwaerme_kWh"] / jaz
     else:
-        df["jaz_dynamisch"] = 0.0
         df["wp_strom_kWh"] = 0.0
-
     df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
+
     return df
 def simulate_battery(
     df,
@@ -2550,11 +2539,13 @@ if run_simulation:
             vorlauf_auslegung=Vorlauftemperatur_Auslegung if heizsystem == "Wärmepumpe" else 40
         )
 
+
         df_ts = add_heatpump_consumption(
             df_ts,
             heizsystem,
             jaz=jaz if heizsystem == "Wärmepumpe" else None,
-            wp_typ=wp_typ if heizsystem == "Wärmepumpe" else None
+            wp_typ=wp_typ if heizsystem == "Wärmepumpe" else None,
+            wp_strom_jahr=StromverbrauchWP_input if heizsystem == "Wärmepumpe" else None
         )
 
 
