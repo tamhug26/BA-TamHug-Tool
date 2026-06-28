@@ -1914,19 +1914,15 @@ with col3:
         f"Verwendeter Mittelwert für die Simulation: {jahresstromverbrauch:.0f} kWh/a"
     )
     strombedarf_typ = st.radio(
-
         "Was enthält der eingegebene Jahresstrombedarf?",
-
         [
-
             "Komplette Gesamtlast inkl. WP/WW/E-Auto",
-
             "Nur Haushaltsstrom ohne WP/WW/E-Auto"
-
         ],
-
         horizontal=False
-
+    )
+    strombedarf_ist_gesamt = (
+        strombedarf_typ == "Komplette Gesamtlast inkl. WP/WW/E-Auto"
     )
     
 with col4:
