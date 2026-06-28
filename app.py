@@ -8,6 +8,7 @@ import json
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+import matplotlib.pyplot as plt
 PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
@@ -3097,3 +3098,42 @@ if "df_ts" in st.session_state:
         st.write("WW-Strom:", round(df_ts["ww_kWh"].sum(), 1))
         st.write("EV-Strom:", round(df_ts["ev_kWh"].sum(), 1))
         st.write("Gesamtlast final:", round(df_ts["gesamtlast_kWh"].sum(), 1))
+
+
+        batteriekapazitaet = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33]
+
+        netzbezug = [8894, 8494, 7987, 7500, 7035, 6589, 6173, 5782, 5474, 5238, 5071, 4949]
+
+        autarkie = [40.7, 43.4, 46.8, 50.0, 53.1, 56.1, 58.9, 61.5, 63.5, 65.1, 66.2, 67.0]
+
+        eigenverbrauch = [38.7, 41.3, 44.7, 47.9, 51.0, 54.0, 56.7, 59.3, 61.4, 62.9, 64.0, 64.9]
+
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+
+        ax1.plot(batteriekapazitaet, netzbezug, marker="o", label="Netzbezug")
+
+        ax1.set_xlabel("Batteriekapazität in kWh")
+
+        ax1.set_ylabel("Netzbezug in kWh/a")
+
+        ax1.grid(True)
+
+        ax2 = ax1.twinx()
+
+        ax2.plot(batteriekapazitaet, autarkie, marker="s", linestyle="--", label="Autarkiegrad")
+
+        ax2.plot(batteriekapazitaet, eigenverbrauch, marker="^", linestyle="--", label="Eigenverbrauch")
+
+        ax2.set_ylabel("Autarkiegrad / Eigenverbrauch in %")
+
+        linien_1, labels_1 = ax1.get_legend_handles_labels()
+
+        linien_2, labels_2 = ax2.get_legend_handles_labels()
+
+        ax1.legend(linien_1 + linien_2, labels_1 + labels_2, loc="center right")
+
+        plt.title("Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch")
+
+        plt.tight_layout()
+
+        st.pyplot(fig)
