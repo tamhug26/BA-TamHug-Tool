@@ -1702,6 +1702,8 @@ def create_values_pdf(jahreskennzahlen, df_umwelt, df_ts):
     y -= 25
 
     c.setFont("Helvetica", 10)
+    
+    max_einspeiseleistung_kw = df_ts["netzeinspeisung_kWh"].max() / 0.25
 
     werte = {
         "PV-Produktion kWh/a": jahreskennzahlen["PV_Produktion_kWh"],
@@ -1714,6 +1716,7 @@ def create_values_pdf(jahreskennzahlen, df_umwelt, df_ts):
         "Abgeregelte Energie kWh/a": jahreskennzahlen["Abgeregelte_Energie_kWh"],
         "Unterdeckung kWh/a": jahreskennzahlen["Unterdeckung_kWh"],
         "Eingesparte Stromkosten CHF/a": jahreskennzahlen["Eingesparte_Stromkosten_CHF"],
+        "Max. Einspeiseleistung kW": max_einspeiseleistung_kw,
     }
 
     for name, wert in werte.items():
