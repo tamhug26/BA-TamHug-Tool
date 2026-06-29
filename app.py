@@ -2859,6 +2859,8 @@ if "df_ts" in st.session_state:
         else:
             df_sum = get_raw_period_dataframe(df_ts, zeitraum)
 
+        # Maximale Einspeiseleistung im ausgewählten Zeitraum
+        max_einspeiseleistung_kw = df_sum["netzeinspeisung_kWh"].max() / 0.25
 
         if zeitraum == "Tag":
             titel = "Zusammenfassung des ausgewählten Tages"
@@ -2884,6 +2886,7 @@ if "df_ts" in st.session_state:
         with col3:
             st.metric("Abregelung", f"{df_sum['abregelung_kWh'].sum():,.1f} kWh".replace(",", "'"))
             st.metric("Unterdeckung", f"{df_sum['unterdeckung_kWh'].sum():,.1f} kWh".replace(",", "'"))
+            st.metric("Max. Einspeiseleistung", f"{max_einspeiseleistung_kw:,.2f} kW".replace(",", "'"))
 
         with st.expander("Daten im ausgewählten Zeitraum anzeigen"):
             st.dataframe(
