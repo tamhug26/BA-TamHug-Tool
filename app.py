@@ -3101,14 +3101,10 @@ if "df_ts" in st.session_state:
 
 
         batteriekapazitaet = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33]
-
         netzbezug = [8894, 8494, 7987, 7500, 7035, 6589, 6173, 5782, 5474, 5238, 5071, 4949]
-
         autarkie = [40.7, 43.4, 46.8, 50.0, 53.1, 56.1, 58.9, 61.5, 63.5, 65.1, 66.2, 67.0]
-
         eigenverbrauch = [38.7, 41.3, 44.7, 47.9, 51.0, 54.0, 56.7, 59.3, 61.4, 62.9, 64.0, 64.9]
-
-        fig, ax1 = plt.subplots(figsize=(10, 6))
+        fig, ax1 = plt.subplots(figsize=(6, 3.5))
 
         ax1.plot(batteriekapazitaet, netzbezug, marker="o", label="Netzbezug")
 
@@ -3136,4 +3132,4 @@ if "df_ts" in st.session_state:
 
         plt.tight_layout()
 
-        st.pyplot(fig)
+        st.pyplot(fig, use_container_width=False)
