@@ -2438,7 +2438,8 @@ for start in range(0, PVAnlagen, 3):
                 format="%.4f",
                 key=f"gamma_pdc_{i}"
             )
-            st.caption("Der Temperaturkoeffizient beschreibt die Änderung der maximalen Modulleistung pro 1 °C Zelltemperatur. Der Standardwert von −0,004 1/°C entspricht einer Leistungsabnahme von 0,4 % pro °C über den Standard-Testbedingungen (25 °C Zelltemperatur).")
+            if i == 0:
+                st.caption("Der Temperaturkoeffizient beschreibt die Änderung der maximalen Modulleistung pro 1 °C Zelltemperatur. Der Standardwert von −0,004 1/°C entspricht einer Leistungsabnahme von 0,4 % pro °C über den Standard-Testbedingungen (25 °C Zelltemperatur).")
 
             nmot_input = st.number_input(
                 "NMOT / NOCT in °C",
