@@ -2669,6 +2669,17 @@ if run_simulation:
             df_ts["temp_cell"] += df_tmp["temp_cell"]
             df_ts["temp_factor"] += df_tmp["temp_factor"]
 
+        # Wechselrichterbegrenzung AC-seitig
+        df_ts["pv_power_kW_vor_wr"] = df_ts["pv_power_kW"]
+
+        df_ts["pv_power_kW"] = df_ts["pv_power_kW"].clip(upper=WechselrichterkW)
+
+        df_ts["pv_kWh"] = df_ts["pv_power_kW"] * 0.25
+
+        df_ts["wr_abregelung_kWh"] = (
+            df_ts["pv_power_kW_vor_wr"] - df_ts["pv_power_kW"]
+        ).clip(lower=0) * 0.25
+
         if strombedarf_ist_gesamt:
             ww_aktiv_sim = False
             ev_aktiv_sim = False
