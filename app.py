@@ -3115,3 +3115,9 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
         ) 
+        st.write("PV Debug")
+        st.write("PV kWp gesamt:", gesamt_pv_peakleistung)
+        st.write("PV-Produktion simuliert:", round(df_ts["pv_kWh"].sum(), 1))
+        st.write("Spezifischer Ertrag simuliert:", round(df_ts["pv_kWh"].sum() / gesamt_pv_peakleistung, 1), "kWh/kWp")
+        st.write("Max. PV-Leistung:", round(df_ts["pv_power_kW"].max(), 2), "kW")
+        st.write("Performance Ratio:", [anlage["performance_ratio"] for anlage in pv_anlagen_daten])
