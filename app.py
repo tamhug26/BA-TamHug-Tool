@@ -2453,7 +2453,7 @@ for start in range(0, PVAnlagen, 3):
                 "Performance Ratio",
                 min_value=0.5,
                 max_value=1.1,
-                value=0.85,
+                value=0.78,
                 step=0.01,
                 key=f"performance_ratio_{i}"
             )
