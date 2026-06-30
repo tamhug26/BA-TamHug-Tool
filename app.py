@@ -929,14 +929,8 @@ def add_pv_profile_weather_based(
         altitude=altitude
     )
 
-    #hier
-    #solar_position = location.get_solarposition(df.index) #eine pvlib-Methode. Laut pvlib verwendet sie intern pvlib.solarposition.get_solarposition(), um Solarzenit, Solarazimut usw. zu berechnen
-    solar_index = df.index + pd.Timedelta(minutes=30)
+    solar_position = location.get_solarposition(df.index) #eine pvlib-Methode. Laut pvlib verwendet sie intern pvlib.solarposition.get_solarposition(), um Solarzenit, Solarazimut usw. zu berechnen
 
-    solar_position = location.get_solarposition(solar_index)
-
-    # Index wieder zurücksetzen, damit pandas nicht falsch alignet
-    solar_position.index = df.index
     surface_azimuth = dachausrichtung
 
     dni_extra = pvlib.irradiance.get_extra_radiation(df.index) #Das ist kein Messdatensatz deiner Station, sondern ein berechneter astronomischer Wert für die extraterrestrische Strahlung, also die Sonnenstrahlung außerhalb der Atmosphäre. pvlib berechnet ihn aus Datum bzw. Tageszahl mit hinterlegten Formeln/Methoden wie standardmäßig spencer.
@@ -3115,9 +3109,4 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
         ) 
-        st.write("PV Debug")
-        st.write("PV kWp gesamt:", gesamt_pv_peakleistung)
-        st.write("PV-Produktion simuliert:", round(df_ts["pv_kWh"].sum(), 1))
-        st.write("Spezifischer Ertrag simuliert:", round(df_ts["pv_kWh"].sum() / gesamt_pv_peakleistung, 1), "kWh/kWp")
-        st.write("Max. PV-Leistung:", round(df_ts["pv_power_kW"].max(), 2), "kW")
-        st.write("Performance Ratio:", [anlage["performance_ratio"] for anlage in pv_anlagen_daten])
+        
