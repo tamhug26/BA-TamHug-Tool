@@ -321,8 +321,7 @@ def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, rau
     weather = df_weather[["temp"]].copy()
     weather["temp"] = pd.to_numeric(weather["temp"], errors="coerce")
 
-    # Wetterdaten von stündlich auf 15 min bringen
-    weather_15min = weather.resample("15min").interpolate("time")
+    weather_15min = weather.resample("15min").ffill()
 
     df = df.join(weather_15min, how="left")
     df["temp"] = df["temp"].interpolate("time")
