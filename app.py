@@ -1983,18 +1983,29 @@ with col1:
             else:
                 Heizwaermebedarf_total = Heizwaermebedarf_basis
 
-            Heizwaermebedarf_input = st.number_input(
-                "Heizwärmebedarf in kWh/a",
-                min_value=0.0,
-                max_value=500000.0,
-                value=float(round(Heizwaermebedarf_total, 0)),
-                step=100.0,
-                format="%.0f",
-                key=f"heizwaermebedarf_{bau_typ}_{Baujahr}_{status}_{hash(str(locals().get('Sanierungstyp', '')))}"
-            )
+            #Heizwaermebedarf_input = st.number_input(
+             #   "Heizwärmebedarf in kWh/a",
+              #  min_value=0.0,
+               # max_value=500000.0,
+                #value=float(round(Heizwaermebedarf_total, 0)),
+                #step=100.0,
+                #format="%.0f",
+                #key=f"heizwaermebedarf_{bau_typ}_{Baujahr}_{status}_{hash(str(locals().get('Sanierungstyp', '')))}"
+            #)
+            #raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
+            #ergebnis = Heizwaermebedarf_input
 
+
+            Heizwaermebedarf_input = float(Heizwaermebedarf_total)
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
             ergebnis = Heizwaermebedarf_input
+
+            st.metric(
+                "Verwendeter Heizwärmebedarf",
+                f"{Heizwaermebedarf_input:,.0f} kWh/a".replace(",", "'")
+            )
+
+#------
 
             st.caption(
                 "Vorschlagswert basierend auf Baujahr, Fläche und gegebenenfalls Sanierungszustand oder GEAK-Klasse."
@@ -3102,5 +3113,12 @@ if "df_ts" in st.session_state:
             data=pdf_buffer,
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
-        ) 
-        
+        )
+
+        st.write("DEBUG strombedarf_ist_gesamt:", strombedarf_ist_gesamt)
+        st.write("DEBUG Heizwärmebedarf für Simulation:", heizwaerme_jahr)
+        st.write("DEBUG JAZ:", jaz if heizsystem == "Wärmepumpe" else "keine WP")
+        st.write("DEBUG WP-Strom berechnet:", StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0)
+        st.write("DEBUG Summe Heizwärme:", round(df_ts["heizwaerme_kWh"].sum(), 1))
+        st.write("DEBUG Summe WP-Strom:", round(df_ts["wp_strom_kWh"].sum(), 1))
+        st.write("DEBUG Summe Gesamtlast:", round(df_ts["gesamtlast_kWh"].sum(), 1))
