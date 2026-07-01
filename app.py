@@ -1975,38 +1975,73 @@ with col1:
     )
     if bau_typ == "Baujahr":
         Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
-        treffer = df_Bautyp_Heizwaermebedarf.loc[df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr, "Heizwaermebedarf"]
+
+        treffer = df_Bautyp_Heizwaermebedarf.loc[
+            df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr,
+            "Heizwaermebedarf"
+        ]
+
         if not treffer.empty:
-            Heizwaermebedarf = treffer.iloc[0] * m2
+            heizwaermebedarf_spez = treffer.iloc[0]
+            Heizwaermebedarf_basis = heizwaermebedarf_spez * m2
+
             status = st.radio(
                 "Gebäude saniert oder sogar GEAK bekannt?",
                 ["Nein", "Ja", "GEAK Klasse"],
                 horizontal=True
             )
-            reduktion = 0.0
+
             if status == "Ja":
                 Sanierungstyp = st.multiselect(
                     "Sanierungstyp",
                     list(reduktionen.keys())
                 )
+
                 reduktion = sum(reduktionen[typ] for typ in Sanierungstyp)
-                Heizwaermebedarf_total = Heizwaermebedarf * (1 - reduktion)
+                reduktion = min(reduktion, 0.75)  # Sicherheitsgrenze, damit es nicht unrealistisch tief wird
+
+                Heizwaermebedarf_total = Heizwaermebedarf_basis * (1 - reduktion)
+
+                st.caption(
+                    f"Basiswert: {Heizwaermebedarf_basis:.0f} kWh/a, "
+                    f"Reduktion durch Sanierung: {reduktion*100:.0f} %, "
+                    f"Vorschlagswert: {Heizwaermebedarf_total:.0f} kWh/a"
+                )
+
             elif status == "GEAK Klasse":
                 geak_klasse = st.selectbox(
                     "GEAK Klasse wählen",
                     list(GEAK_Klassen.keys())
                 )
+
                 Heizwaermebedarf_total = GEAK_Klassen[geak_klasse] * m2
 
+                st.caption(
+                    f"GEAK-Klasse {geak_klasse}: "
+                    f"{GEAK_Klassen[geak_klasse]} kWh/m²a × {m2:.0f} m² = "
+                    f"{Heizwaermebedarf_total:.0f} kWh/a"
+                )
+
             else:
-                Heizwaermebedarf_total = Heizwaermebedarf
+                Heizwaermebedarf_total = Heizwaermebedarf_basis
+
             Heizwaermebedarf_input = st.number_input(
                 "Heizwärmebedarf in kWh/a",
-                value=int(Heizwaermebedarf_total)
+                min_value=0.0,
+                max_value=500000.0,
+                value=float(round(Heizwaermebedarf_total, 0)),
+                step=100.0,
+                format="%.0f",
+                key=f"heizwaermebedarf_{bau_typ}_{Baujahr}_{status}_{hash(str(locals().get('Sanierungstyp', '')))}"
             )
+
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
-            st.caption("Vorschlagswert basierend auf dem Baujahr des Gebäudes und den typischen Heizwärmebedarfskennwerten nach GEAK in kWh/m²·a")
             ergebnis = Heizwaermebedarf_input
+
+            st.caption(
+                "Vorschlagswert basierend auf Baujahr, Fläche und gegebenenfalls Sanierungszustand oder GEAK-Klasse."
+            )
+
         else:
             st.error("Dieses Baujahr wurde in der Tabelle nicht gefunden.")
     elif bau_typ == "Minergie":
