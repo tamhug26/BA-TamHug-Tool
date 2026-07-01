@@ -2603,10 +2603,16 @@ if run_simulation:
                 st.stop()
 
         # Raumheizung übernehmen (ohne Warmwasser)
-        if "raumheizung_waermebedarf_kWh" in locals():
-            heizwaerme_jahr = raumheizung_waermebedarf_kWh
-        else:
-            heizwaerme_jahr = 12000
+        
+        heizwaerme_jahr = raumheizung_waermebedarf_kWh
+       
+        st.write("DEBUG strombedarf_ist_gesamt:", strombedarf_ist_gesamt)
+
+        st.write("DEBUG Heizwärmebedarf für Simulation:", heizwaerme_jahr)
+
+        st.write("DEBUG JAZ:", jaz if heizsystem == "Wärmepumpe" else "keine WP")
+
+        st.write("DEBUG WP-Strom berechnet:", StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0)
 
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
@@ -3114,11 +3120,3 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
         )
-
-        st.write("DEBUG strombedarf_ist_gesamt:", strombedarf_ist_gesamt)
-        st.write("DEBUG Heizwärmebedarf für Simulation:", heizwaerme_jahr)
-        st.write("DEBUG JAZ:", jaz if heizsystem == "Wärmepumpe" else "keine WP")
-        st.write("DEBUG WP-Strom berechnet:", StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0)
-        st.write("DEBUG Summe Heizwärme:", round(df_ts["heizwaerme_kWh"].sum(), 1))
-        st.write("DEBUG Summe WP-Strom:", round(df_ts["wp_strom_kWh"].sum(), 1))
-        st.write("DEBUG Summe Gesamtlast:", round(df_ts["gesamtlast_kWh"].sum(), 1))
