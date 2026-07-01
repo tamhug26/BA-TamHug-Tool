@@ -17,49 +17,7 @@ st.write("Prototyp 2 test3")
 
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
-#Tabellen bzw Dataframes
-# Standort = {
-#     "Adelboden" : -10,
-#     "Aigle" : -6,
-#     "Altdorf" : -6,
-#     "Basel-Binningen" : -7,
-#     "Bern-Liebefeld" : -7,
-#     "Buchs-Aarau" : -7,
-#     "Chur" : -7,
-#     "Davos" : -13,
-#     "Disentis" : -10,
-#     "Engelberg" : -11,
-#     "Genève-Cointrin" : -4,
-#     "Glarus" : -8,
-#     "Grand-St-Bernard" : -15,
-#     "Güttingen" : -7,
-#     "Interlaken" : -7,
-#     "La Chaux-de-Fonds" : -10,
-#     "La Frétaz" : -10,
-#     "Locarno-Monti" : -1,
-#     "Lugano" : -1,
-#     "Luzern" : -6,
-#     "Magadino" : -3,
-#     "Montana" : -10,
-#     "Neuchâtel" : -5,
-#     "Payerne" : -7,
-#     "Piotta" : -7,
-#     "Pully" : -4,
-#     "Robbia" : -8,
-#     "Rünenberg" : -8,
-#     "Samedan" : -18,
-#     "San Bernardino" : -11,
-#     "St. Gallen" : -9,
-#     "Schaffhausen" : -8,
-#     "Scuol" : -12,
-#     "Sion" : -6,
-#     "Ulrichen" : -16,
-#     "Vaduz" : -8,
-#     "Wynau" : -7,
-#     "Zermatt" : -11,
-#     "Zürich-Kloten" : -8,
-#     "Zürich-MeteoSchweiz" : -8
-# }
+
 #Herstellung und Entsorgung
 UBP = {
     "HeizölEL pro kWh":437,
@@ -2151,9 +2109,9 @@ with col2:
             stromverbrauch = Heizwaermebedarf_input / jaz
         else:
             stromverbrauch = 0.0
-        StromverbrauchWP_input = st.number_input(
-            "geschätzter Stromverbrauch Wärmepumpe in kWh/a",
-            value=int(stromverbrauch)
+        StromverbrauchWP_input = stromverbrauch
+        st.write(
+            f"Geschätzter Stromverbrauch Wärmepumpe: {StromverbrauchWP_input:.0f} kWh/a"
         )
         ergebnis = stromverbrauch
     raumtemperatur = st.number_input(
