@@ -1703,6 +1703,21 @@ def create_values_pdf(jahreskennzahlen, df_umwelt, df_ts):
     c.save()
     buffer.seek(0)
     return buffer
+def berechne_ev_jahresbedarf(ev_config):
+    if not ev_config["aktiv"]:
+        return 0.0
+
+    anzahl_fahrtage_pro_woche = len(ev_config["fahrtage"])
+    anzahl_nicht_fahrtage_pro_woche = 7 - anzahl_fahrtage_pro_woche
+
+    km_jahr = (
+        anzahl_fahrtage_pro_woche * ev_config["km_pro_fahrtag"] * 52
+        + anzahl_nicht_fahrtage_pro_woche * ev_config["km_nicht_fahrtag"] * 52
+    )
+
+    ev_strom_jahr = km_jahr * ev_config["verbrauch_pro_100km"] / 100
+
+    return ev_strom_jahr
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 
@@ -1874,17 +1889,46 @@ with col3:
     st.caption(
         f"Verwendeter Mittelwert für die Simulation: {jahresstromverbrauch:.0f} kWh/a"
     )
-    strombedarf_typ = st.radio(
-        "Was enthält der eingegebene Jahresstrombedarf?",
+    strombedarf_modus = st.radio(
+        "Wie soll der eingegebene Jahresstrombedarf verwendet werden?",
         [
-            "Komplette Gesamtlast inkl. WP/WW/E-Auto",
-            "Nur Haushaltsstrom ohne WP/WW/E-Auto"
+            "Ist-Zustand: gemessene Gesamtlast aus Stromrechnung verwenden",
+            "Szenario: Haushaltsstrom ohne WP/WW/E-Auto eingeben",
+            "Szenario aus Stromrechnung: Gesamtstrom auf Haushaltsstrom zurückrechnen"
         ],
         horizontal=False
     )
+
     strombedarf_ist_gesamt = (
-        strombedarf_typ == "Komplette Gesamtlast inkl. WP/WW/E-Auto"
+        strombedarf_modus == "Ist-Zustand: gemessene Gesamtlast aus Stromrechnung verwenden"
     )
+
+    strombedarf_szenario_basis = (
+        strombedarf_modus == "Szenario: Haushaltsstrom ohne WP/WW/E-Auto eingeben"
+    )
+
+    strombedarf_rueckrechnung = (
+        strombedarf_modus == "Szenario aus Stromrechnung: Gesamtstrom auf Haushaltsstrom zurückrechnen"
+    )
+
+    if strombedarf_ist_gesamt:
+        st.info(
+            "Der eingegebene Jahresstrombedarf wird als gemessene Gesamtlast verwendet. "
+            "Wärmepumpe, Warmwasser und E-Auto werden nicht zusätzlich addiert."
+        )
+
+    elif strombedarf_szenario_basis:
+        st.info(
+            "Der eingegebene Jahresstrombedarf wird als Haushaltsstrom ohne Wärmepumpe, Warmwasser und E-Auto verwendet. "
+            "WP, WW und E-Auto werden zusätzlich berechnet."
+        )
+
+    elif strombedarf_rueckrechnung:
+        st.info(
+            "Der eingegebene Jahresstrombedarf wird als gemessene Gesamtlast verwendet. "
+            "Das Tool zieht die geschätzten Anteile für Wärmepumpe, Warmwasser und E-Auto ab und berechnet daraus den Haushaltsstrom. "
+            "Danach werden WP, WW und E-Auto für das Szenario neu dazugerechnet."
+        )
     
 with col4:
     Stromnutzung = st.radio(
@@ -1911,9 +1955,7 @@ with col4:
             ["Energie pro 15-Minuten-Intervall in kWh", "mittlere Leistung im Intervall in kW"],
             horizontal=False
         )
-        strombedarf_ist_gesamt = (
-            strombedarf_typ == "Komplette Gesamtlast inkl. WP/WW/E-Auto"
-        )
+    
 
 st.write("-----------------------")
 #Heizwärmebedarf-Ermittlung & Heizsystem
@@ -2158,6 +2200,71 @@ with col1:
     ww_bedarf_kWh_tag = 0.0
     ww_ladeleistung_kw = 0.0
     ww_strategie = "Abends"
+
+    wp_strom_ist = 0.0
+ww_strom_ist = 0.0
+ev_strom_ist = 0.0
+
+if strombedarf_rueckrechnung:
+    st.subheader("Rückrechnung der Stromrechnung")
+
+    wp_strom_vorschlag = StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0.0
+    ww_strom_vorschlag = ww_bedarf_kWh_tag * 365 if ww_aktiv else 0.0
+
+    ev_config_vorschlag = {
+        "aktiv": ev_aktiv,
+        "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
+        "km_pro_fahrtag": ev_km_pro_fahrtag,
+        "km_nicht_fahrtag": ev_km_nicht_fahrtag,
+        "fahrtage": ev_fahrtage
+    }
+
+    ev_strom_vorschlag = berechne_ev_jahresbedarf(ev_config_vorschlag)
+
+    wp_strom_ist = st.number_input(
+        "WP-Stromanteil im Ist-Zustand in kWh/a",
+        min_value=0.0,
+        max_value=100000.0,
+        value=float(round(wp_strom_vorschlag, 0)),
+        step=100.0,
+        format="%.0f",
+        key="wp_strom_ist_rueckrechnung"
+    )
+
+    ww_strom_ist = st.number_input(
+        "Warmwasser-Stromanteil im Ist-Zustand in kWh/a",
+        min_value=0.0,
+        max_value=50000.0,
+        value=float(round(ww_strom_vorschlag, 0)),
+        step=50.0,
+        format="%.0f",
+        key="ww_strom_ist_rueckrechnung"
+    )
+
+    ev_strom_ist = st.number_input(
+        "E-Auto-Stromanteil im Ist-Zustand in kWh/a",
+        min_value=0.0,
+        max_value=100000.0,
+        value=float(round(ev_strom_vorschlag, 0)),
+        step=100.0,
+        format="%.0f",
+        key="ev_strom_ist_rueckrechnung"
+    )
+
+    basislast_vorschau = max(
+        0.0,
+        jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
+    )
+
+    st.metric(
+        "Zurückgerechneter Haushaltsstrom",
+        f"{basislast_vorschau:,.0f} kWh/a".replace(",", "'")
+    )
+
+    st.caption(
+        "Diese Basislast bleibt für Szenarien konstant. Änderungen an Sanierung, WP, WW oder E-Auto "
+        "werden danach neu zur Basislast addiert."
+    )
 
     if not ww_aktiv:
         st.caption("WW wird nicht als elektrische Last simuliert.")
@@ -2588,23 +2695,65 @@ if run_simulation:
         df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
         # Stromprofil
+        # Standardmässig wird der eingegebene Stromverbrauch als Basislast verwendet
+        jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
+
+        # Für Rückrechnungsmodus: Gesamtstromrechnung auf Haushaltsstrom zurückrechnen
+        # Standardmässig wird der eingegebene Stromverbrauch als Basislast verwendet
+        jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
+
+        # Für Rückrechnungsmodus: Gesamtstromrechnung auf Haushaltsstrom zurückrechnen
+        if strombedarf_rueckrechnung:
+            jahresstromverbrauch_fuer_basislast = (
+                jahresstromverbrauch
+                - wp_strom_ist
+                - ww_strom_ist
+                - ev_strom_ist
+            )
+
+            jahresstromverbrauch_fuer_basislast = max(
+                0.0,
+                jahresstromverbrauch_fuer_basislast
+            )
+
+            st.write("Rückrechnung aus Stromrechnung:")
+            st.write(f"Gemessener Gesamtstrom: {jahresstromverbrauch:,.0f} kWh/a".replace(",", "'"))
+            st.write(f"Abzug WP-Strom Ist-Zustand: {wp_strom_ist:,.0f} kWh/a".replace(",", "'"))
+            st.write(f"Abzug Warmwasserstrom Ist-Zustand: {ww_strom_ist:,.0f} kWh/a".replace(",", "'"))
+            st.write(f"Abzug E-Auto-Strom Ist-Zustand: {ev_strom_ist:,.0f} kWh/a".replace(",", "'"))
+
+            st.metric(
+                "Berechneter Haushaltsstrom als Basislast",
+                f"{jahresstromverbrauch_fuer_basislast:,.0f} kWh/a".replace(",", "'")
+            )
+
+        # Stromprofil mit Basislast erzeugen
         if Stromnutzung == "Standardprofil EFH":
-            df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch)
+            df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch_fuer_basislast)
 
         elif Stromnutzung == "Standardprofil Gewerbe (G25, nur Fallstudie)":
-            df_ts = add_g25_profile(df_ts, g25_df, jahresstromverbrauch)
+            df_ts = add_g25_profile(df_ts, g25_df, jahresstromverbrauch_fuer_basislast)
 
         elif Stromnutzung == "eigene Daten":
             if uploaded_file is not None:
                 df_ts = add_uploaded_load_profile(df_ts, uploaded_file, lastprofil_einheit)
                 st.write("Hochgeladener Jahresverbrauch in kWh:", round(df_ts["hauslast_kWh"].sum(), 1))
+
+                if strombedarf_rueckrechnung:
+                    faktor = jahresstromverbrauch_fuer_basislast / df_ts["hauslast_kWh"].sum()
+                    df_ts["hauslast_kWh"] = df_ts["hauslast_kWh"] * faktor
+                    st.write(
+                        "Hochgeladenes Profil wurde auf die zurückgerechnete Basislast skaliert:",
+                        round(df_ts["hauslast_kWh"].sum(), 1),
+                        "kWh/a"
+                    )
             else:
                 st.info("Bitte eine gültige CSV-/Excel-Datei hochladen.")
                 st.stop()
 
         # Raumheizung übernehmen (ohne Warmwasser)
         
-        heizwaerme_jahr = raumheizung_waermebedarf_kWh
+        heizwaerme_jahr = float(Heizwaermebedarf_input)
        
         st.write("DEBUG strombedarf_ist_gesamt:", strombedarf_ist_gesamt)
 
@@ -2633,6 +2782,7 @@ if run_simulation:
         if strombedarf_ist_gesamt:
             df_ts["wp_strom_kWh"] = 0.0
             df_ts["gesamtlast_kWh"] = df_ts["hauslast_kWh"]
+
         else:
             df_ts = add_heatpump_consumption(
                 df_ts,
