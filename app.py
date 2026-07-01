@@ -2106,14 +2106,15 @@ with col2:
         else:
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=4.0, step=0.1, format="%.1f")
         if "Heizwaermebedarf_input" in locals():
-            stromverbrauch = Heizwaermebedarf_input / jaz
+            StromverbrauchWP_input = Heizwaermebedarf_input / jaz
         else:
-            stromverbrauch = 0.0
-        StromverbrauchWP_input = stromverbrauch
+            StromverbrauchWP_input = 0.0
+
         st.write(
             f"Geschätzter Stromverbrauch Wärmepumpe: {StromverbrauchWP_input:.0f} kWh/a"
         )
-        ergebnis = stromverbrauch
+
+        ergebnis = StromverbrauchWP_input
     raumtemperatur = st.number_input(
         "Gewünschte Raumtemperatur in °C",
         min_value=15.0,
