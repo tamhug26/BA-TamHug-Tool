@@ -2199,78 +2199,13 @@ with col1:
     ww_steuerbar = False
     ww_bedarf_kWh_tag = 0.0
     ww_ladeleistung_kw = 0.0
-    ww_strategie = "Abends"
-
-    wp_strom_ist = 0.0
-ww_strom_ist = 0.0
-ev_strom_ist = 0.0
-
-if strombedarf_rueckrechnung:
-    st.subheader("Rückrechnung der Stromrechnung")
-
-    wp_strom_vorschlag = StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0.0
-    ww_strom_vorschlag = ww_bedarf_kWh_tag * 365 if ww_aktiv else 0.0
-
-    ev_config_vorschlag = {
-        "aktiv": ev_aktiv,
-        "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
-        "km_pro_fahrtag": ev_km_pro_fahrtag,
-        "km_nicht_fahrtag": ev_km_nicht_fahrtag,
-        "fahrtage": ev_fahrtage
-    }
-
-    ev_strom_vorschlag = berechne_ev_jahresbedarf(ev_config_vorschlag)
-
-    wp_strom_ist = st.number_input(
-        "WP-Stromanteil im Ist-Zustand in kWh/a",
-        min_value=0.0,
-        max_value=100000.0,
-        value=float(round(wp_strom_vorschlag, 0)),
-        step=100.0,
-        format="%.0f",
-        key="wp_strom_ist_rueckrechnung"
-    )
-
-    ww_strom_ist = st.number_input(
-        "Warmwasser-Stromanteil im Ist-Zustand in kWh/a",
-        min_value=0.0,
-        max_value=50000.0,
-        value=float(round(ww_strom_vorschlag, 0)),
-        step=50.0,
-        format="%.0f",
-        key="ww_strom_ist_rueckrechnung"
-    )
-
-    ev_strom_ist = st.number_input(
-        "E-Auto-Stromanteil im Ist-Zustand in kWh/a",
-        min_value=0.0,
-        max_value=100000.0,
-        value=float(round(ev_strom_vorschlag, 0)),
-        step=100.0,
-        format="%.0f",
-        key="ev_strom_ist_rueckrechnung"
-    )
-
-    basislast_vorschau = max(
-        0.0,
-        jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
-    )
-
-    st.metric(
-        "Zurückgerechneter Haushaltsstrom",
-        f"{basislast_vorschau:,.0f} kWh/a".replace(",", "'")
-    )
-
-    st.caption(
-        "Diese Basislast bleibt für Szenarien konstant. Änderungen an Sanierung, WP, WW oder E-Auto "
-        "werden danach neu zur Basislast addiert."
-    )
+    ww_strategie = WW_ABEND
 
     if not ww_aktiv:
         st.caption("WW wird nicht als elektrische Last simuliert.")
 
     else:
-        st.caption(f"{ww_system} wird als elektrische WWlast berücksichtigt.")
+        st.caption(f"{ww_system} wird als elektrische WW-Last berücksichtigt.")
 
         ww_speicher_liter = st.selectbox(
             "WWspeicher / Boiler in Liter",
@@ -2308,7 +2243,7 @@ if strombedarf_rueckrechnung:
                 (ww_waermebedarf_kWh_jahr + speicherverlust_kWh_jahr) / jaz_ww
             ) / 365
 
-            ww_label = "Strombedarf Elektroboiler in kWh/Tag"
+            ww_label = "Strombedarf Wärmepumpenboiler in kWh/Tag"
 
         ww_bedarf_kWh_tag = st.number_input(
             ww_label,
@@ -2352,7 +2287,9 @@ if strombedarf_rueckrechnung:
                 )
         else:
             ww_strategie = WW_ABEND
-            st.caption("Nicht steuerbares Warmwasser wird standartmässig abends geladen.")
+            st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
+
+    
 with col2:
     st.subheader("E-Auto")
 
@@ -2460,6 +2397,72 @@ with col2:
         auto_km_jahr = auto_km_woche * 52
 
         st.caption(f"Entspricht ca. {auto_km_jahr:.0f} km pro Jahr.")
+
+wp_strom_ist = 0.0
+ww_strom_ist = 0.0
+ev_strom_ist = 0.0
+
+if strombedarf_rueckrechnung:
+    st.write("------------------------------")
+    st.subheader("Rückrechnung der Stromrechnung")
+
+    wp_strom_vorschlag = StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0.0
+    ww_strom_vorschlag = ww_bedarf_kWh_tag * 365 if ww_aktiv else 0.0
+
+    ev_config_vorschlag = {
+        "aktiv": ev_aktiv,
+        "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
+        "km_pro_fahrtag": ev_km_pro_fahrtag,
+        "km_nicht_fahrtag": ev_km_nicht_fahrtag,
+        "fahrtage": ev_fahrtage
+    }
+
+    ev_strom_vorschlag = berechne_ev_jahresbedarf(ev_config_vorschlag)
+
+    wp_strom_ist = st.number_input(
+        "WP-Stromanteil im Ist-Zustand in kWh/a",
+        min_value=0.0,
+        max_value=100000.0,
+        value=float(round(wp_strom_vorschlag, 0)),
+        step=100.0,
+        format="%.0f",
+        key="wp_strom_ist_rueckrechnung"
+    )
+
+    ww_strom_ist = st.number_input(
+        "Warmwasser-Stromanteil im Ist-Zustand in kWh/a",
+        min_value=0.0,
+        max_value=50000.0,
+        value=float(round(ww_strom_vorschlag, 0)),
+        step=50.0,
+        format="%.0f",
+        key="ww_strom_ist_rueckrechnung"
+    )
+
+    ev_strom_ist = st.number_input(
+        "E-Auto-Stromanteil im Ist-Zustand in kWh/a",
+        min_value=0.0,
+        max_value=100000.0,
+        value=float(round(ev_strom_vorschlag, 0)),
+        step=100.0,
+        format="%.0f",
+        key="ev_strom_ist_rueckrechnung"
+    )
+
+    basislast_vorschau = max(
+        0.0,
+        jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
+    )
+
+    st.metric(
+        "Zurückgerechneter Haushaltsstrom",
+        f"{basislast_vorschau:,.0f} kWh/a".replace(",", "'")
+    )
+
+    st.caption(
+        "Diese Basislast bleibt für Szenarien konstant. Änderungen an Sanierung, Wärmepumpe, "
+        "Warmwasser oder E-Auto werden danach neu zur Basislast addiert."
+    )
 
 st.write("------------------------------")
 st.subheader("Photovoltaikanlage")
@@ -2695,10 +2698,6 @@ if run_simulation:
         df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
         # Stromprofil
-        # Standardmässig wird der eingegebene Stromverbrauch als Basislast verwendet
-        jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
-
-        # Für Rückrechnungsmodus: Gesamtstromrechnung auf Haushaltsstrom zurückrechnen
         # Standardmässig wird der eingegebene Stromverbrauch als Basislast verwendet
         jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
 
