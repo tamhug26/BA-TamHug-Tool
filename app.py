@@ -1830,7 +1830,7 @@ if vergleichsmodus:
     st.stop()
 
 #allgemein
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 with col1: 
     EBFm2 = st.number_input("Energiebezugsfläche (EBF) in m²", 50, 5000, 200)
     st.caption(
@@ -1839,99 +1839,8 @@ with col1:
     ) 
 with col2:
     personen = st.number_input("Anzahl Personen im Haushalt", 1, 10, 4)
+
 with col3:
-    st.write("**Jahresstrombedarf**")
-
-    anzahl_stromjahre = st.number_input(
-        "Anzahl Jahre für Strombedarf",
-        min_value=1,
-        max_value=10,
-        value=1,
-        step=1
-    )
-
-    stromjahre_daten = []
-
-    for i in range(anzahl_stromjahre):
-        col_jahr, col_verbrauch = st.columns(2)
-
-        with col_jahr:
-            jahr = st.number_input(
-                f"Jahr {i+1}",
-                min_value=2000,
-                max_value=2100,
-                value=2024 - i,
-                step=1,
-                key=f"strom_jahr_{i}"
-            )
-
-        with col_verbrauch:
-            verbrauch = st.number_input(
-                f"Strombedarf {i+1} in kWh/a",
-                min_value=0.0,
-                max_value=100000.0,
-                value=4500.0,
-                step=100.0,
-                key=f"strom_verbrauch_{i}",
-                format="%.1f"
-            )
-
-        stromjahre_daten.append({
-            "jahr": int(jahr),
-            "verbrauch_kWh": float(verbrauch)
-        })
-
-    jahresstromverbrauch = np.mean([
-        eintrag["verbrauch_kWh"]
-        for eintrag in stromjahre_daten
-    ])
-
-    st.caption(
-        f"Verwendeter Mittelwert für die Simulation: {jahresstromverbrauch:.0f} kWh/a"
-    )
-    strombedarf_modus = st.radio(
-        "Wie soll der eingegebene Jahresstrombedarf verwendet werden?",
-        [
-            "Ist-Zustand: gemessene Gesamtlast aus Stromrechnung verwenden",
-            "Szenario: Haushaltsstrom ohne WP/WW/E-Auto eingeben",
-            "Szenario aus Stromrechnung: Gesamtstrom auf Haushaltsstrom zurückrechnen"
-        ],
-        index=2,
-        horizontal=False
-    )
-
-    strombedarf_ist_gesamt = (
-        strombedarf_modus == "Ist-Zustand: gemessene Gesamtlast aus Stromrechnung verwenden"
-    )
-
-    strombedarf_szenario_basis = (
-        strombedarf_modus == "Szenario: Haushaltsstrom ohne WP/WW/E-Auto eingeben"
-    )
-
-    strombedarf_rueckrechnung = (
-        strombedarf_modus == "Szenario aus Stromrechnung: Gesamtstrom auf Haushaltsstrom zurückrechnen"
-    )
-
-    if strombedarf_ist_gesamt:
-        st.info(
-            "Der eingegebene Jahresstrombedarf wird als gemessene Gesamtlast verwendet. "
-            "Wärmepumpe, Warmwasser und E-Auto werden nicht zusätzlich addiert."
-        )
-
-    elif strombedarf_szenario_basis:
-        st.info(
-            "Der eingegebene Jahresstrombedarf wird als Haushaltsstrom ohne Wärmepumpe, Warmwasser und E-Auto verwendet. "
-            "WP, WW und E-Auto werden zusätzlich berechnet."
-        )
-
-    elif strombedarf_rueckrechnung:
-        st.info(
-            "Der eingegebene Jahresstrombedarf wird als gemessene Gesamtlast verwendet. "
-            "Das Tool zieht die geschätzten Anteile für Wärmepumpe, Warmwasser und E-Auto ab und berechnet daraus den Haushaltsstrom. "
-            "Danach werden WP, WW und E-Auto für das Szenario neu dazugerechnet."
-        )
-    
-with col4:
     Stromnutzung = st.radio(
         "Stromprofil wählen",
         ["Standardprofil EFH", "Standardprofil Gewerbe (G25, nur Fallstudie)", "eigene Daten"],
@@ -1958,6 +1867,97 @@ with col4:
         )
     
 
+st.write("**Jahresstrombedarf**")
+
+anzahl_stromjahre = st.number_input(
+    "Anzahl Jahre für Strombedarf",
+    min_value=1,
+    max_value=10,
+    value=1,
+    step=1
+)
+
+stromjahre_daten = []
+
+for i in range(anzahl_stromjahre):
+    col_jahr, col_verbrauch = st.columns(2)
+
+    with col_jahr:
+            jahr = st.number_input(
+                f"Jahr {i+1}",
+                min_value=2000,
+                max_value=2100,
+                value=2024 - i,
+                step=1,
+                key=f"strom_jahr_{i}"
+            )
+
+    with col_verbrauch:
+            verbrauch = st.number_input(
+                f"Strombedarf {i+1} in kWh/a",
+                min_value=0.0,
+                max_value=100000.0,
+                value=4500.0,
+                step=100.0,
+                key=f"strom_verbrauch_{i}",
+                format="%.1f"
+            )
+
+    stromjahre_daten.append({
+            "jahr": int(jahr),
+            "verbrauch_kWh": float(verbrauch)
+        })
+
+jahresstromverbrauch = np.mean([
+        eintrag["verbrauch_kWh"]
+        for eintrag in stromjahre_daten
+])
+
+st.caption(
+        f"Verwendeter Mittelwert für die Simulation: {jahresstromverbrauch:.0f} kWh/a"
+)
+strombedarf_modus = st.radio(
+        "Wie soll der eingegebene Jahresstrombedarf verwendet werden?",
+        [
+            "Ist-Zustand: gemessene Gesamtlast aus Stromrechnung verwenden",
+            "Szenario: Haushaltsstrom ohne WP/WW/E-Auto eingeben",
+            "Szenario aus Stromrechnung: Gesamtstrom auf Haushaltsstrom zurückrechnen"
+        ],
+        index=2,
+        horizontal=False
+)
+
+strombedarf_ist_gesamt = (
+        strombedarf_modus == "Ist-Zustand: gemessene Gesamtlast aus Stromrechnung verwenden"
+)
+
+strombedarf_szenario_basis = (
+        strombedarf_modus == "Szenario: Haushaltsstrom ohne WP/WW/E-Auto eingeben"
+)
+
+strombedarf_rueckrechnung = (
+        strombedarf_modus == "Szenario aus Stromrechnung: Gesamtstrom auf Haushaltsstrom zurückrechnen"
+)
+
+if strombedarf_ist_gesamt:
+        st.info(
+            "Der eingegebene Jahresstrombedarf wird als gemessene Gesamtlast verwendet. "
+            "Wärmepumpe, Warmwasser und E-Auto werden nicht zusätzlich addiert."
+        )
+
+elif strombedarf_szenario_basis:
+        st.info(
+            "Der eingegebene Jahresstrombedarf wird als Haushaltsstrom ohne Wärmepumpe, Warmwasser und E-Auto verwendet. "
+            "WP, WW und E-Auto werden zusätzlich berechnet."
+        )
+
+elif strombedarf_rueckrechnung:
+        st.info(
+            "Der eingegebene Jahresstrombedarf wird als gemessene Gesamtlast verwendet. "
+            "Das Tool zieht die geschätzten Anteile für Wärmepumpe, Warmwasser und E-Auto ab und berechnet daraus den Haushaltsstrom. "
+            "Danach werden WP, WW und E-Auto für das Szenario neu dazugerechnet."
+        )
+    
 st.write("-----------------------")
 #Heizwärmebedarf-Ermittlung & Heizsystem
 fossil_typ = "Gas"      # default
