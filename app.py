@@ -2496,7 +2496,7 @@ if strombedarf_rueckrechnung:
 
 st.write("------------------------------")
 st.subheader("Photovoltaikanlage")
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     standort_auswahl = st.selectbox(
         "Standort wählen",
@@ -2533,6 +2533,63 @@ with col4:
         step=1
     )
     st.caption("Ein Anlage gleicht einer Ausrichtung.")
+with col5:
+    pv_bestehend = st.checkbox(
+        "PV-Anlage bereits vorhanden und reale Jahresproduktion bekannt",
+        value=False
+    )
+
+    pv_produktion_real_mittelwert = None
+
+    if pv_bestehend:
+        anzahl_pv_jahre = st.number_input(
+            "Anzahl Jahre für gemessene PV-Produktion",
+            min_value=1,
+            max_value=10,
+            value=1,
+            step=1
+        )
+
+        pv_jahre_daten = []
+
+        for j in range(anzahl_pv_jahre):
+            col_pv_jahr, col_pv_produktion = st.columns(2)
+
+            with col_pv_jahr:
+                pv_jahr = st.number_input(
+                    f"PV-Jahr {j+1}",
+                    min_value=2000,
+                    max_value=2100,
+                    value=2024 - j,
+                    step=1,
+                    key=f"pv_jahr_{j}"
+                )
+
+            with col_pv_produktion:
+                pv_produktion = st.number_input(
+                    f"Gemessene PV-Produktion {j+1} in kWh/a",
+                    min_value=0.0,
+                    max_value=100000.0,
+                    value=12000.0,
+                    step=100.0,
+                    key=f"pv_produktion_{j}",
+                    format="%.1f"
+                )
+
+            pv_jahre_daten.append({
+                "jahr": int(pv_jahr),
+                "produktion_kWh": float(pv_produktion)
+            })
+
+        pv_produktion_real_mittelwert = np.mean([
+            eintrag["produktion_kWh"]
+            for eintrag in pv_jahre_daten
+        ])
+
+        st.caption(
+            f"Verwendeter Mittelwert der gemessenen PV-Produktion: "
+            f"{pv_produktion_real_mittelwert:,.0f} kWh/a".replace(",", "'")
+        )
 pv_anlagen_daten = []
 # pro Zeile maximal 3 PV-Anlagen nebeneinander
 for start in range(0, PVAnlagen, 3):
@@ -2745,16 +2802,16 @@ if run_simulation:
                 jahresstromverbrauch_fuer_basislast
             )
 
-            st.write("Rückrechnung aus Stromrechnung:")
-            st.write(f"Gemessener Gesamtstrom: {jahresstromverbrauch:,.0f} kWh/a".replace(",", "'"))
-            st.write(f"Abzug WP-Strom Ist-Zustand: {wp_strom_ist:,.0f} kWh/a".replace(",", "'"))
-            st.write(f"Abzug Warmwasserstrom Ist-Zustand: {ww_strom_ist:,.0f} kWh/a".replace(",", "'"))
-            st.write(f"Abzug E-Auto-Strom Ist-Zustand: {ev_strom_ist:,.0f} kWh/a".replace(",", "'"))
+            #st.write("Rückrechnung aus Stromrechnung:")
+            #st.write(f"Gemessener Gesamtstrom: {jahresstromverbrauch:,.0f} kWh/a".replace(",", "'"))
+            #st.write(f"Abzug WP-Strom Ist-Zustand: {wp_strom_ist:,.0f} kWh/a".replace(",", "'"))
+            #st.write(f"Abzug Warmwasserstrom Ist-Zustand: {ww_strom_ist:,.0f} kWh/a".replace(",", "'"))
+            #st.write(f"Abzug E-Auto-Strom Ist-Zustand: {ev_strom_ist:,.0f} kWh/a".replace(",", "'"))
 
-            st.metric(
-                "Berechneter Haushaltsstrom als Basislast",
-                f"{jahresstromverbrauch_fuer_basislast:,.0f} kWh/a".replace(",", "'")
-            )
+            #st.metric(
+                #"Berechneter Haushaltsstrom als Basislast",
+                #f"{jahresstromverbrauch_fuer_basislast:,.0f} kWh/a".replace(",", "'")
+            #)
 
         # Stromprofil mit Basislast erzeugen
         if Stromnutzung == "Standardprofil EFH":
@@ -2784,13 +2841,13 @@ if run_simulation:
         
         heizwaerme_jahr = float(Heizwaermebedarf_input)
        
-        st.write("DEBUG strombedarf_ist_gesamt:", strombedarf_ist_gesamt)
+        #st.write("DEBUG strombedarf_ist_gesamt:", strombedarf_ist_gesamt)
 
-        st.write("DEBUG Heizwärmebedarf für Simulation:", heizwaerme_jahr)
+        #st.write("DEBUG Heizwärmebedarf für Simulation:", heizwaerme_jahr)
 
-        st.write("DEBUG JAZ:", jaz if heizsystem == "Wärmepumpe" else "keine WP")
+        #st.write("DEBUG JAZ:", jaz if heizsystem == "Wärmepumpe" else "keine WP")
 
-        st.write("DEBUG WP-Strom berechnet:", StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0)
+        #st.write("DEBUG WP-Strom berechnet:", StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0)
 
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
@@ -2857,6 +2914,37 @@ if run_simulation:
             df_ts["poa_global"] += df_tmp["poa_global"]
             df_ts["temp_cell"] += df_tmp["temp_cell"]
             df_ts["temp_factor"] += df_tmp["temp_factor"]
+
+        # Korrektur anhand gemessener PV-Produktion
+        pv_korrekturfaktor = 1.0
+
+        if pv_bestehend and pv_produktion_real_mittelwert is not None:
+            pv_produktion_theoretisch = df_ts["pv_kWh"].sum()
+
+            if pv_produktion_theoretisch > 0:
+                pv_korrekturfaktor = pv_produktion_real_mittelwert / pv_produktion_theoretisch
+
+                # Sicherheitsgrenze, damit Eingabefehler nicht komplett absurde Werte erzeugen
+                pv_korrekturfaktor = min(max(pv_korrekturfaktor, 0.1), 1.5)
+
+                df_ts["pv_kWh"] = df_ts["pv_kWh"] * pv_korrekturfaktor
+                df_ts["pv_power_kW"] = df_ts["pv_power_kW"] * pv_korrekturfaktor
+
+                pv_verlust_prozent = (1 - pv_korrekturfaktor) * 100
+
+                st.write("PV-Korrektur anhand gemessener Produktion:")
+                st.write(
+                    f"Theoretische PV-Produktion: {pv_produktion_theoretisch:,.0f} kWh/a".replace(",", "'")
+                )
+                st.write(
+                    f"Gemessene PV-Produktion: {pv_produktion_real_mittelwert:,.0f} kWh/a".replace(",", "'")
+                )
+                st.write(
+                    f"PV-Korrekturfaktor: {pv_korrekturfaktor:.3f}"
+                )
+                st.write(
+                    f"Abweichung / zusätzlicher Verlust: {pv_verlust_prozent:.1f} %"
+                )
 
         # Wechselrichterbegrenzung AC-seitig
         df_ts["pv_power_kW_vor_wr"] = df_ts["pv_power_kW"]
