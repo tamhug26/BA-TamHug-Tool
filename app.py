@@ -1838,7 +1838,7 @@ with col1:
         "Die EBF umfasst alle beheizten bzw. klimatisierten Bereiche eines Gebäudes."
     ) 
 with col2:
-    personen = st.number_input("Anzahl Personen im Haushalt", 1, 10, 4)
+    personen = st.number_input("Anzahl Personen im Haushalt", 1, 20, 4)
 
 with col3:
     Stromnutzung = st.radio(
