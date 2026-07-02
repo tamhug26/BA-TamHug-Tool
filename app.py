@@ -2365,6 +2365,7 @@ with col2:
             ],
             index=2
         )
+        st.write("Hinweis: Für die Berechnung wird angenommen, dass das Elektrofahrzeug ausschließlich zu Hause geladen wird. Ladevorgänge an öffentlichen Ladestationen oder an anderen Orten werden nicht berücksichtigt.")
     else:
         ev_fahrtage = []
         ev_verbrauch_kWh_pro_100km = 0.0
