@@ -2422,26 +2422,9 @@ if strombedarf_rueckrechnung:
     ev_strom_vorschlag = berechne_ev_jahresbedarf(ev_config_vorschlag)
 
     st.write("Geschätzte Anteile aus den Eingaben:")
-
-    col_a, col_b, col_c = st.columns(3)
-
-    with col_a:
-        st.metric(
-            "WP-Strom",
-            f"{wp_strom_vorschlag:,.0f} kWh/a".replace(",", "'")
-        )
-
-    with col_b:
-        st.metric(
-            "Warmwasser",
-            f"{ww_strom_vorschlag:,.0f} kWh/a".replace(",", "'")
-        )
-
-    with col_c:
-        st.metric(
-            "E-Auto",
-            f"{ev_strom_vorschlag:,.0f} kWh/a".replace(",", "'")
-        )
+    st.write(f"WP-Strom: {wp_strom_vorschlag:,.0f} kWh/a".replace(",", "'"))
+    st.write(f"Warmwasser: {ww_strom_vorschlag:,.0f} kWh/a".replace(",", "'"))
+    st.write(f"E-Auto: {ev_strom_vorschlag:,.0f} kWh/a".replace(",", "'"))
 
     werte_manuell_anpassen = st.checkbox(
         "Geschätzte Anteile manuell anpassen",
@@ -2489,9 +2472,8 @@ if strombedarf_rueckrechnung:
         jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
     )
 
-    st.metric(
-        "Zurückgerechneter Haushaltsstrom",
-        f"{basislast_vorschau:,.0f} kWh/a".replace(",", "'")
+    st.write(
+        f"Zurückgerechneter Haushaltsstrom: {basislast_vorschau:,.0f} kWh/a".replace(",", "'")
     )
 
     st.caption(
