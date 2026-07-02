@@ -1897,7 +1897,7 @@ for i in range(anzahl_stromjahre):
                 f"Strombedarf {i+1} in kWh/a",
                 min_value=0.0,
                 max_value=100000.0,
-                value=4500.0,
+                value=10000.0,
                 step=100.0,
                 key=f"strom_verbrauch_{i}",
                 format="%.1f"
@@ -2475,6 +2475,14 @@ if strombedarf_rueckrechnung:
         0.0,
         jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
     )
+    abgezogene_anteile = wp_strom_ist + ww_strom_ist + ev_strom_ist
+
+    if abgezogene_anteile > jahresstromverbrauch:
+        st.warning(
+            "Die geschätzten Anteile für Wärmepumpe, Warmwasser und E-Auto sind höher "
+            "als der eingegebene Jahresstrombedarf. Dadurch würde rechnerisch kein "
+            "Haushaltsstrom übrig bleiben. Bitte die Werte prüfen oder manuell anpassen."
+        )
 
     st.write(
         f"Zurückgerechneter Haushaltsstrom: {basislast_vorschau:,.0f} kWh/a".replace(",", "'")
