@@ -2407,6 +2407,7 @@ if strombedarf_rueckrechnung:
     st.write("------------------------------")
     st.subheader("Rückrechnung der Stromrechnung")
 
+    # Vorschlagswerte aus den Eingaben berechnen
     wp_strom_vorschlag = StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0.0
     ww_strom_vorschlag = ww_bedarf_kWh_tag * 365 if ww_aktiv else 0.0
 
@@ -2420,35 +2421,68 @@ if strombedarf_rueckrechnung:
 
     ev_strom_vorschlag = berechne_ev_jahresbedarf(ev_config_vorschlag)
 
-    wp_strom_ist = st.number_input(
-        "WP-Stromanteil im Ist-Zustand in kWh/a",
-        min_value=0.0,
-        max_value=100000.0,
-        value=float(round(wp_strom_vorschlag, 0)),
-        step=100.0,
-        format="%.0f",
-        key="wp_strom_ist_rueckrechnung"
+    st.write("Geschätzte Anteile aus den Eingaben:")
+
+    col_a, col_b, col_c = st.columns(3)
+
+    with col_a:
+        st.metric(
+            "WP-Strom",
+            f"{wp_strom_vorschlag:,.0f} kWh/a".replace(",", "'")
+        )
+
+    with col_b:
+        st.metric(
+            "Warmwasser",
+            f"{ww_strom_vorschlag:,.0f} kWh/a".replace(",", "'")
+        )
+
+    with col_c:
+        st.metric(
+            "E-Auto",
+            f"{ev_strom_vorschlag:,.0f} kWh/a".replace(",", "'")
+        )
+
+    werte_manuell_anpassen = st.checkbox(
+        "Geschätzte Anteile manuell anpassen",
+        value=False
     )
 
-    ww_strom_ist = st.number_input(
-        "Warmwasser-Stromanteil im Ist-Zustand in kWh/a",
-        min_value=0.0,
-        max_value=50000.0,
-        value=float(round(ww_strom_vorschlag, 0)),
-        step=50.0,
-        format="%.0f",
-        key="ww_strom_ist_rueckrechnung"
-    )
+    if werte_manuell_anpassen:
+        wp_strom_ist = st.number_input(
+            "WP-Strom im Ist-Zustand in kWh/a",
+            min_value=0.0,
+            max_value=100000.0,
+            value=float(round(wp_strom_vorschlag, 0)),
+            step=100.0,
+            format="%.0f",
+            key="wp_strom_ist_rueckrechnung"
+        )
 
-    ev_strom_ist = st.number_input(
-        "E-Auto-Stromanteil im Ist-Zustand in kWh/a",
-        min_value=0.0,
-        max_value=100000.0,
-        value=float(round(ev_strom_vorschlag, 0)),
-        step=100.0,
-        format="%.0f",
-        key="ev_strom_ist_rueckrechnung"
-    )
+        ww_strom_ist = st.number_input(
+            "Warmwasser-Strom im Ist-Zustand in kWh/a",
+            min_value=0.0,
+            max_value=50000.0,
+            value=float(round(ww_strom_vorschlag, 0)),
+            step=50.0,
+            format="%.0f",
+            key="ww_strom_ist_rueckrechnung"
+        )
+
+        ev_strom_ist = st.number_input(
+            "E-Auto-Strom im Ist-Zustand in kWh/a",
+            min_value=0.0,
+            max_value=100000.0,
+            value=float(round(ev_strom_vorschlag, 0)),
+            step=100.0,
+            format="%.0f",
+            key="ev_strom_ist_rueckrechnung"
+        )
+
+    else:
+        wp_strom_ist = wp_strom_vorschlag
+        ww_strom_ist = ww_strom_vorschlag
+        ev_strom_ist = ev_strom_vorschlag
 
     basislast_vorschau = max(
         0.0,
@@ -2461,9 +2495,10 @@ if strombedarf_rueckrechnung:
     )
 
     st.caption(
-        "Diese Basislast bleibt für Szenarien konstant. Änderungen an Sanierung, Wärmepumpe, "
-        "Warmwasser oder E-Auto werden danach neu zur Basislast addiert."
+        "Die geschätzten Anteile werden vom gemessenen Gesamtstrom abgezogen. "
+        "Die berechnete Haushaltslast bleibt für das Szenario konstant."
     )
+
 
 st.write("------------------------------")
 st.subheader("Photovoltaikanlage")
