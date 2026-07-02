@@ -1896,6 +1896,7 @@ with col3:
             "Szenario: Haushaltsstrom ohne WP/WW/E-Auto eingeben",
             "Szenario aus Stromrechnung: Gesamtstrom auf Haushaltsstrom zurückrechnen"
         ],
+        index=2
         horizontal=False
     )
 
