@@ -2063,7 +2063,7 @@ with col1:
                         "Heizwärmebedarf total in kWh/a",
                         min_value=0.0,
                         max_value=500000.0,
-                        value=45628.0,
+                        value=float(round(Heizwaermebedarf_basis * 0.5, -3)),
                         step=100.0,
                         format="%.0f"
                     )
