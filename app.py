@@ -2079,15 +2079,28 @@ with col1:
                     "Es wird der typische Heizwärmebedarf nach Baujahr und Fläche verwendet."
                 )
 
-            Heizwaermebedarf_input = st.number_input(
-                "Verwendeter Heizwärmebedarf für Simulation in kWh/a",
-                min_value=0.0,
-                max_value=500000.0,
-                value=float(round(Heizwaermebedarf_vorschlag, 0)),
-                step=100.0,
-                format="%.0f",
-                key=f"heizwaermebedarf_final_{Baujahr}_{status}"
+            st.metric(
+                "Vorschlagswert Heizwärmebedarf",
+                f"{Heizwaermebedarf_vorschlag:,.0f} kWh/a".replace(",", "'")
             )
+
+            heizwaerme_manuell_anpassen = st.checkbox(
+                "Heizwärmebedarf manuell anpassen",
+                value=False
+            )
+
+            if heizwaerme_manuell_anpassen:
+                Heizwaermebedarf_input = st.number_input(
+                    "Verwendeter Heizwärmebedarf für Simulation in kWh/a",
+                    min_value=0.0,
+                    max_value=500000.0,
+                    value=float(round(Heizwaermebedarf_vorschlag, 0)),
+                    step=100.0,
+                    format="%.0f",
+                    key=f"heizwaermebedarf_manuell_{Baujahr}_{status}_{str(locals().get('Sanierungstyp', ''))}"
+                )
+            else:
+                Heizwaermebedarf_input = float(Heizwaermebedarf_vorschlag)
 
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
             ergebnis = Heizwaermebedarf_input
