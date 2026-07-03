@@ -2079,11 +2079,6 @@ with col1:
                     "Es wird der typische Heizwärmebedarf nach Baujahr und Fläche verwendet."
                 )
 
-            st.metric(
-                "Vorschlagswert Heizwärmebedarf",
-                f"{Heizwaermebedarf_vorschlag:,.0f} kWh/a".replace(",", "'")
-            )
-
             heizwaerme_manuell_anpassen = st.checkbox(
                 "Heizwärmebedarf manuell anpassen",
                 value=False
