@@ -1240,7 +1240,7 @@ def simulate_ems(
 
                 max_step = ww_config["leistung_kw"] * delta_t
 
-                if ww_config["strategie"] == "PV-Überschussgeführt (spätestens 11 Uhr)":
+                if ww_config["strategie"] == WW_PV:
                     if pv_rest > 0:
                         ladung = min(max_step, ww_rest, pv_rest)
                     elif i.hour >= 11:
@@ -2246,11 +2246,13 @@ with col1:
 
             ww_label = "Strombedarf Wärmepumpenboiler in kWh/Tag"
 
+        ww_bedarf_kWh_tag_berechnet = float(round(ww_bedarf_kWh_tag_berechnet, 2))
+
         ww_bedarf_kWh_tag = st.number_input(
             ww_label,
             min_value=0.0,
-            max_value=30.0,
-            value=float(round(ww_bedarf_kWh_tag_berechnet, 2)),
+            max_value=max(100.0, ww_bedarf_kWh_tag_berechnet),
+            value=ww_bedarf_kWh_tag_berechnet,
             step=0.1,
             format="%.1f"
         )
