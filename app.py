@@ -1983,30 +1983,41 @@ with col1:
         ]
 
         if not treffer.empty:
-            heizwaermebedarf_spez = treffer.iloc[0]
+            heizwaermebedarf_spez = float(treffer.iloc[0])
             Heizwaermebedarf_basis = heizwaermebedarf_spez * m2
 
+            st.metric(
+                "Typischer Heizwärmebedarf nach Baujahr",
+                f"{Heizwaermebedarf_basis:,.0f} kWh/a".replace(",", "'")
+            )
+
+            st.caption(
+                f"Berechnet aus {heizwaermebedarf_spez:.0f} kWh/m²a × {m2:.0f} m². "
+                "Dieser Wert ist ein statistischer Vorschlagswert für ein typisches Gebäude dieses Jahrgangs. "
+                "Gebäudespezifische Werte aus GEAK, Messdaten oder Projektdaten können deutlich davon abweichen."
+            )
+
             status = st.radio(
-                "Gebäude saniert oder sogar GEAK bekannt?",
-                ["Nein", "Ja", "GEAK Klasse"],
+                "Gebäude saniert oder GEAK / Projektwert bekannt?",
+                ["Nein", "Ja, saniert", "GEAK Klasse", "GEAK / Wert direkt"],
                 horizontal=True
             )
 
-            if status == "Ja":
+            if status == "Ja, saniert":
                 Sanierungstyp = st.multiselect(
                     "Sanierungstyp",
                     list(reduktionen.keys())
                 )
 
                 reduktion = sum(reduktionen[typ] for typ in Sanierungstyp)
-                reduktion = min(reduktion, 0.75)  # Sicherheitsgrenze, damit es nicht unrealistisch tief wird
+                reduktion = min(reduktion, 0.75)
 
-                Heizwaermebedarf_total = Heizwaermebedarf_basis * (1 - reduktion)
+                Heizwaermebedarf_vorschlag = Heizwaermebedarf_basis * (1 - reduktion)
 
                 st.caption(
-                    f"Basiswert: {Heizwaermebedarf_basis:.0f} kWh/a, "
+                    f"Ausgangswert: {Heizwaermebedarf_basis:,.0f} kWh/a, ".replace(",", "'") +
                     f"Reduktion durch Sanierung: {reduktion*100:.0f} %, "
-                    f"Vorschlagswert: {Heizwaermebedarf_total:.0f} kWh/a"
+                    f"Vorschlagswert nach Sanierung: {Heizwaermebedarf_vorschlag:,.0f} kWh/a".replace(",", "'")
                 )
 
             elif status == "GEAK Klasse":
@@ -2015,43 +2026,75 @@ with col1:
                     list(GEAK_Klassen.keys())
                 )
 
-                Heizwaermebedarf_total = GEAK_Klassen[geak_klasse] * m2
+                Heizwaermebedarf_vorschlag = GEAK_Klassen[geak_klasse] * m2
 
                 st.caption(
                     f"GEAK-Klasse {geak_klasse}: "
                     f"{GEAK_Klassen[geak_klasse]} kWh/m²a × {m2:.0f} m² = "
-                    f"{Heizwaermebedarf_total:.0f} kWh/a"
+                    f"{Heizwaermebedarf_vorschlag:,.0f} kWh/a".replace(",", "'")
                 )
 
+            elif status == "GEAK / Wert direkt":
+                eingabe_art = st.radio(
+                    "Eingabeart",
+                    ["spezifisch in kWh/m²a", "total in kWh/a"],
+                    horizontal=True
+                )
+
+                if eingabe_art == "spezifisch in kWh/m²a":
+                    heizwaermebedarf_spez_direkt = st.number_input(
+                        "Heizwärmebedarf spezifisch in kWh/m²a",
+                        min_value=0.0,
+                        max_value=300.0,
+                        value=44.0,
+                        step=1.0,
+                        format="%.1f"
+                    )
+
+                    Heizwaermebedarf_vorschlag = heizwaermebedarf_spez_direkt * m2
+
+                    st.caption(
+                        f"GEAK-/Projektwert: {heizwaermebedarf_spez_direkt:.1f} kWh/m²a × "
+                        f"{m2:.0f} m² = {Heizwaermebedarf_vorschlag:,.0f} kWh/a".replace(",", "'")
+                    )
+
+                else:
+                    Heizwaermebedarf_vorschlag = st.number_input(
+                        "Heizwärmebedarf total in kWh/a",
+                        min_value=0.0,
+                        max_value=500000.0,
+                        value=45628.0,
+                        step=100.0,
+                        format="%.0f"
+                    )
+
+                    st.caption(
+                        "Der Heizwärmebedarf wird direkt als Jahreswert eingegeben."
+                    )
+
             else:
-                Heizwaermebedarf_total = Heizwaermebedarf_basis
+                Heizwaermebedarf_vorschlag = Heizwaermebedarf_basis
 
-            #Heizwaermebedarf_input = st.number_input(
-             #   "Heizwärmebedarf in kWh/a",
-              #  min_value=0.0,
-               # max_value=500000.0,
-                #value=float(round(Heizwaermebedarf_total, 0)),
-                #step=100.0,
-                #format="%.0f",
-                #key=f"heizwaermebedarf_{bau_typ}_{Baujahr}_{status}_{hash(str(locals().get('Sanierungstyp', '')))}"
-            #)
-            #raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
-            #ergebnis = Heizwaermebedarf_input
+                st.caption(
+                    "Es wird der typische Heizwärmebedarf nach Baujahr und Fläche verwendet."
+                )
 
+            Heizwaermebedarf_input = st.number_input(
+                "Verwendeter Heizwärmebedarf für Simulation in kWh/a",
+                min_value=0.0,
+                max_value=500000.0,
+                value=float(round(Heizwaermebedarf_vorschlag, 0)),
+                step=100.0,
+                format="%.0f",
+                key=f"heizwaermebedarf_final_{Baujahr}_{status}"
+            )
 
-            Heizwaermebedarf_input = float(Heizwaermebedarf_total)
             raumheizung_waermebedarf_kWh = Heizwaermebedarf_input
             ergebnis = Heizwaermebedarf_input
 
             st.metric(
                 "Verwendeter Heizwärmebedarf",
                 f"{Heizwaermebedarf_input:,.0f} kWh/a".replace(",", "'")
-            )
-
-#------
-
-            st.caption(
-                "Vorschlagswert basierend auf Baujahr, Fläche und gegebenenfalls Sanierungszustand oder GEAK-Klasse."
             )
 
         else:
