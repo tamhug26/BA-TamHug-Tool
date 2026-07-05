@@ -9,6 +9,7 @@ from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import matplotlib.pyplot as plt
+import copy
 PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
@@ -2830,6 +2831,26 @@ st.subheader("Test Zeitreihe")
 run_simulation = st.button("Simulation starten")
 
 if run_simulation:
+    for key in ["df_ts", "monatsbilanz", "jahreskennzahlen", "df_umwelt"]:
+        st.session_state.pop(key, None)
+    simulation_inputs = {
+        "jahresstromverbrauch": float(jahresstromverbrauch),
+        "heizwaermebedarf": float(Heizwaermebedarf_input),
+        "heizsystem": heizsystem,
+        "jaz": float(jaz),
+        "ww_aktiv": bool(ww_aktiv),
+        "ww_bedarf_kWh_tag": float(ww_bedarf_kWh_tag),
+        "ev_aktiv": bool(ev_aktiv),
+        "batteriekapazität": float(batteriekapazität),
+        "maxLadeleistungBatterie": float(maxLadeleistungBatterie),
+        "maxEntladeleistungBatterie": float(maxEntladeleistungBatterie),
+        "einspeisegrenze_kw": float(EinspeisegrenzekW),
+        "bezugsgrenze_kw": float(Bezugsgrenze),
+        "pv_anlagen_daten": copy.deepcopy(pv_anlagen_daten),
+        "prioritaeten": prioritaeten.copy()
+    }
+
+    st.session_state["simulation_inputs"] = simulation_inputs
     with st.spinner("Simulation läuft... bitte warten"):
 
         simulationsjahr = 2025
