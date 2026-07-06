@@ -3436,8 +3436,7 @@ if "df_ts" in st.session_state:
                     "* Netzstrom Betrieb bezeichnet die Umweltwirkung des Stroms, "
                     "der während des Betriebs aus dem öffentlichen Stromnetz bezogen wird. "
                     "Die Berechnung erfolgt über den jährlichen Netzbezug und den CO₂-Faktor "
-                    "des gewählten Energieversorgers. Herstellung und Entsorgung von PV-Anlage, "
-                    "Batterie und Wärmepumpe werden separat bilanziert."
+                    "des gewählten Energieversorgers."
                 )
         with col2:
             fig_umwelt = go.Figure()
