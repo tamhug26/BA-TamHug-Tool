@@ -3492,6 +3492,7 @@ if "df_ts" in st.session_state:
             batterie_df["Netzbezug in kWh/a"],
 
             marker="o",
+            color="darkblue",
 
             label="Netzbezug"
 
@@ -3517,7 +3518,9 @@ if "df_ts" in st.session_state:
 
             linestyle="--",
 
-            label="Autarkiegrad"
+            label="Autarkiegrad",
+
+            color="darkgreen"
 
         )
 
@@ -3531,7 +3534,9 @@ if "df_ts" in st.session_state:
 
             linestyle="--",
 
-            label="Eigenverbrauch"
+            label="Eigenverbrauch",
+            color="darkorange"
+            
 
         )
 
