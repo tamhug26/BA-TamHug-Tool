@@ -3462,109 +3462,108 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
         )
-
+        col1, col2 = st.columns(2)
         # Temporäre Auswertung Batteriekapazität
+        with col1:
+            batterie_df = pd.DataFrame({
 
-        batterie_df = pd.DataFrame({
+                "Batteriekapazität in kWh": [1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
 
-            "Batteriekapazität in kWh": [1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
+                "Netzbezug in kWh/a": [9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
 
-            "Netzbezug in kWh/a": [9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
+                "Autarkie in %": [33.1, 37.9, 43.3, 48.2, 52.1, 54.9, 57.0, 58.2, 59.0, 59.5, 59.7, 60.0, 60.7],
 
-            "Autarkie in %": [33.1, 37.9, 43.3, 48.2, 52.1, 54.9, 57.0, 58.2, 59.0, 59.5, 59.7, 60.0, 60.7],
+                "Eigenverbrauch in %": [34.0, 38.4, 44.2, 49.3, 53.4, 56.4, 58.6, 59.8, 60.7, 61.2, 61.5, 61.7, 62.4]
 
-            "Eigenverbrauch in %": [34.0, 38.4, 44.2, 49.3, 53.4, 56.4, 58.6, 59.8, 60.7, 61.2, 61.5, 61.7, 62.4]
+            })
 
-        })
+            st.subheader("Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch")
 
-        st.subheader("Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch")
+            st.dataframe(batterie_df, use_container_width=True)
+            fig.add_trace(go.Scatter(
 
-        st.dataframe(batterie_df, use_container_width=True)
+                x=batterie_df["Batteriekapazität in kWh"],
 
-        fig = go.Figure()
+                y=batterie_df["Netzbezug in kWh/a"],
 
-        fig.add_trace(go.Scatter(
+                mode="lines+markers",
 
-            x=batterie_df["Batteriekapazität in kWh"],
+                name="Netzbezug",
 
-            y=batterie_df["Netzbezug in kWh/a"],
+                yaxis="y1"
 
-            mode="lines+markers",
+            ))
 
-            name="Netzbezug",
+            fig.add_trace(go.Scatter(
 
-            yaxis="y1"
+                x=batterie_df["Batteriekapazität in kWh"],
 
-        ))
+                y=batterie_df["Autarkie in %"],
 
-        fig.add_trace(go.Scatter(
+                mode="lines+markers",
 
-            x=batterie_df["Batteriekapazität in kWh"],
+                name="Autarkiegrad",
 
-            y=batterie_df["Autarkie in %"],
+                yaxis="y2"
 
-            mode="lines+markers",
+            ))
 
-            name="Autarkiegrad",
+            fig.add_trace(go.Scatter(
 
-            yaxis="y2"
+                x=batterie_df["Batteriekapazität in kWh"],
 
-        ))
+                y=batterie_df["Eigenverbrauch in %"],
 
-        fig.add_trace(go.Scatter(
+                mode="lines+markers",
 
-            x=batterie_df["Batteriekapazität in kWh"],
+                name="Eigenverbrauch",
 
-            y=batterie_df["Eigenverbrauch in %"],
+                yaxis="y2"
 
-            mode="lines+markers",
+            ))
 
-            name="Eigenverbrauch",
+            fig.update_layout(
 
-            yaxis="y2"
+                title="Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
 
-        ))
+                xaxis=dict(
 
-        fig.update_layout(
+                    title="Batteriekapazität in kWh"
 
-            title="Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
+                ),
 
-            xaxis=dict(
+                yaxis=dict(
 
-                title="Batteriekapazität in kWh"
+                    title="Netzbezug in kWh/a",
 
-            ),
+                    side="left"
 
-            yaxis=dict(
+                ),
 
-                title="Netzbezug in kWh/a",
+                yaxis2=dict(
 
-                side="left"
+                    title="Autarkiegrad / Eigenverbrauch in %",
 
-            ),
+                    overlaying="y",
 
-            yaxis2=dict(
+                    side="right"
 
-                title="Autarkiegrad / Eigenverbrauch in %",
+                ),
 
-                overlaying="y",
+                legend=dict(
 
-                side="right"
+                    x=0.72,
 
-            ),
+                    y=0.55
 
-            legend=dict(
+                ),
 
-                x=0.72,
+                template="plotly_white",
 
-                y=0.55
+                height=500
 
-            ),
+            )
 
-            template="plotly_white",
-
-            height=500
-
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.write("")
