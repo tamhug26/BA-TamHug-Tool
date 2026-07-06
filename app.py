@@ -3528,45 +3528,41 @@ if "df_ts" in st.session_state:
         ))
 
         fig.update_layout(
-
             title="Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
 
             xaxis=dict(
-
                 title="Batteriekapazität in kWh"
-
             ),
 
             yaxis=dict(
-
                 title="Netzbezug in kWh/a",
-
                 side="left"
-
             ),
 
             yaxis2=dict(
-
                 title="Autarkiegrad / Eigenverbrauch in %",
-
                 overlaying="y",
-
                 side="right"
-
             ),
 
             legend=dict(
-
-                x=0.72,
-
-                y=0.55
-
+                orientation="h",
+                yanchor="top",
+                y=-0.25,
+                xanchor="center",
+                x=0.5
             ),
 
             template="plotly_white",
+            height=500,
+            width=850,
 
-            height=500
-
+            margin=dict(
+                l=80,
+                r=100,
+                t=80,
+                b=120
+            )
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=False)
