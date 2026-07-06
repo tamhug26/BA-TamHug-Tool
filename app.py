@@ -3462,10 +3462,10 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
         )
-        col1, col2 = st.columns(2)
-        # Temporäre Auswertung Batteriekapazität
-        with col1:
-            batterie_df = pd.DataFrame({
+
+
+
+        batterie_df = pd.DataFrame({
 
                 "Batteriekapazität in kWh": [1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
 
@@ -3477,10 +3477,10 @@ if "df_ts" in st.session_state:
 
             })
 
-            st.subheader("Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch")
+        st.subheader("Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch")
 
-            st.dataframe(batterie_df, use_container_width=True)
-            fig.add_trace(go.Scatter(
+        st.dataframe(batterie_df, use_container_width=True)
+        fig.add_trace(go.Scatter(
 
                 x=batterie_df["Batteriekapazität in kWh"],
 
@@ -3494,7 +3494,7 @@ if "df_ts" in st.session_state:
 
             ))
 
-            fig.add_trace(go.Scatter(
+        fig.add_trace(go.Scatter(
 
                 x=batterie_df["Batteriekapazität in kWh"],
 
@@ -3508,7 +3508,7 @@ if "df_ts" in st.session_state:
 
             ))
 
-            fig.add_trace(go.Scatter(
+        fig.add_trace(go.Scatter(
 
                 x=batterie_df["Batteriekapazität in kWh"],
 
@@ -3522,7 +3522,7 @@ if "df_ts" in st.session_state:
 
             ))
 
-            fig.update_layout(
+        fig.update_layout(
 
                 title="Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
 
@@ -3564,6 +3564,4 @@ if "df_ts" in st.session_state:
 
             )
 
-            st.plotly_chart(fig, use_container_width=True)
-        with col2:
-            st.write("")
+        st.plotly_chart(fig, use_container_width=True)
