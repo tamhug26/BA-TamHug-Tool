@@ -3481,88 +3481,88 @@ if "df_ts" in st.session_state:
 
         st.subheader("Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch")
 
-        st.dataframe(batterie_df, use_container_width=True)
+        fig, ax1 = plt.subplots(figsize=(7, 3.8))
 
-        fig = go.Figure()
+        # Linke y-Achse: Netzbezug
 
-        fig.add_trace(go.Scatter(
+        ax1.plot(
 
-            x=batterie_df["Batteriekapazität in kWh"],
+            batterie_df["Batteriekapazität in kWh"],
 
-            y=batterie_df["Netzbezug in kWh/a"],
+            batterie_df["Netzbezug in kWh/a"],
 
-            mode="lines+markers",
+            marker="o",
 
-            name="Netzbezug",
+            label="Netzbezug"
 
-            yaxis="y1"
-
-        ))
-
-        fig.add_trace(go.Scatter(
-
-            x=batterie_df["Batteriekapazität in kWh"],
-
-            y=batterie_df["Autarkie in %"],
-
-            mode="lines+markers",
-
-            name="Autarkiegrad",
-
-            yaxis="y2"
-
-        ))
-
-        fig.add_trace(go.Scatter(
-
-            x=batterie_df["Batteriekapazität in kWh"],
-
-            y=batterie_df["Eigenverbrauch in %"],
-
-            mode="lines+markers",
-
-            name="Eigenverbrauch",
-
-            yaxis="y2"
-
-        ))
-
-        fig.update_layout(
-            title="Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
-
-            xaxis=dict(
-                title="Batteriekapazität in kWh"
-            ),
-
-            yaxis=dict(
-                title="Netzbezug in kWh/a",
-                side="left"
-            ),
-
-            yaxis2=dict(
-                title="Autarkiegrad / Eigenverbrauch in %",
-                overlaying="y",
-                side="right"
-            ),
-
-            legend=dict(
-                orientation="h",
-                yanchor="top",
-                y=-0.25,
-                xanchor="center",
-                x=0.5
-            ),
-
-            template="plotly_white",
-            height=500,
-            width=850,
-
-            margin=dict(
-                l=80,
-                r=100,
-                t=80,
-                b=120
-            )
         )
 
-        st.plotly_chart(fig, use_container_width=False)
+        ax1.set_xlabel("Batteriekapazität in kWh")
+
+        ax1.set_ylabel("Netzbezug in kWh/a")
+
+        ax1.grid(True, alpha=0.6)
+
+        # Rechte y-Achse: Autarkie und Eigenverbrauch
+
+        ax2 = ax1.twinx()
+
+        ax2.plot(
+
+            batterie_df["Batteriekapazität in kWh"],
+
+            batterie_df["Autarkie in %"],
+
+            marker="s",
+
+            linestyle="--",
+
+            label="Autarkiegrad"
+
+        )
+
+        ax2.plot(
+
+            batterie_df["Batteriekapazität in kWh"],
+
+            batterie_df["Eigenverbrauch in %"],
+
+            marker="^",
+
+            linestyle="--",
+
+            label="Eigenverbrauch"
+
+        )
+
+        ax2.set_ylabel("Autarkiegrad / Eigenverbrauch in %")
+
+        # Titel
+
+        plt.title("Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch")
+
+        # Gemeinsame Legende
+
+        lines_1, labels_1 = ax1.get_legend_handles_labels()
+
+        lines_2, labels_2 = ax2.get_legend_handles_labels()
+
+        ax1.legend(
+
+            lines_1 + lines_2,
+
+            labels_1 + labels_2,
+
+            loc="center right"
+
+        )
+
+        plt.tight_layout()
+
+        # Halb breit / kompakt anzeigen
+
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+
+            st.pyplot(fig)
