@@ -625,6 +625,27 @@ def schoene_achsenobergrenze_wetter(max_wert, schrittweite):
         return schrittweite
 
     return np.ceil(max_wert / schrittweite) * schrittweite
+def schoene_leistungsachse(max_wert, anzahl_intervalle=5):
+    if pd.isna(max_wert) or max_wert <= 0:
+        max_wert = 1
+
+    zielwert = max_wert * 1.1
+
+    moegliche_maxima = [
+        0.5, 1, 1.5, 2, 2.5, 3, 4, 5,
+        7.5, 10, 12.5, 15, 20, 25, 30,
+        40, 50, 75, 100, 150, 200
+    ]
+
+    for achse_max in moegliche_maxima:
+        if achse_max >= zielwert:
+            ticks = np.linspace(0, achse_max, anzahl_intervalle + 1)
+            return achse_max, ticks
+
+    achse_max = np.ceil(zielwert / anzahl_intervalle) * anzahl_intervalle
+    ticks = np.linspace(0, achse_max, anzahl_intervalle + 1)
+
+    return achse_max, ticks
 def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     fig = go.Figure()
 
@@ -761,18 +782,22 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
 
     for spalte in leistungs_spalten:
         if spalte in df_plot.columns:
-            max_y_roh = max(max_y_roh, df_plot[spalte].max())
+            spalten_max = df_plot[spalte].max()
 
-    # Abregelungsmarker liegt bei Netzeinspeisung + Abregelung
+            if not pd.isna(spalten_max):
+                max_y_roh = max(max_y_roh, spalten_max)
+
+    # Abregelungsmarker liegt sichtbar bei Netzeinspeisung + Abregelung.
+    # Deshalb wird nur dieser sichtbare Marker zusätzlich berücksichtigt.
     if "netzeinspeisung_kW" in df_plot.columns and "abregelung_kW" in df_plot.columns:
-        max_abregel_marker = (
+        marker_max = (
             df_plot["netzeinspeisung_kW"] + df_plot["abregelung_kW"]
         ).max()
-        max_y_roh = max(max_y_roh, max_abregel_marker)
 
-    max_y_roh = max(max_y_roh, einspeisegrenze_kw)
+        if not pd.isna(marker_max):
+            max_y_roh = max(max_y_roh, marker_max)
 
-    max_y, linke_tickwerte = schoene_achse_mit_ticks(max_y_roh)
+    max_y, linke_tickwerte = schoene_leistungsachse(max_y_roh)
 
     rechte_tickwerte = [0, 20, 40, 60, 80, 100]
 
@@ -786,7 +811,8 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             range=[0, max_y],
             tickmode="array",
             tickvals=linke_tickwerte,
-            tickformat="~g"
+            tickformat="~g",
+            zeroline=False
         ),
         yaxis2=dict(
             title="Batterie-SoC in %",
@@ -795,7 +821,8 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             range=[0, 100],
             tickmode="array",
             tickvals=rechte_tickwerte,
-            showgrid=False
+            showgrid=False,
+            zeroline=False
         ),
         legend=dict(orientation="h", y=-0.25),
         height=600,
@@ -870,7 +897,8 @@ def create_weather_plot(df_plot):
             range=[temp_achse_min, temp_achse_max],
             tickmode="array",
             tickvals=temp_tickwerte,
-            tickformat=".1f"
+            tickformat=".1f",
+            zeroline=False
         ),
         yaxis2=dict(
             title="Sonneneinstrahlung in W/m²",
@@ -880,7 +908,8 @@ def create_weather_plot(df_plot):
             tickmode="array",
             tickvals=einstrahlung_tickwerte,
             tickformat=".0f",
-            showgrid=False
+            showgrid=False,
+            zeroline=False
         ),
         legend=dict(orientation="h", y=-0.25),
         height=500,
