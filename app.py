@@ -3012,12 +3012,16 @@ with col2:
         st.caption("Keine Batterie aktiv, daher keine Batterie-Investition.")
 
     optimierungskosten_chf = st.number_input(
-        "Kosten Optimierung / Steuerung in CHF",
+        "Zusatzkosten für Energiemanagement / Steuerung in CHF",
         min_value=0.0,
         max_value=50000.0,
         value=0.0,
         step=500.0,
         format="%.0f"
+    )
+    st.caption(
+        "Optionale Zusatzkosten für eine Steuerung, die z. B. Batterie, Boiler oder E-Auto "
+        "PV-optimiert betreibt. Falls keine separate Steuerung berücksichtigt werden soll, 0 CHF eingeben."
     )
 
 with col3:
@@ -3070,7 +3074,16 @@ if run_simulation:
         "einspeisegrenze_kw": float(EinspeisegrenzekW),
         "bezugsgrenze_kw": float(Bezugsgrenze),
         "pv_anlagen_daten": copy.deepcopy(pv_anlagen_daten),
-        "prioritaeten": prioritaeten.copy()
+        "prioritaeten": prioritaeten.copy(),
+        "kostenmodus_pv": kostenmodus_pv,
+        "pv_investition_brutto": float(pv_investition_brutto),
+        "kosten_pv_chf_kwp": float(kosten_pv_chf_kwp),
+        "batteriekosten_chf": float(batteriekosten_chf),
+        "optimierungskosten_chf": float(optimierungskosten_chf),
+        "foerderanteil_pv_prozent": float(foerderanteil_pv_prozent),
+        "ruecklieferverguetung_rp_kWh": float(ruecklieferverguetung_rp_kWh),
+        "betriebskosten_prozent": float(betriebskosten_prozent),
+        "betrachtungsdauer_jahre": int(betrachtungsdauer_jahre),
     }
 
     st.session_state["simulation_inputs"] = simulation_inputs
@@ -3565,10 +3578,13 @@ if "df_ts" in st.session_state:
                 )
         with col4:
             st.metric(
-                "Eingesparte Stromkosten",
+                "Vermiedene Bezugskosten",
                 f"{jahreskennzahlen['Eingesparte_Stromkosten_CHF']:,.0f} CHF/a".replace(",", "'")
             )
-            st.caption("Entspricht den vermiedenen Strombezugskosten durch den direkten PV-Eigenverbrauch. Eine Einspeisevergütung wird nicht berücksichtigt.")
+            st.caption(
+                "Entspricht den vermiedenen Strombezugskosten durch direkt genutzten PV-Strom. "
+                "Einspeisevergütung, Betriebskosten und Investitionskosten werden unten in der Kostenabschätzung berücksichtigt."
+            )
         with col5:
             st.metric(
                 "PV-Jahresproduktion",
