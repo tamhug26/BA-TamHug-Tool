@@ -1725,7 +1725,7 @@ def berechne_kostenkennzahlen(
     pv_kwp_total,
     batterie_aktiv,
     batteriekapazitaet,
-    kosten_pv_chf_kwp,
+    pv_investition_brutto,
     batteriekosten_chf,
     optimierungskosten_chf,
     foerderanteil_pv_prozent,
@@ -1738,9 +1738,6 @@ def berechne_kostenkennzahlen(
     pv_produktion_kWh = jahreskennzahlen["PV_Produktion_kWh"]
     netzbezug_kWh = jahreskennzahlen["Netzbezug_kWh"]
     netzeinspeisung_kWh = jahreskennzahlen["Netzeinspeisung_kWh"]
-
-    # Investitionen
-    pv_investition_brutto = pv_kwp_total * kosten_pv_chf_kwp
 
     if batterie_aktiv and batteriekapazitaet > 0:
         batterie_investition = batteriekosten_chf
@@ -2941,13 +2938,51 @@ st.subheader("Kostenannahmen")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    kosten_pv_chf_kwp = st.number_input(
-        "PV-Investitionskosten in CHF/kWp",
-        min_value=0.0,
-        max_value=10000.0,
-        value=2800.0,
-        step=100.0,
-        format="%.0f"
+    kostenmodus_pv = st.radio(
+        "Wie sollen die PV-Investitionskosten angegeben werden?",
+        [
+            "Über Richtwert berechnen",
+            "Gesamtkosten manuell eingeben"
+        ],
+        horizontal=False
+    )
+
+    if kostenmodus_pv == "Über Richtwert berechnen":
+        kosten_pv_chf_kwp = st.number_input(
+            "Richtwert PV-Kosten in CHF/kWp",
+            min_value=0.0,
+            max_value=10000.0,
+            value=2800.0,
+            step=100.0,
+            format="%.0f"
+        )
+
+        pv_investition_brutto = gesamt_pv_peakleistung * kosten_pv_chf_kwp
+
+        st.caption(
+            "Der Richtwert wird mit der installierten PV-Leistung multipliziert. "
+            "Falls eine konkrete Offerte vorliegt, können stattdessen die Gesamtkosten manuell eingegeben werden."
+        )
+
+    else:
+        pv_investition_brutto = st.number_input(
+            "PV-Investition total in CHF",
+            min_value=0.0,
+            max_value=500000.0,
+            value=float(gesamt_pv_peakleistung * 2800),
+            step=1000.0,
+            format="%.0f"
+        )
+
+        if gesamt_pv_peakleistung > 0:
+            kosten_pv_chf_kwp = pv_investition_brutto / gesamt_pv_peakleistung
+        else:
+            kosten_pv_chf_kwp = 0.0
+
+    st.info(
+        f"Verwendete PV-Investition: {pv_investition_brutto:,.0f} CHF "
+        f"bei {gesamt_pv_peakleistung:.1f} kWp "
+        f"({kosten_pv_chf_kwp:,.0f} CHF/kWp).".replace(",", "'")
     )
 
     foerderanteil_pv_prozent = st.slider(
@@ -3283,7 +3318,7 @@ if run_simulation:
             pv_kwp_total=gesamt_pv_peakleistung,
             batterie_aktiv=batterie_aktiv,
             batteriekapazitaet=batteriekapazität,
-            kosten_pv_chf_kwp=kosten_pv_chf_kwp,
+            pv_investition_brutto=pv_investition_brutto,
             batteriekosten_chf=batteriekosten_chf,
             optimierungskosten_chf=optimierungskosten_chf,
             foerderanteil_pv_prozent=foerderanteil_pv_prozent,
@@ -3366,7 +3401,7 @@ if run_simulation:
             "strompreis_rp_kWh": float(strompreis_rp_kWh),
             "stromkosten_chf": float(stromkosten_chf),
             "kostenkennzahlen": kostenkennzahlen,
-            "kosten_pv_chf_kwp": float(kosten_pv_chf_kwp),
+            "pv_investition_brutto": float(pv_investition_brutto),
             "batteriekosten_chf": float(batteriekosten_chf),
             "optimierungskosten_chf": float(optimierungskosten_chf),
             "foerderanteil_pv_prozent": float(foerderanteil_pv_prozent),
