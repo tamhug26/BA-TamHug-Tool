@@ -198,6 +198,7 @@ WW_PV = "PV-Überschussgeführt (spätestens 11:00 Uhr)"
 WW_MORGEN = "Morgens (05:00–07:00 Uhr)"
 WW_ABEND = "Abends (17:00–20:00 Uhr)"
 WW_KOMBI = "Morgens + Abends (05:00–07:00 Uhr und 17:00–20:00 Uhr)"
+WW_NACHMITTAG_LWWP = "Nachmittags für Luft/Wasser-WP (14:00–17:00 Uhr)"
 
 #Standartlastprofile
 slp_df = pd.read_excel("Standartprofil H25.xlsx")
@@ -593,6 +594,24 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df[spalten]
 
     return df_anzeige
+def schoene_achsenobergrenze(max_wert):
+    if max_wert <= 0 or pd.isna(max_wert):
+        return 1
+
+    rohwert = max_wert * 1.10
+
+    if rohwert <= 5:
+        schritt = 1
+    elif rohwert <= 20:
+        schritt = 2
+    elif rohwert <= 50:
+        schritt = 5
+    elif rohwert <= 100:
+        schritt = 10
+    else:
+        schritt = 20
+
+    return np.ceil(rohwert / schritt) * schritt
 def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     fig = go.Figure()
 
@@ -714,15 +733,30 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             name="Unterdeckung",
             marker=dict(color="darkred", size=8, symbol="circle-open")
         ))
-    y_title = "Leistung in kW"
-    max_y = max(
-        df_plot["pv_kW"].max(),
-        df_plot["gesamtlast_kW"].max(),
-        df_plot["netzbezug_kW"].max(),
-        df_plot["netzeinspeisung_kW"].max(),
-        df_plot["abregelung_kW"].max() if "abregelung_kW" in df_plot.columns else 0,
-        einspeisegrenze_kw
-    )
+    leistungs_spalten = [
+        "pv_kW",
+        "gesamtlast_kW",
+        "netzbezug_kW",
+        "netzeinspeisung_kW"
+    ]
+
+    if "abregelung_kW" in df_plot.columns:
+        leistungs_spalten.append("abregelung_kW")
+
+    max_y_roh = 0
+
+    for spalte in leistungs_spalten:
+        if spalte in df_plot.columns:
+            max_y_roh = max(max_y_roh, df_plot[spalte].max())
+
+    max_y_roh = max(max_y_roh, einspeisegrenze_kw)
+
+    max_y = schoene_achsenobergrenze(max_y_roh)
+
+    # 6 Werte: 0, 20, 40, 60, 80, 100 auf rechter Achse
+    # Links ebenfalls 6 Werte, damit die horizontalen Linien sauber zusammenpassen
+    linke_tickwerte = np.linspace(0, max_y, 6)
+    rechte_tickwerte = [0, 20, 40, 60, 80, 100]
 
     fig.update_layout(
         title="Zeitverlauf von PV, Last, Batterie und Netz",
@@ -731,13 +765,18 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             title="Leistung in kW",
             showgrid=True,
             gridcolor="rgba(200,200,200,0.35)",
-            range=[0, max_y * 1.15]
+            range=[0, max_y],
+            tickmode="array",
+            tickvals=linke_tickwerte,
+            tickformat=".1f"
         ),
         yaxis2=dict(
             title="Batterie-SoC in %",
             overlaying="y",
             side="right",
             range=[0, 100],
+            tickmode="array",
+            tickvals=rechte_tickwerte,
             showgrid=False
         ),
         legend=dict(orientation="h", y=-0.25),
@@ -765,6 +804,35 @@ def create_weather_plot(df_plot):
         yaxis="y2"
     ))
 
+    max_einstrahlung = df_plot["poa_global"].max()
+
+    if pd.isna(max_einstrahlung) or max_einstrahlung <= 0:
+        max_einstrahlung = 1000
+
+    max_einstrahlung_achse = np.ceil((max_einstrahlung * 1.10) / 100) * 100
+
+    # mindestens 1000 W/m² anzeigen, aber höhere Werte nicht abschneiden
+    max_einstrahlung_achse = max(1000, max_einstrahlung_achse)
+
+    einstrahlung_tickwerte = np.linspace(0, max_einstrahlung_achse, 6)
+
+    temp_min = df_plot["temp"].min()
+    temp_max = df_plot["temp"].max()
+
+    if pd.isna(temp_min) or pd.isna(temp_max):
+        temp_min = -10
+        temp_max = 40
+
+    temp_unten = np.floor((temp_min - 2) / 5) * 5
+    temp_oben = np.ceil((temp_max + 2) / 5) * 5
+
+    # Falls Temperaturbereich sehr klein ist
+    if temp_oben <= temp_unten:
+        temp_unten = temp_min - 5
+        temp_oben = temp_max + 5
+
+    temp_tickwerte = np.linspace(temp_unten, temp_oben, 6)
+
     fig.update_layout(
         title="Temperatur und Sonneneinstrahlung",
         xaxis_title="Zeit",
@@ -772,17 +840,19 @@ def create_weather_plot(df_plot):
             title="Temperatur in °C",
             showgrid=True,
             gridcolor="rgba(200,200,200,0.35)",
-            range=[-10, 40],
+            range=[temp_unten, temp_oben],
             tickmode="array",
-            tickvals=[-10, 0, 10, 20, 30, 40]
+            tickvals=temp_tickwerte,
+            tickformat=".0f"
         ),
         yaxis2=dict(
             title="Sonneneinstrahlung in W/m²",
             overlaying="y",
             side="right",
-            range=[0, 1000],
+            range=[0, max_einstrahlung_achse],
             tickmode="array",
-            tickvals=[0, 200, 400, 600, 800, 1000],
+            tickvals=einstrahlung_tickwerte,
+            tickformat=".0f",
             showgrid=False
         ),
         legend=dict(orientation="h", y=-0.25),
@@ -1119,10 +1189,16 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
     if verbraucher == "Warmwasser":
         if strategie == WW_MORGEN:
             return 5 <= h < 7
+
+        elif strategie == WW_NACHMITTAG_LWWP:
+            return 14 <= h < 17
+
         elif strategie == WW_ABEND:
             return 17 <= h < 20
+
         elif strategie == WW_KOMBI:
             return (5 <= h < 7) or (17 <= h < 20)
+
         elif strategie == WW_PV:
             return 5 <= h < 15
 
@@ -2414,18 +2490,56 @@ with col1:
         ww_steuerbar = st.checkbox("Warmwasser zeitgesteuert", value=True)
 
         if ww_steuerbar:
-            if ladezyklen_pro_tag <= 1:
-                ww_strategie = st.selectbox(
-                    "WW-Strategie",
-                    [WW_PV, WW_MORGEN, WW_ABEND],
-                    index=0
+
+            lwwp_relevant = (
+                heizsystem == "Wärmepumpe"
+                and wp_typ == "Luft/Wasser WP"
+            )
+
+            if lwwp_relevant:
+                if ladezyklen_pro_tag <= 1:
+                    ww_optionen = [
+                        WW_NACHMITTAG_LWWP,
+                        WW_PV,
+                        WW_MORGEN,
+                        WW_ABEND
+                    ]
+                else:
+                    ww_optionen = [
+                        WW_NACHMITTAG_LWWP,
+                        WW_PV,
+                        WW_KOMBI
+                    ]
+
+                ww_default_index = 0
+
+                st.caption(
+                    "Bei Luft/Wasser-Wärmepumpen ist eine Warmwasserbereitung am Nachmittag "
+                    "energetisch günstiger, da die Außentemperatur meist höher ist und der "
+                    "Temperaturhub der Wärmepumpe dadurch kleiner wird. Dieser Effekt gilt nicht "
+                    "in gleicher Form für Sole/Wasser- oder Wasser/Wasser-Wärmepumpen."
                 )
+
             else:
-                ww_strategie = st.selectbox(
-                    "WW-Strategie",
-                    [WW_PV, WW_KOMBI],
-                    index=0
-                )
+                if ladezyklen_pro_tag <= 1:
+                    ww_optionen = [
+                        WW_PV,
+                        WW_MORGEN,
+                        WW_ABEND
+                    ]
+                else:
+                    ww_optionen = [
+                        WW_PV,
+                        WW_KOMBI
+                    ]
+
+                ww_default_index = 0
+
+            ww_strategie = st.selectbox(
+                "WW-Strategie",
+                ww_optionen,
+                index=ww_default_index
+            )
 
             if ww_strategie == WW_PV:
                 st.caption(
@@ -2433,10 +2547,6 @@ with col1:
                     "Falls bis 11:00 Uhr nicht genügend PV-Energie verfügbar war, "
                     "wird die Ladung ab 11:00 Uhr automatisch abgeschlossen."
                 )
-        else:
-            ww_strategie = WW_ABEND
-            st.caption("Nicht steuerbares Warmwasser wird standardmässig abends geladen.")
-
     
 with col2:
     st.subheader("E-Auto")
