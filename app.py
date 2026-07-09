@@ -3931,15 +3931,70 @@ if "df_ts" in st.session_state:
         with col2:
             st.metric("Total Treibhausgasemissionen", f"{total_co2:,.0f} kg CO₂-eq/a".replace(",", "'"))
 
+        st.caption(
+            "Die Umweltwirkungen der Herstellung werden als jährlicher Anteil über die angenommene "
+            "Lebensdauer der Komponenten dargestellt. Betriebsemissionen, z. B. Netzstrom Betrieb, "
+            "werden dagegen aus dem effektiv simulierten jährlichen Energiebezug berechnet."
+        )
+        pv_herstellung_mask = df_umwelt["Kategorie"].str.contains(
+            "PV-Anlage|Wechselrichter|Elektroinstallation PV",
+            regex=True
+        )
+
+        pv_system_co2_a = df_umwelt.loc[
+            pv_herstellung_mask,
+            "kg CO2-eq/a"
+        ].sum()
+
+        pv_produktion_kWh_a = jahreskennzahlen["PV_Produktion_kWh"]
+
+        if pv_produktion_kWh_a > 0:
+            pv_co2_kg_kWh = pv_system_co2_a / pv_produktion_kWh_a
+        else:
+            pv_co2_kg_kWh = np.nan
+
+        netz_co2_kg_kWh = CO2Emmisionen_input / 1000
+
+        st.write("**CO₂-Referenzwerte pro kWh elektrische Energie**")
+
+        col_ref1, col_ref2 = st.columns(2)
+
+        with col_ref1:
+            st.metric(
+                "PV-Strom Herstellung",
+                f"{pv_co2_kg_kWh:.3f} kg CO₂-eq/kWh"
+            )
+
+        with col_ref2:
+            st.metric(
+                "Netzstrom Betrieb",
+                f"{netz_co2_kg_kWh:.3f} kg CO₂-eq/kWh"
+            )
+
+        st.caption(
+            "Der PV-Referenzwert berücksichtigt die auf die Lebensdauer verteilte Herstellung "
+            "der PV-Anlage inklusive Wechselrichter und Elektroinstallation, bezogen auf die "
+            "jährliche PV-Produktion. Der Netzstromwert entspricht dem eingegebenen CO₂-Faktor "
+            "des gewählten Energieversorgers."
+        )
         col1, col2 = st.columns(2)
 
         with col1:
             st.write("")
             st.write("")
             st.write("")
-            st.write("**Treibhausgasemmissionen Data**")
+            st.write("**Treibhausgasemmissionen**")
             st.write("")
             df_umwelt_anzeige = df_umwelt.copy()
+
+            df_umwelt_anzeige["Kategorie"] = df_umwelt_anzeige["Kategorie"].apply(
+                lambda x: x + ", anteilig pro Jahr" if "Herstellung" in x else x
+            )
+
+            df_umwelt_anzeige["Kategorie"] = df_umwelt_anzeige["Kategorie"].replace({
+                "Elektroinstallation PV": "Elektroinstallation PV, anteilig pro Jahr",
+                "Netzstrom Betrieb": "Netzstrom Betrieb, effektiv pro Jahr"
+            })
 
             df_umwelt_anzeige["UBP/a"] = df_umwelt_anzeige["UBP/a"].map(
                 lambda x: f"{x:,.0f}".replace(",", "'")
@@ -3960,7 +4015,7 @@ if "df_ts" in st.session_state:
             fig_umwelt = go.Figure()
 
             fig_umwelt.add_trace(go.Bar(
-                x=df_umwelt["Kategorie"],
+                x=df_umwelt_anzeige["Kategorie"],
                 y=df_umwelt["kg CO2-eq/a"],
                 name="kg CO₂-eq/a"
             ))
