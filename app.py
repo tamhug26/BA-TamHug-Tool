@@ -1719,6 +1719,102 @@ def berechne_ev_jahresbedarf(ev_config):
     ev_strom_jahr = km_jahr * ev_config["verbrauch_pro_100km"] / 100
 
     return ev_strom_jahr
+def berechne_kostenkennzahlen(
+    df_ts,
+    jahreskennzahlen,
+    pv_kwp_total,
+    batterie_aktiv,
+    batteriekapazitaet,
+    kosten_pv_chf_kwp,
+    batteriekosten_chf,
+    optimierungskosten_chf,
+    foerderanteil_pv_prozent,
+    betriebskosten_prozent,
+    strompreis_chf_kWh,
+    ruecklieferverguetung_chf_kWh,
+    betrachtungsdauer_jahre
+):
+    gesamtlast_kWh = df_ts["gesamtlast_kWh"].sum()
+    pv_produktion_kWh = jahreskennzahlen["PV_Produktion_kWh"]
+    netzbezug_kWh = jahreskennzahlen["Netzbezug_kWh"]
+    netzeinspeisung_kWh = jahreskennzahlen["Netzeinspeisung_kWh"]
+
+    # Investitionen
+    pv_investition_brutto = pv_kwp_total * kosten_pv_chf_kwp
+
+    if batterie_aktiv and batteriekapazitaet > 0:
+        batterie_investition = batteriekosten_chf
+    else:
+        batterie_investition = 0.0
+
+    investition_brutto = (
+        pv_investition_brutto
+        + batterie_investition
+        + optimierungskosten_chf
+    )
+
+    # Förderung nur auf PV-Investition bezogen
+    foerderung = pv_investition_brutto * foerderanteil_pv_prozent / 100
+
+    investition_netto = max(0.0, investition_brutto - foerderung)
+
+    # Laufende Kosten pro Jahr
+    betriebskosten_jahr = investition_brutto * betriebskosten_prozent / 100
+
+    # Stromkosten ohne PV
+    stromkosten_ohne_pv = gesamtlast_kWh * strompreis_chf_kWh
+
+    # Stromkosten mit PV
+    strombezugskosten_mit_pv = netzbezug_kWh * strompreis_chf_kWh
+    einspeiseerloes = netzeinspeisung_kWh * ruecklieferverguetung_chf_kWh
+
+    stromkosten_mit_pv_ohne_betrieb = (
+        strombezugskosten_mit_pv - einspeiseerloes
+    )
+
+    stromkosten_mit_pv_inkl_betrieb = (
+        strombezugskosten_mit_pv
+        - einspeiseerloes
+        + betriebskosten_jahr
+    )
+
+    jaehrlicher_kostenvorteil = (
+        stromkosten_ohne_pv - stromkosten_mit_pv_inkl_betrieb
+    )
+
+    if jaehrlicher_kostenvorteil > 0:
+        amortisationszeit_jahre = investition_netto / jaehrlicher_kostenvorteil
+    else:
+        amortisationszeit_jahre = np.nan
+
+    # Vereinfachte Stromgestehungskosten des PV-Systems
+    if pv_produktion_kWh > 0 and betrachtungsdauer_jahre > 0:
+        stromgestehungskosten_chf_kWh = (
+            investition_netto
+            + betriebskosten_jahr * betrachtungsdauer_jahre
+        ) / (pv_produktion_kWh * betrachtungsdauer_jahre)
+    else:
+        stromgestehungskosten_chf_kWh = np.nan
+
+    return {
+        "PV-Investition brutto CHF": pv_investition_brutto,
+        "Batterie-Investition CHF": batterie_investition,
+        "Optimierung/Steuerung CHF": optimierungskosten_chf,
+        "Investition brutto CHF": investition_brutto,
+        "Förderung CHF": foerderung,
+        "Investition netto CHF": investition_netto,
+        "Betriebskosten CHF/a": betriebskosten_jahr,
+        "Stromkosten ohne PV CHF/a": stromkosten_ohne_pv,
+        "Strombezugskosten mit PV CHF/a": strombezugskosten_mit_pv,
+        "Einspeiseerlös CHF/a": einspeiseerloes,
+        "Stromkosten mit PV ohne Betrieb CHF/a": stromkosten_mit_pv_ohne_betrieb,
+        "Stromkosten mit PV inkl. Betrieb CHF/a": stromkosten_mit_pv_inkl_betrieb,
+        "Jährlicher Kostenvorteil CHF/a": jaehrlicher_kostenvorteil,
+        "Amortisationszeit Jahre": amortisationszeit_jahre,
+        "Stromgestehungskosten CHF/kWh": stromgestehungskosten_chf_kWh,
+        "Stromgestehungskosten Rp/kWh": stromgestehungskosten_chf_kWh * 100,
+    }
+
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 
@@ -2840,6 +2936,85 @@ with col2:
     strompreis_chf_kWh = strompreis_rp_kWh / 100
 
 st.write("------------------------------")
+st.subheader("Kostenannahmen")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    kosten_pv_chf_kwp = st.number_input(
+        "PV-Investitionskosten in CHF/kWp",
+        min_value=0.0,
+        max_value=10000.0,
+        value=2800.0,
+        step=100.0,
+        format="%.0f"
+    )
+
+    foerderanteil_pv_prozent = st.slider(
+        "Förderanteil PV-Investition in %",
+        min_value=0,
+        max_value=30,
+        value=30,
+        step=1
+    )
+
+    st.caption(
+        "Die Förderung wird vereinfacht als prozentualer Anteil der PV-Investition berücksichtigt."
+    )
+
+with col2:
+    if batterie_aktiv and batteriekapazität > 0:
+        batteriekosten_chf = st.number_input(
+            "Batteriespeicher-Investition total in CHF",
+            min_value=0.0,
+            max_value=100000.0,
+            value=6500.0,
+            step=500.0,
+            format="%.0f"
+        )
+    else:
+        batteriekosten_chf = 0.0
+        st.caption("Keine Batterie aktiv, daher keine Batterie-Investition.")
+
+    optimierungskosten_chf = st.number_input(
+        "Kosten Optimierung / Steuerung in CHF",
+        min_value=0.0,
+        max_value=50000.0,
+        value=0.0,
+        step=500.0,
+        format="%.0f"
+    )
+
+with col3:
+    ruecklieferverguetung_rp_kWh = st.number_input(
+        "Rückliefervergütung in Rp./kWh",
+        min_value=0.0,
+        max_value=100.0,
+        value=10.0,
+        step=0.5,
+        format="%.1f"
+    )
+
+    ruecklieferverguetung_chf_kWh = ruecklieferverguetung_rp_kWh / 100
+
+    betriebskosten_prozent = st.number_input(
+        "Laufende Kosten pro Jahr in % der Investition",
+        min_value=0.0,
+        max_value=10.0,
+        value=1.0,
+        step=0.1,
+        format="%.1f"
+    )
+
+    betrachtungsdauer_jahre = st.number_input(
+        "Betrachtungsdauer Kostenrechnung in Jahren",
+        min_value=1,
+        max_value=50,
+        value=LebenszeitJahre["PV"],
+        step=1
+    )
+
+st.write("------------------------------")
 st.subheader("Test Zeitreihe")
 run_simulation = st.button("Simulation starten")
 
@@ -3102,6 +3277,24 @@ if run_simulation:
         )
 
         jahreskennzahlen["Eingesparte_Stromkosten_CHF"] = eingesparte_stromkosten
+        kostenkennzahlen = berechne_kostenkennzahlen(
+            df_ts=df_ts,
+            jahreskennzahlen=jahreskennzahlen,
+            pv_kwp_total=gesamt_pv_peakleistung,
+            batterie_aktiv=batterie_aktiv,
+            batteriekapazitaet=batteriekapazität,
+            kosten_pv_chf_kwp=kosten_pv_chf_kwp,
+            batteriekosten_chf=batteriekosten_chf,
+            optimierungskosten_chf=optimierungskosten_chf,
+            foerderanteil_pv_prozent=foerderanteil_pv_prozent,
+            betriebskosten_prozent=betriebskosten_prozent,
+            strompreis_chf_kWh=strompreis_chf_kWh,
+            ruecklieferverguetung_chf_kWh=ruecklieferverguetung_chf_kWh,
+            betrachtungsdauer_jahre=betrachtungsdauer_jahre
+        )
+
+        st.session_state["kostenkennzahlen"] = kostenkennzahlen
+        
         if heizsystem != "Wärmepumpe":
             wp_typ_use = None
             WPkW_use = 0
@@ -3171,7 +3364,15 @@ if run_simulation:
             "auto_aktiv": bool(auto_aktiv),
             "auto_typ": auto_typ,
             "strompreis_rp_kWh": float(strompreis_rp_kWh),
-            "stromkosten_chf": float(stromkosten_chf)
+            "stromkosten_chf": float(stromkosten_chf),
+            "kostenkennzahlen": kostenkennzahlen,
+            "kosten_pv_chf_kwp": float(kosten_pv_chf_kwp),
+            "batteriekosten_chf": float(batteriekosten_chf),
+            "optimierungskosten_chf": float(optimierungskosten_chf),
+            "foerderanteil_pv_prozent": float(foerderanteil_pv_prozent),
+            "ruecklieferverguetung_rp_kWh": float(ruecklieferverguetung_rp_kWh),
+            "betriebskosten_prozent": float(betriebskosten_prozent),
+            "betrachtungsdauer_jahre": int(betrachtungsdauer_jahre)
         }
         speichere_profil(profil_name, profil)
         st.success(f"Profil '{profil_name}' wurde gespeichert.")
@@ -3338,6 +3539,85 @@ if "df_ts" in st.session_state:
                 "PV-Jahresproduktion",
                 f"{jahreskennzahlen['PV_Produktion_kWh']:,.0f} kWh/a".replace(",", "'")
             )
+
+        if "kostenkennzahlen" in st.session_state:
+            kostenkennzahlen = st.session_state["kostenkennzahlen"]
+
+            st.write("------------------------------")
+            st.subheader("Kostenabschätzung")
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    "Investition brutto",
+                    f"{kostenkennzahlen['Investition brutto CHF']:,.0f} CHF".replace(",", "'")
+                )
+                st.metric(
+                    "Förderung",
+                    f"{kostenkennzahlen['Förderung CHF']:,.0f} CHF".replace(",", "'")
+                )
+                st.metric(
+                    "Investition netto",
+                    f"{kostenkennzahlen['Investition netto CHF']:,.0f} CHF".replace(",", "'")
+                )
+
+            with col2:
+                st.metric(
+                    "Stromkosten ohne PV",
+                    f"{kostenkennzahlen['Stromkosten ohne PV CHF/a']:,.0f} CHF/a".replace(",", "'")
+                )
+                st.metric(
+                    "Stromkosten mit PV",
+                    f"{kostenkennzahlen['Stromkosten mit PV inkl. Betrieb CHF/a']:,.0f} CHF/a".replace(",", "'")
+                )
+                st.metric(
+                    "Jährlicher Kostenvorteil",
+                    f"{kostenkennzahlen['Jährlicher Kostenvorteil CHF/a']:,.0f} CHF/a".replace(",", "'")
+                )
+
+            with col3:
+                amortisation = kostenkennzahlen["Amortisationszeit Jahre"]
+
+                if np.isnan(amortisation):
+                    amortisation_text = "nicht berechenbar"
+                else:
+                    amortisation_text = f"{amortisation:,.1f} Jahre".replace(",", "'")
+
+                st.metric(
+                    "Amortisationszeit",
+                    amortisation_text
+                )
+
+                st.metric(
+                    "Stromgestehungskosten",
+                    f"{kostenkennzahlen['Stromgestehungskosten Rp/kWh']:,.1f} Rp./kWh".replace(",", "'")
+                )
+
+                st.metric(
+                    "Betriebskosten",
+                    f"{kostenkennzahlen['Betriebskosten CHF/a']:,.0f} CHF/a".replace(",", "'")
+                )
+
+            with st.expander("Details der Kostenrechnung anzeigen"):
+                df_kosten = pd.DataFrame(
+                    list(kostenkennzahlen.items()),
+                    columns=["Kennzahl", "Wert"]
+                )
+
+                df_kosten["Wert"] = df_kosten["Wert"].apply(
+                    lambda x: f"{x:,.2f}".replace(",", "'") if isinstance(x, (int, float, np.number)) and not pd.isna(x) else x
+                )
+
+                st.dataframe(df_kosten, use_container_width=True)
+
+            st.caption(
+                "Die Kostenabschätzung vergleicht die jährlichen Stromkosten ohne PV-Anlage mit den "
+                "Stromkosten bei PV-Nutzung. Berücksichtigt werden Netzbezugskosten, Einspeiseerlöse, "
+                "Investitionskosten, Förderung und laufende Betriebskosten. Die Berechnung stellt eine "
+                "vereinfachte Abschätzung dar und ersetzt keine detaillierte Wirtschaftlichkeitsanalyse."
+            )
+
 
         st.write("---------------------")
 
