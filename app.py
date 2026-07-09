@@ -807,31 +807,39 @@ def create_weather_plot(df_plot):
     max_einstrahlung = df_plot["poa_global"].max()
 
     if pd.isna(max_einstrahlung) or max_einstrahlung <= 0:
-        max_einstrahlung = 1000
+        max_einstrahlung = 1
 
-    max_einstrahlung_achse = np.ceil((max_einstrahlung * 1.10) / 100) * 100
+    einstrahlung_achse_max = max_einstrahlung * 1.1
 
-    # mindestens 1000 W/m² anzeigen, aber höhere Werte nicht abschneiden
-    max_einstrahlung_achse = max(1000, max_einstrahlung_achse)
-
-    einstrahlung_tickwerte = np.linspace(0, max_einstrahlung_achse, 6)
 
     temp_min = df_plot["temp"].min()
     temp_max = df_plot["temp"].max()
 
     if pd.isna(temp_min) or pd.isna(temp_max):
-        temp_min = -10
-        temp_max = 40
+        temp_min = 0
+        temp_max = 1
 
-    temp_unten = np.floor((temp_min - 2) / 5) * 5
-    temp_oben = np.ceil((temp_max + 2) / 5) * 5
+    # Temperaturachse ebenfalls dynamisch:
+    # unten etwas unter Minimum, oben Maximum × 1.1
+    if temp_min < 0:
+        temp_achse_min = temp_min * 1.1
+    else:
+        temp_achse_min = temp_min * 0.9
 
-    # Falls Temperaturbereich sehr klein ist
-    if temp_oben <= temp_unten:
-        temp_unten = temp_min - 5
-        temp_oben = temp_max + 5
+    if temp_max > 0:
+        temp_achse_max = temp_max * 1.1
+    else:
+        temp_achse_max = temp_max * 0.9
 
-    temp_tickwerte = np.linspace(temp_unten, temp_oben, 6)
+    # Falls der Bereich zu klein oder komisch ist
+    if temp_achse_max <= temp_achse_min:
+        temp_achse_min = temp_min - 1
+        temp_achse_max = temp_max + 1
+
+    # Beide Achsen bekommen gleich viele Tickwerte.
+    # Dadurch liegen die horizontalen Linien sauber parallel.
+    temp_tickwerte = np.linspace(temp_achse_min, temp_achse_max, 6)
+    einstrahlung_tickwerte = np.linspace(0, einstrahlung_achse_max, 6)
 
     fig.update_layout(
         title="Temperatur und Sonneneinstrahlung",
@@ -840,16 +848,16 @@ def create_weather_plot(df_plot):
             title="Temperatur in °C",
             showgrid=True,
             gridcolor="rgba(200,200,200,0.35)",
-            range=[temp_unten, temp_oben],
+            range=[temp_achse_min, temp_achse_max],
             tickmode="array",
             tickvals=temp_tickwerte,
-            tickformat=".0f"
+            tickformat=".1f"
         ),
         yaxis2=dict(
             title="Sonneneinstrahlung in W/m²",
             overlaying="y",
             side="right",
-            range=[0, max_einstrahlung_achse],
+            range=[0, einstrahlung_achse_max],
             tickmode="array",
             tickvals=einstrahlung_tickwerte,
             tickformat=".0f",
