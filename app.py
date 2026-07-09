@@ -612,6 +612,11 @@ def schoene_achsenobergrenze(max_wert):
         schritt = 20
 
     return np.ceil(rohwert / schritt) * schritt
+def schoene_achsenobergrenze_wetter(max_wert, schrittweite):
+    if pd.isna(max_wert) or max_wert <= 0:
+        return schrittweite
+
+    return np.ceil(max_wert / schrittweite) * schrittweite
 def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     fig = go.Figure()
 
@@ -809,8 +814,11 @@ def create_weather_plot(df_plot):
     if pd.isna(max_einstrahlung) or max_einstrahlung <= 0:
         max_einstrahlung = 1
 
-    einstrahlung_achse_max = max_einstrahlung * 1.1
-
+    # Maximum × 1.1 und dann schön aufrunden
+    einstrahlung_achse_max = schoene_achsenobergrenze_wetter(
+        max_einstrahlung * 1.1,
+        100
+    )
 
     temp_min = df_plot["temp"].min()
     temp_max = df_plot["temp"].max()
@@ -819,25 +827,23 @@ def create_weather_plot(df_plot):
         temp_min = 0
         temp_max = 1
 
-    # Temperaturachse ebenfalls dynamisch:
-    # unten etwas unter Minimum, oben Maximum × 1.1
+    # Temperaturachse unten/oben dynamisch, aber schön gerundet
     if temp_min < 0:
-        temp_achse_min = temp_min * 1.1
+        temp_achse_min = np.floor((temp_min * 1.1) / 5) * 5
     else:
-        temp_achse_min = temp_min * 0.9
+        temp_achse_min = np.floor((temp_min * 0.9) / 5) * 5
 
     if temp_max > 0:
-        temp_achse_max = temp_max * 1.1
+        temp_achse_max = np.ceil((temp_max * 1.1) / 5) * 5
     else:
-        temp_achse_max = temp_max * 0.9
+        temp_achse_max = np.ceil((temp_max * 0.9) / 5) * 5
 
     # Falls der Bereich zu klein oder komisch ist
     if temp_achse_max <= temp_achse_min:
-        temp_achse_min = temp_min - 1
-        temp_achse_max = temp_max + 1
+        temp_achse_min = np.floor((temp_min - 1) / 5) * 5
+        temp_achse_max = np.ceil((temp_max + 1) / 5) * 5
 
-    # Beide Achsen bekommen gleich viele Tickwerte.
-    # Dadurch liegen die horizontalen Linien sauber parallel.
+    # Beide Achsen bekommen gleich viele Tickwerte
     temp_tickwerte = np.linspace(temp_achse_min, temp_achse_max, 6)
     einstrahlung_tickwerte = np.linspace(0, einstrahlung_achse_max, 6)
 
