@@ -594,24 +594,32 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df[spalten]
 
     return df_anzeige
-def schoene_achsenobergrenze(max_wert):
-    if max_wert <= 0 or pd.isna(max_wert):
-        return 1
+def schoene_achse_mit_ticks(max_wert, anzahl_intervalle=5):
+    if pd.isna(max_wert) or max_wert <= 0:
+        max_wert = 1
 
-    rohwert = max_wert * 1.10
+    zielwert = max_wert * 1.10
 
-    if rohwert <= 5:
-        schritt = 1
-    elif rohwert <= 20:
-        schritt = 2
-    elif rohwert <= 50:
-        schritt = 5
-    elif rohwert <= 100:
-        schritt = 10
-    else:
-        schritt = 20
+    moegliche_tickschritte = [
+        0.1, 0.2, 0.5,
+        1, 2, 2.5, 5,
+        10, 20, 25, 50,
+        100, 200, 250, 500,
+        1000
+    ]
 
-    return np.ceil(rohwert / schritt) * schritt
+    for schritt in moegliche_tickschritte:
+        achse_max = schritt * anzahl_intervalle
+
+        if achse_max >= zielwert:
+            ticks = np.linspace(0, achse_max, anzahl_intervalle + 1)
+            return achse_max, ticks
+
+    schritt = np.ceil(zielwert / anzahl_intervalle)
+    achse_max = schritt * anzahl_intervalle
+    ticks = np.linspace(0, achse_max, anzahl_intervalle + 1)
+
+    return achse_max, ticks
 def schoene_achsenobergrenze_wetter(max_wert, schrittweite):
     if pd.isna(max_wert) or max_wert <= 0:
         return schrittweite
@@ -741,12 +749,13 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     leistungs_spalten = [
         "pv_kW",
         "gesamtlast_kW",
+        "ww_kW",
+        "ev_kW",
         "netzbezug_kW",
-        "netzeinspeisung_kW"
+        "netzeinspeisung_kW",
+        "abregelung_kW",
+        "unterdeckung_kW"
     ]
-
-    if "abregelung_kW" in df_plot.columns:
-        leistungs_spalten.append("abregelung_kW")
 
     max_y_roh = 0
 
@@ -754,13 +763,17 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         if spalte in df_plot.columns:
             max_y_roh = max(max_y_roh, df_plot[spalte].max())
 
+    # Abregelungsmarker liegt bei Netzeinspeisung + Abregelung
+    if "netzeinspeisung_kW" in df_plot.columns and "abregelung_kW" in df_plot.columns:
+        max_abregel_marker = (
+            df_plot["netzeinspeisung_kW"] + df_plot["abregelung_kW"]
+        ).max()
+        max_y_roh = max(max_y_roh, max_abregel_marker)
+
     max_y_roh = max(max_y_roh, einspeisegrenze_kw)
 
-    max_y = schoene_achsenobergrenze(max_y_roh)
+    max_y, linke_tickwerte = schoene_achse_mit_ticks(max_y_roh)
 
-    # 6 Werte: 0, 20, 40, 60, 80, 100 auf rechter Achse
-    # Links ebenfalls 6 Werte, damit die horizontalen Linien sauber zusammenpassen
-    linke_tickwerte = np.linspace(0, max_y, 6)
     rechte_tickwerte = [0, 20, 40, 60, 80, 100]
 
     fig.update_layout(
@@ -773,7 +786,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             range=[0, max_y],
             tickmode="array",
             tickvals=linke_tickwerte,
-            tickformat=".1f"
+            tickformat="~g"
         ),
         yaxis2=dict(
             title="Batterie-SoC in %",
