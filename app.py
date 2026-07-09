@@ -3052,6 +3052,27 @@ with col3:
         value=LebenszeitJahre["PV"],
         step=1
     )
+    kostenbestandteile = [
+        "PV-Anlage",
+        "Wechselrichter",
+        "Unterkonstruktion",
+        "Montage",
+        "elektrische Installation",
+        "Planung und Inbetriebnahme"
+    ]
+
+    if batterie_aktiv and batteriekapazität > 0:
+        kostenbestandteile.append("Batteriespeicher")
+
+    if optimierungskosten_chf > 0:
+        kostenbestandteile.append("Energiemanagement / Steuerung")
+
+    st.caption(
+        "Die Kostenabschätzung berücksichtigt: "
+        + ", ".join(kostenbestandteile)
+        + ". Zusätzlich werden Förderung, laufende Betriebskosten, Strombezugskosten "
+        "und Einspeiseerlöse berücksichtigt."
+    )
 
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
