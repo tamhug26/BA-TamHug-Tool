@@ -3961,7 +3961,7 @@ if "df_ts" in st.session_state:
 
         with col_ref1:
             st.metric(
-                "PV-Strom Herstellung",
+                "PV-Strom, Herstellung anteilig",
                 f"{pv_co2_kg_kWh:.3f} kg CO₂-eq/kWh"
             )
 
@@ -3983,7 +3983,7 @@ if "df_ts" in st.session_state:
             st.write("")
             st.write("")
             st.write("")
-            st.write("**Treibhausgasemmissionen**")
+            st.write("**Treibhausgasemissionen**")
             st.write("")
             df_umwelt_anzeige = df_umwelt.copy()
 
