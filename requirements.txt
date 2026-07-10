@@ -1,8 +1,9 @@
-streamlit
-pandas
-numpy
-plotly
-openpyxl
-pvlib
-reportlab
-matplotlib
+streamlit==1.36.0
+pandas==2.2.2
+numpy==1.26.4
+plotly==5.22.0
+pvlib==0.10.4
+matplotlib==3.8.4
+reportlab==4.2.2
+openpyxl==3.1.5
+scipy==1.13.1
