@@ -8,7 +8,7 @@ import json
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import copy
 PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
