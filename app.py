@@ -2365,9 +2365,11 @@ with col1:
 with col2:
     st.subheader("Heizsystem")
 
-    heizsystem = st.segmented_control(
-        "Heizsystem wählen", ["Fossil & Holz", "Wärmepumpe"],
-        default="Fossil & Holz"
+    heizsystem = st.radio(
+        "Heizsystem wählen",
+        ["Fossil & Holz", "Wärmepumpe"],
+        index=0,
+        horizontal=True
     )
     if heizsystem == "Fossil & Holz":
         fossil_typ = st.radio(
@@ -2931,9 +2933,11 @@ for start in range(0, PVAnlagen, 3):
         with cols[j]:
             st.markdown(f"### PV-Anlage {i+1}")
 
-            Dachart = st.segmented_control(
-                "Dach auf welches die Photovoltaik montiert ist", ["Flachdach", "Schrägdach", "Fassade"],
-                default="Schrägdach",
+            Dachart = st.radio(
+                "Dach auf welches die Photovoltaik montiert ist",
+                ["Flachdach", "Schrägdach", "Fassade"],
+                index=1,
+                horizontal=True,
                 key=f"dachart_{i}"
             )
 
