@@ -88,6 +88,7 @@ Auto_Faktoren = {
     "Benzin": {"UBP/Fzkm": 442, "kg CO2-eq/Fzkm": 0.243, "MJ/Fzkm": 4.07},
     "Diesel": {"UBP/Fzkm": 400, "kg CO2-eq/Fzkm": 0.213, "MJ/Fzkm": 3.54},
     "Gas": {"UBP/Fzkm": 378, "kg CO2-eq/Fzkm": 0.196, "MJ/Fzkm": 3.61},
+    "E-Auto": {"UBP/Fzkm": 351, "kg CO2-eq/Fzkm": 0.1108, "MJ/Fzkm": 0.0},
 }
 
 strompreis_mapping = {
@@ -1589,7 +1590,9 @@ def berechne_umweltwirkung(
     lebensdauer_wechselrichter=LebenszeitJahre["Wechselreichter"],
     auto_aktiv=False,
     auto_typ=None,
-    auto_km_jahr=0.0
+    auto_km_jahr=0.0,
+    ev_aktiv=False,
+    ev_km_jahr=0.0
 ):
     ergebnisse = []
 
@@ -1703,15 +1706,26 @@ def berechne_umweltwirkung(
             wp_co2 / lebensdauer_wp
         )
 
-        # Auto Betrieb fossil
+        # Fossiles Auto: Lebenszykluswert pro Fahrzeugkilometer
     if auto_aktiv and auto_typ is not None and auto_km_jahr > 0:
         auto_ubp = Auto_Faktoren[auto_typ]["UBP/Fzkm"] * auto_km_jahr
         auto_co2 = Auto_Faktoren[auto_typ]["kg CO2-eq/Fzkm"] * auto_km_jahr
 
         add(
-            f"Auto {auto_typ} Betrieb",
+            f"Auto {auto_typ} Lebenszyklus",
             auto_ubp,
             auto_co2
+        )
+
+    # E-Auto: Lebenszykluswert pro Fahrzeugkilometer
+    if ev_aktiv and ev_km_jahr > 0:
+        ev_ubp = Auto_Faktoren["E-Auto"]["UBP/Fzkm"] * ev_km_jahr
+        ev_co2 = Auto_Faktoren["E-Auto"]["kg CO2-eq/Fzkm"] * ev_km_jahr
+
+        add(
+            "E-Auto Lebenszyklus",
+            ev_ubp,
+            ev_co2
         )
 
     return pd.DataFrame(ergebnisse)   
@@ -1851,6 +1865,19 @@ def berechne_ev_jahresbedarf(ev_config):
     ev_strom_jahr = km_jahr * ev_config["verbrauch_pro_100km"] / 100
 
     return ev_strom_jahr
+def berechne_ev_jahreskilometer(ev_config):
+    if not ev_config["aktiv"]:
+        return 0.0
+
+    anzahl_fahrtage_pro_woche = len(ev_config["fahrtage"])
+    anzahl_nicht_fahrtage_pro_woche = 7 - anzahl_fahrtage_pro_woche
+
+    km_jahr = (
+        anzahl_fahrtage_pro_woche * ev_config["km_pro_fahrtag"] * 52
+        + anzahl_nicht_fahrtage_pro_woche * ev_config["km_nicht_fahrtag"] * 52
+    )
+
+    return km_jahr
 def berechne_kostenkennzahlen(
     df_ts,
     jahreskennzahlen,
@@ -3534,7 +3561,7 @@ if run_simulation:
             wp_typ_use = wp_typ
             WPkW_use = WPkW
             Erdsondentiefe_use = Erdsondentiefe if wp_typ == "Sole/Wasser WP" else 0
-
+        ev_km_jahr = berechne_ev_jahreskilometer(ev_config)
         df_umwelt = berechne_umweltwirkung(
             df_ts=df_ts,
             pv_anlagen_daten=pv_anlagen_daten,
@@ -3549,7 +3576,9 @@ if run_simulation:
             ebf_m2=EBFm2,
             auto_aktiv=auto_aktiv,
             auto_typ=auto_typ,
-            auto_km_jahr=auto_km_jahr
+            auto_km_jahr=auto_km_jahr,
+            ev_aktiv=ev_aktiv,
+            ev_km_jahr=ev_km_jahr
         )
 
         st.session_state["df_umwelt"] = df_umwelt
@@ -3585,6 +3614,7 @@ if run_simulation:
             "ww_system": ww_system,
             "ww_bedarf_kWh_tag": float(ww_bedarf_kWh_tag),
             "ev_aktiv": bool(ev_aktiv),
+            "ev_km_jahr": float(ev_km_jahr),
             "batterie_aktiv": bool(batterie_aktiv),
             "batteriekapazität": float(batteriekapazität),
             "standort": standort_auswahl,
