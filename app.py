@@ -2828,6 +2828,15 @@ if strombedarf_rueckrechnung:
     if st.button("Haushaltsbasislast neu aus aktueller Stromrechnung berechnen"):
         st.session_state["fixe_basislast_kWh"] = basislast_berechnet
         st.rerun()
+    if "fixe_basislast_kWh" in st.session_state:
+        st.success(
+            f"Fixierte Haushaltsbasislast für Parameterstudien: "
+            f"{st.session_state['fixe_basislast_kWh']:,.0f} kWh/a".replace(",", "'")
+        )
+
+        if st.button("Fixierte Haushaltsbasislast löschen"):
+            st.session_state.pop("fixe_basislast_kWh", None)
+            st.rerun()
     abgezogene_anteile = wp_strom_ist + ww_strom_ist + ev_strom_ist
 
     if abgezogene_anteile > jahresstromverbrauch:
@@ -3273,7 +3282,14 @@ st.subheader("Test Zeitreihe")
 run_simulation = st.button("Simulation starten")
 
 if run_simulation:
-    for key in ["df_ts", "monatsbilanz", "jahreskennzahlen", "df_umwelt"]:
+    for key in [
+        "df_ts",
+        "monatsbilanz",
+        "jahreskennzahlen",
+        "df_umwelt",
+        "kostenkennzahlen",
+        "simulation_inputs"
+    ]:
         st.session_state.pop(key, None)
     simulation_inputs = {
         "jahresstromverbrauch": float(jahresstromverbrauch),
@@ -3314,8 +3330,11 @@ if run_simulation:
         # Standardmässig wird der eingegebene Stromverbrauch als Basislast verwendet
         jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
 
-        # Für Rückrechnungsmodus: Gesamtstromrechnung auf Haushaltsstrom zurückrechnen
-        if strombedarf_rueckrechnung:
+        # Für Parameterstudien wird eine einmal berechnete Haushaltsbasislast fixiert.
+        # Dadurch bleibt die Haushaltslast konstant, wenn z. B. von Wärmepumpe auf Gas/Öl/Pellets gewechselt wird.
+        if "fixe_basislast_kWh" in st.session_state:
+            jahresstromverbrauch_fuer_basislast = st.session_state["fixe_basislast_kWh"]
+        else:
             jahresstromverbrauch_fuer_basislast = max(
                 0.0,
                 basislast_berechnet
