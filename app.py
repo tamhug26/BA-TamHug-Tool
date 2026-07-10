@@ -4081,36 +4081,41 @@ if "df_ts" in st.session_state:
             title="Tabelle 9: Abregelung je Fall",
             xaxis_title="Fall",
             yaxis_title="Abregelung in kWh/a",
-            height=450
+            height=450,
+            yaxis=dict(
+                tickmode="array",
+                tickvals=[0, 100, 200, 300, 400, 500, 600, 700, 800],
+                range=[0, 800]
+            )
         )
 
         st.plotly_chart(fig_t9_abregelung, use_container_width=True)
 
 
-        fig_t9_autarkie = go.Figure()
+        fig_t9_anteile = go.Figure()
 
-        fig_t9_autarkie.add_trace(go.Scatter(
+        fig_t9_anteile.add_trace(go.Bar(
             x=df_t9["Fall"],
             y=df_t9["Autarkiegrad %"],
-            mode="lines+markers",
             name="Autarkiegrad"
         ))
 
-        fig_t9_autarkie.add_trace(go.Scatter(
+        fig_t9_anteile.add_trace(go.Bar(
             x=df_t9["Fall"],
             y=df_t9["Eigenverbrauchsquote %"],
-            mode="lines+markers",
             name="Eigenverbrauchsquote"
         ))
 
-        fig_t9_autarkie.update_layout(
+        fig_t9_anteile.update_layout(
             title="Tabelle 9: Autarkiegrad und Eigenverbrauchsquote je Fall",
             xaxis_title="Fall",
             yaxis_title="Anteil in %",
-            height=450
+            barmode="group",
+            height=450,
+            yaxis=dict(range=[0, 70])
         )
 
-        st.plotly_chart(fig_t9_autarkie, use_container_width=True)
+        st.plotly_chart(fig_t9_anteile, use_container_width=True)
 
 
         fig_t9_energie = go.Figure()
@@ -4156,17 +4161,15 @@ if "df_ts" in st.session_state:
 
         fig_t11_anteile = go.Figure()
 
-        fig_t11_anteile.add_trace(go.Scatter(
+        fig_t11_anteile.add_trace(go.Bar(
             x=df_t11["Fall"],
             y=df_t11["Autarkiegrad %"],
-            mode="lines+markers",
             name="Autarkiegrad"
         ))
 
-        fig_t11_anteile.add_trace(go.Scatter(
+        fig_t11_anteile.add_trace(go.Bar(
             x=df_t11["Fall"],
             y=df_t11["Eigenverbrauchsquote %"],
-            mode="lines+markers",
             name="Eigenverbrauchsquote"
         ))
 
@@ -4174,7 +4177,9 @@ if "df_ts" in st.session_state:
             title="Tabelle 11: Einfluss der EMS-Fälle auf Autarkiegrad und Eigenverbrauchsquote",
             xaxis_title="EMS-Fall",
             yaxis_title="Anteil in %",
-            height=450
+            barmode="group",
+            height=450,
+            yaxis=dict(range=[0, 60])
         )
 
         st.plotly_chart(fig_t11_anteile, use_container_width=True)
@@ -4209,7 +4214,7 @@ if "df_ts" in st.session_state:
         # Tabelle 12
         # ============================================================
 
-        st.write("### Tabelle 12: Einfluss verschiedener Sanierungsszenarien")
+        st.write("### Tabelle 12: Einfluss verschiedener Sanierungsszenarien auf Strombedarf, Eigenverbrauch, Autarkiegrad, Netzbezug und maximale Netzeinspeisung")
 
         df_t12 = pd.DataFrame({
             "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3"],
@@ -4248,17 +4253,15 @@ if "df_ts" in st.session_state:
 
         fig_t12_anteile = go.Figure()
 
-        fig_t12_anteile.add_trace(go.Scatter(
+        fig_t12_anteile.add_trace(go.Bar(
             x=df_t12["Fall"],
             y=df_t12["Autarkiegrad %"],
-            mode="lines+markers",
             name="Autarkiegrad"
         ))
 
-        fig_t12_anteile.add_trace(go.Scatter(
+        fig_t12_anteile.add_trace(go.Bar(
             x=df_t12["Fall"],
             y=df_t12["Eigenverbrauchsquote %"],
-            mode="lines+markers",
             name="Eigenverbrauchsquote"
         ))
 
@@ -4266,17 +4269,37 @@ if "df_ts" in st.session_state:
             title="Tabelle 12: Autarkiegrad und Eigenverbrauchsquote bei Sanierungsszenarien",
             xaxis_title="Sanierungsfall",
             yaxis_title="Anteil in %",
-            height=450
+            barmode="group",
+            height=450,
+            yaxis=dict(range=[0, 65])
         )
 
         st.plotly_chart(fig_t12_anteile, use_container_width=True)
+
+
+        fig_t12_einspeisung = go.Figure()
+
+        fig_t12_einspeisung.add_trace(go.Bar(
+            x=df_t12["Fall"],
+            y=df_t12["Netzeinspeisung kWh/a"],
+            name="Netzeinspeisung"
+        ))
+
+        fig_t12_einspeisung.update_layout(
+            title="Tabelle 12: Netzeinspeisung bei Sanierungsszenarien",
+            xaxis_title="Sanierungsfall",
+            yaxis_title="Netzeinspeisung in kWh/a",
+            height=450
+        )
+
+        st.plotly_chart(fig_t12_einspeisung, use_container_width=True)
 
 
         # ============================================================
         # Tabelle 13
         # ============================================================
 
-        st.write("### Tabelle 13: Vergleich zwischen elektrifiziertem Standardszenario und fossiler Heizung")
+        st.write("### Tabelle 13: Vergleich der energetischen Kennzahlen und Umweltwirkungen zwischen dem elektrifizierten Standardszenario und Varianten mit fossiler bzw. Pellet-Heizung")
 
         df_t13 = pd.DataFrame({
             "Fall": ["Fall 0", "Fall 1 Gas", "Fall 1 Öl", "Fall 1 Pellets"],
@@ -4290,22 +4313,47 @@ if "df_ts" in st.session_state:
             "Total kg CO2eq/a": [1144, 5875, 8256, 1595],
         })
 
-        fig_t13_umwelt = go.Figure()
+        fig_t13_energie = go.Figure()
 
-        fig_t13_umwelt.add_trace(go.Bar(
+        fig_t13_energie.add_trace(go.Bar(
+            x=df_t13["Fall"],
+            y=df_t13["Strombedarf kWh/a"],
+            name="Strombedarf"
+        ))
+
+        fig_t13_energie.add_trace(go.Bar(
+            x=df_t13["Fall"],
+            y=df_t13["Netzbezug kWh/a"],
+            name="Netzbezug"
+        ))
+
+        fig_t13_energie.update_layout(
+            title="Tabelle 13: Strombedarf und Netzbezug nach Heizsystem",
+            xaxis_title="Fall",
+            yaxis_title="Energie in kWh/a",
+            barmode="group",
+            height=450
+        )
+
+        st.plotly_chart(fig_t13_energie, use_container_width=True)
+
+
+        fig_t13_co2 = go.Figure()
+
+        fig_t13_co2.add_trace(go.Bar(
             x=df_t13["Fall"],
             y=df_t13["Total kg CO2eq/a"],
             name="Treibhausgasemissionen"
         ))
 
-        fig_t13_umwelt.update_layout(
+        fig_t13_co2.update_layout(
             title="Tabelle 13: Treibhausgasemissionen nach Heizsystem",
             xaxis_title="Fall",
             yaxis_title="kg CO₂-eq/a",
             height=450
         )
 
-        st.plotly_chart(fig_t13_umwelt, use_container_width=True)
+        st.plotly_chart(fig_t13_co2, use_container_width=True)
 
 
         fig_t13_ubp = go.Figure()
@@ -4330,7 +4378,7 @@ if "df_ts" in st.session_state:
         # Tabelle 14
         # ============================================================
 
-        st.write("### Tabelle 14: Einfluss des Fahrzeugantriebs bei gleichem Fahrprofil")
+        st.write("### Tabelle 14: Einfluss des Fahrzeugantriebs auf Strombedarf, Eigenverbrauch, Autarkiegrad, Netzbezug, Netzeinspeisung und Umweltwirkungen bei gleichem Fahrprofil")
 
         df_t14 = pd.DataFrame({
             "Fall": ["Fall 0", "Fall 2 Benzin", "Fall 2 Diesel", "Fall 2 Gas"],
@@ -4344,22 +4392,47 @@ if "df_ts" in st.session_state:
             "Total kg CO2eq/a": [1144, 2924, 2702, 2577],
         })
 
-        fig_t14_umwelt = go.Figure()
+        fig_t14_energie = go.Figure()
 
-        fig_t14_umwelt.add_trace(go.Bar(
+        fig_t14_energie.add_trace(go.Bar(
+            x=df_t14["Fall"],
+            y=df_t14["Strombedarf kWh/a"],
+            name="Strombedarf"
+        ))
+
+        fig_t14_energie.add_trace(go.Bar(
+            x=df_t14["Fall"],
+            y=df_t14["Netzbezug kWh/a"],
+            name="Netzbezug"
+        ))
+
+        fig_t14_energie.update_layout(
+            title="Tabelle 14: Strombedarf und Netzbezug nach Fahrzeugantrieb",
+            xaxis_title="Fall",
+            yaxis_title="Energie in kWh/a",
+            barmode="group",
+            height=450
+        )
+
+        st.plotly_chart(fig_t14_energie, use_container_width=True)
+
+
+        fig_t14_co2 = go.Figure()
+
+        fig_t14_co2.add_trace(go.Bar(
             x=df_t14["Fall"],
             y=df_t14["Total kg CO2eq/a"],
             name="Treibhausgasemissionen"
         ))
 
-        fig_t14_umwelt.update_layout(
+        fig_t14_co2.update_layout(
             title="Tabelle 14: Treibhausgasemissionen nach Fahrzeugantrieb",
             xaxis_title="Fall",
             yaxis_title="kg CO₂-eq/a",
             height=450
         )
 
-        st.plotly_chart(fig_t14_umwelt, use_container_width=True)
+        st.plotly_chart(fig_t14_co2, use_container_width=True)
 
 
         fig_t14_ubp = go.Figure()
@@ -4384,7 +4457,7 @@ if "df_ts" in st.session_state:
         # Tabelle 15
         # ============================================================
 
-        st.write("### Tabelle 15: Einfluss der Batteriekapazität auf Netzbezug und CO₂-Emissionen")
+        st.write("### Tabelle 15: Einfluss der Batteriekapazität auf Netzbezug, betriebsbedingte CO₂-Emissionen des Netzstrombezugs und herstellungsbedingte CO₂-Emissionen der Batterie")
 
         df_t15 = pd.DataFrame({
             "Batterie": ["1 kWh", "9 kWh", "15 kWh", "33 kWh"],
@@ -4408,27 +4481,31 @@ if "df_ts" in st.session_state:
             title="Tabelle 15: Netzbezug in Abhängigkeit der Batteriekapazität",
             xaxis_title="Batteriekapazität in kWh",
             yaxis_title="Netzbezug in kWh/a",
-            height=450
+            height=450,
+            xaxis=dict(
+                tickmode="array",
+                tickvals=df_t15["Batteriekapazität kWh"]
+            )
         )
 
         st.plotly_chart(fig_t15_netzbezug, use_container_width=True)
 
 
-        fig_t15_co2 = go.Figure()
+        fig_t15_co2_stack = go.Figure()
 
-        fig_t15_co2.add_trace(go.Bar(
+        fig_t15_co2_stack.add_trace(go.Bar(
             x=df_t15["Batterie"],
             y=df_t15["CO2 Betrieb Netzstrom kg CO2eq/a"],
             name="CO₂ Betrieb Netzstrom"
         ))
 
-        fig_t15_co2.add_trace(go.Bar(
+        fig_t15_co2_stack.add_trace(go.Bar(
             x=df_t15["Batterie"],
             y=df_t15["CO2 Batterie Herstellung kg CO2eq/a"],
             name="CO₂ Batterie Herstellung"
         ))
 
-        fig_t15_co2.update_layout(
+        fig_t15_co2_stack.update_layout(
             title="Tabelle 15: CO₂-Beiträge von Netzstrombetrieb und Batterieherstellung",
             xaxis_title="Batteriekapazität",
             yaxis_title="kg CO₂-eq/a",
@@ -4436,23 +4513,27 @@ if "df_ts" in st.session_state:
             height=450
         )
 
-        st.plotly_chart(fig_t15_co2, use_container_width=True)
+        st.plotly_chart(fig_t15_co2_stack, use_container_width=True)
 
 
-        fig_t15_total = go.Figure()
+        fig_t15_co2_total = go.Figure()
 
-        fig_t15_total.add_trace(go.Scatter(
+        fig_t15_co2_total.add_trace(go.Scatter(
             x=df_t15["Batteriekapazität kWh"],
             y=df_t15["CO2 total kg CO2eq/a"],
             mode="lines+markers",
             name="CO₂ total"
         ))
 
-        fig_t15_total.update_layout(
+        fig_t15_co2_total.update_layout(
             title="Tabelle 15: Gesamte CO₂-Emissionen in Abhängigkeit der Batteriekapazität",
             xaxis_title="Batteriekapazität in kWh",
             yaxis_title="kg CO₂-eq/a",
-            height=450
+            height=450,
+            xaxis=dict(
+                tickmode="array",
+                tickvals=df_t15["Batteriekapazität kWh"]
+            )
         )
 
-        st.plotly_chart(fig_t15_total, use_container_width=True)
+        st.plotly_chart(fig_t15_co2_total, use_container_width=True)
