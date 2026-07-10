@@ -3561,7 +3561,16 @@ if run_simulation:
             wp_typ_use = wp_typ
             WPkW_use = WPkW
             Erdsondentiefe_use = Erdsondentiefe if wp_typ == "Sole/Wasser WP" else 0
-        ev_km_jahr = berechne_ev_jahreskilometer(ev_config)
+        ev_umwelt_config = {
+            "aktiv": ev_aktiv,
+            "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
+            "km_pro_fahrtag": ev_km_pro_fahrtag,
+            "km_nicht_fahrtag": ev_km_nicht_fahrtag,
+            "fahrtage": ev_fahrtage
+        }
+
+        ev_km_jahr = berechne_ev_jahreskilometer(ev_umwelt_config)
+
         df_umwelt = berechne_umweltwirkung(
             df_ts=df_ts,
             pv_anlagen_daten=pv_anlagen_daten,
