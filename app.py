@@ -2792,10 +2792,7 @@ if strombedarf_rueckrechnung:
     jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
     )
 
-    if "fixe_basislast_kWh" not in st.session_state:
-        st.session_state["fixe_basislast_kWh"] = basislast_berechnet
-
-    basislast_vorschau = st.session_state["fixe_basislast_kWh"]
+    basislast_vorschau = basislast_berechnet
 
     st.write(
         f"Zurückgerechneter Haushaltsstrom: {basislast_vorschau:,.0f} kWh/a".replace(",", "'")
@@ -3292,14 +3289,9 @@ if run_simulation:
 
         # Für Rückrechnungsmodus: Gesamtstromrechnung auf Haushaltsstrom zurückrechnen
         if strombedarf_rueckrechnung:
-            jahresstromverbrauch_fuer_basislast = st.session_state.get(
-                "fixe_basislast_kWh",
-                jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
-            )
-
             jahresstromverbrauch_fuer_basislast = max(
                 0.0,
-                jahresstromverbrauch_fuer_basislast
+                basislast_berechnet
             )
 
             #st.write("Rückrechnung aus Stromrechnung:")
