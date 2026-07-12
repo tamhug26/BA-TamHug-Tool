@@ -2405,21 +2405,21 @@ with col2:
             horizontal=True
         )
         if fossil_typ == "Gas":
-            gas = Heizwaermebedarf / 10
+            gas = Heizwaermebedarf_input / 10
             Gasverbrauch_input = st.number_input(
                 "Gasverbrauch in m³/a",
                 value=int(gas)
             )
             ergebnis = Gasverbrauch_input
         elif fossil_typ == "Öl":
-            oel = Heizwaermebedarf / 10
+            oel = Heizwaermebedarf_input / 10
             Oelverbrauch_input = st.number_input(
                 "Ölverbrauch in L/a",
                 value=int(oel)
             )
             ergebnis = Oelverbrauch_input
         elif fossil_typ == "Pellets":
-            pellets = Heizwaermebedarf / 5
+            pellets = Heizwaermebedarf_input / 5
             Pelletsverbrauch_input = st.number_input(
                 "Pelletsverbrauch in kg/a",
                 value=int(pellets)
@@ -3332,13 +3332,24 @@ if run_simulation:
 
         # Für Parameterstudien wird eine einmal berechnete Haushaltsbasislast fixiert.
         # Dadurch bleibt die Haushaltslast konstant, wenn z. B. von Wärmepumpe auf Gas/Öl/Pellets gewechselt wird.
-        if "fixe_basislast_kWh" in st.session_state:
-            jahresstromverbrauch_fuer_basislast = st.session_state["fixe_basislast_kWh"]
-        else:
-            jahresstromverbrauch_fuer_basislast = max(
-                0.0,
-                basislast_berechnet
-            )
+        # Stromprofil
+        # Standardmässig wird der eingegebene Stromverbrauch als Haushaltsbasislast verwendet
+        jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
+
+        # Im Rückrechnungsmodus wird der Haushaltsstrom aus der Stromrechnung abgeleitet.
+        # Für Parameterstudien kann diese Haushaltsbasislast fixiert werden, damit sie
+        # beim Wechsel des Heizsystems konstant bleibt.
+        if strombedarf_rueckrechnung:
+            if "fixe_basislast_kWh" in st.session_state:
+                jahresstromverbrauch_fuer_basislast = st.session_state["fixe_basislast_kWh"]
+            else:
+                jahresstromverbrauch_fuer_basislast = basislast_berechnet
+
+        elif strombedarf_ist_gesamt:
+            jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
+
+        elif strombedarf_szenario_basis:
+            jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
 
             #st.write("Rückrechnung aus Stromrechnung:")
             #st.write(f"Gemessener Gesamtstrom: {jahresstromverbrauch:,.0f} kWh/a".replace(",", "'"))
