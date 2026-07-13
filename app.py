@@ -3558,6 +3558,31 @@ if run_simulation:
         )
 
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
+        
+        # DEBUG Energiebilanz Batterie
+        batterie_ladung = df_ts["batterie_ladung_kWh"].sum()
+        batterie_entladung = df_ts["batterie_entladung_kWh"].sum()
+        batterieverlust = batterie_ladung - batterie_entladung
+
+        pv_eigenverbrauch_vereinfacht = (
+            df_ts["pv_kWh"].sum()
+            - df_ts["netzeinspeisung_kWh"].sum()
+            - df_ts["abregelung_kWh"].sum()
+        )
+
+        lastdeckung = (
+            df_ts["netzbezug_kWh"].sum()
+            + pv_eigenverbrauch_vereinfacht
+        )
+
+        bilanzdifferenz = lastdeckung - df_ts["gesamtlast_kWh"].sum()
+
+        st.write("DEBUG Batterie Ladung kWh/a:", round(batterie_ladung, 1))
+        st.write("DEBUG Batterie Entladung kWh/a:", round(batterie_entladung, 1))
+        st.write("DEBUG Batterieverlust kWh/a:", round(batterieverlust, 1))
+        st.write("DEBUG Bilanzdifferenz kWh/a:", round(bilanzdifferenz, 1))
+        #---------------------
+
         stromkosten_chf = df_ts["netzbezug_kWh"].sum() * strompreis_chf_kWh
         jahreskennzahlen["Stromkosten_CHF"] = stromkosten_chf
         eingesparte_stromkosten = (
