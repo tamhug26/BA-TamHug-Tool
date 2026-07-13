@@ -1892,7 +1892,8 @@ def berechne_kostenkennzahlen(
     betriebskosten_prozent,
     strompreis_chf_kWh,
     ruecklieferverguetung_chf_kWh,
-    betrachtungsdauer_jahre
+    betrachtungsdauer_jahre,
+    wallboxkosten_chf
 ):
     gesamtlast_kWh = df_ts["gesamtlast_kWh"].sum()
     pv_produktion_kWh = jahreskennzahlen["PV_Produktion_kWh"]
@@ -1908,6 +1909,7 @@ def berechne_kostenkennzahlen(
         pv_investition_brutto
         + batterie_investition
         + optimierungskosten_chf
+        + wallboxkosten_chf
     )
 
     # Förderung nur auf PV-Investition bezogen
@@ -1970,6 +1972,7 @@ def berechne_kostenkennzahlen(
         "Amortisationszeit Jahre": amortisationszeit_jahre,
         "Stromgestehungskosten CHF/kWh": stromgestehungskosten_chf_kWh,
         "Stromgestehungskosten Rp/kWh": stromgestehungskosten_chf_kWh * 100,
+        "Wallbox / Heimladestation CHF": wallboxkosten_chf,
     }
 def pv_kosten_richtwert_chf_kwp(pv_kwp_total):
     """
@@ -2000,7 +2003,19 @@ def pv_kosten_richtwert_chf_kwp(pv_kwp):
     kosten = 4727.6 - 689.1 * np.log(pv_kwp)
 
     return max(kosten, 0.0)
+def batteriekosten_richtwert_chf_kwh(batteriekapazitaet):
+    if batteriekapazitaet <= 0:
+        return 0.0
 
+    # logarithmische Kostenfunktion auf Basis der Annahmen:
+    # 10 kWh = 900 CHF/kWh
+    # 20 kWh = 600 CHF/kWh
+    kosten = 1896.6 - 432.8 * np.log(batteriekapazitaet)
+
+    # Begrenzung auf typische Preisspanne 600–900 CHF/kWh
+    kosten = min(max(kosten, 600.0), 900.0)
+
+    return kosten
 
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
@@ -3248,6 +3263,11 @@ with st.expander("PV-Kostenfunktion anzeigen"):
             ]
         })
 
+        df_pv_kosten["PV-Investition total [CHF]"] = (
+            df_pv_kosten["PV-Leistung [kWp]"]
+            * df_pv_kosten["Kosten [CHF/kWp]"]
+        )
+
         df_stuetzpunkte = pd.DataFrame({
             "PV-Leistung [kWp]": [10, 30],
             "Kosten [CHF/kWp]": [3141, 2384]
@@ -3257,7 +3277,16 @@ with st.expander("PV-Kostenfunktion anzeigen"):
             df_pv_kosten,
             x="PV-Leistung [kWp]",
             y="Kosten [CHF/kWp]",
-            title="Logarithmische PV-Kostenfunktion"
+            title="Logarithmische PV-Kostenfunktion",
+            custom_data=["PV-Investition total [CHF]"]
+        )
+
+        fig.update_traces(
+            hovertemplate=
+                "PV-Leistung: %{x:.2f} kWp<br>"
+                "Kosten: %{y:,.0f} CHF/kWp<br>"
+                "PV-Investition total: %{customdata[0]:,.0f} CHF"
+                "<extra></extra>"
         )
 
         fig.add_scatter(
@@ -3292,18 +3321,27 @@ with st.expander("PV-Kostenfunktion anzeigen"):
 
 with col2:
     if batterie_aktiv and batteriekapazität > 0:
+        batteriekosten_chf_kwh = batteriekosten_richtwert_chf_kwh(batteriekapazität)
+        batteriekosten_vorschlag = batteriekapazität * batteriekosten_chf_kwh
+
         batteriekosten_chf = st.number_input(
             "Batteriespeicher-Investition total in CHF",
             min_value=0.0,
             max_value=100000.0,
-            value=6500.0,
+            value=float(round(batteriekosten_vorschlag, -2)),
             step=500.0,
             format="%.0f"
+        )
+
+        st.caption(
+            f"Richtwert: {batteriekosten_chf_kwh:,.0f} CHF/kWh × "
+            f"{batteriekapazität:.1f} kWh = {batteriekosten_vorschlag:,.0f} CHF. "
+            "Die spezifischen Speicherkosten werden vereinfacht zwischen 600 und 900 CHF/kWh angesetzt."
+            .replace(",", "'")
         )
     else:
         batteriekosten_chf = 0.0
         st.caption("Keine Batterie aktiv, daher keine Batterie-Investition.")
-
     optimierungskosten_chf = st.number_input(
         "Zusatzkosten für Energiemanagement / Steuerung in CHF",
         min_value=0.0,
@@ -3316,7 +3354,23 @@ with col2:
         "Optionale Zusatzkosten für eine Steuerung, die z. B. Batterie, Boiler oder E-Auto "
         "PV-optimiert betreibt. Falls keine separate Steuerung berücksichtigt werden soll, 0 CHF eingeben."
     )
+    if ev_aktiv:
+        wallboxkosten_chf = st.number_input(
+            "Heimladestation / Wallbox in CHF",
+            min_value=0.0,
+            max_value=20000.0,
+            value=2500.0,
+            step=500.0,
+            format="%.0f"
+        )
 
+        st.caption(
+            "Für eine typische Heimladestation mit 11 kW Ladeleistung werden standardmässig "
+            "2'500 CHF angesetzt. Der Wert umfasst vereinfacht Wallbox, Material, Formalitäten "
+            "und Installation."
+        )
+    else:
+        wallboxkosten_chf = 0.0
 with col3:
     ruecklieferverguetung_rp_kWh = st.number_input(
         "Rückliefervergütung in Rp./kWh",
@@ -3405,6 +3459,7 @@ if run_simulation:
         "ruecklieferverguetung_rp_kWh": float(ruecklieferverguetung_rp_kWh),
         "betriebskosten_prozent": float(betriebskosten_prozent),
         "betrachtungsdauer_jahre": int(betrachtungsdauer_jahre),
+        "wallboxkosten_chf": float(wallboxkosten_chf)
     }
 
     st.session_state["simulation_inputs"] = simulation_inputs
@@ -3669,7 +3724,8 @@ if run_simulation:
             betriebskosten_prozent=betriebskosten_prozent,
             strompreis_chf_kWh=strompreis_chf_kWh,
             ruecklieferverguetung_chf_kWh=ruecklieferverguetung_chf_kWh,
-            betrachtungsdauer_jahre=betrachtungsdauer_jahre
+            betrachtungsdauer_jahre=betrachtungsdauer_jahre,
+            wallboxkosten_chf=wallboxkosten_chf
         )
 
         st.session_state["kostenkennzahlen"] = kostenkennzahlen
@@ -3763,7 +3819,8 @@ if run_simulation:
             "foerderanteil_pv_prozent": float(foerderanteil_pv_prozent),
             "ruecklieferverguetung_rp_kWh": float(ruecklieferverguetung_rp_kWh),
             "betriebskosten_prozent": float(betriebskosten_prozent),
-            "betrachtungsdauer_jahre": int(betrachtungsdauer_jahre)
+            "betrachtungsdauer_jahre": int(betrachtungsdauer_jahre),
+            "wallboxkosten_chf": float(wallboxkosten_chf)
         }
         speichere_profil(profil_name, profil)
         st.success(f"Profil '{profil_name}' wurde gespeichert.")
