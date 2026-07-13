@@ -8,6 +8,7 @@ import json
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+import plotly.express as px
 #import matplotlib.pyplot as plt
 import copy
 PROFILE_DIR = "profiles"
@@ -1970,6 +1971,36 @@ def berechne_kostenkennzahlen(
         "Stromgestehungskosten CHF/kWh": stromgestehungskosten_chf_kWh,
         "Stromgestehungskosten Rp/kWh": stromgestehungskosten_chf_kWh * 100,
     }
+def pv_kosten_richtwert_chf_kwp(pv_kwp_total):
+    """
+    Vereinfachter PV-Kostenrichtwert gemäss Preisübersicht.
+    Es werden nur PV-Kosten ohne Batteriespeicher berücksichtigt.
+    """
+
+    if pv_kwp_total <= 10:
+        return 3141.0
+    elif pv_kwp_total <= 30:
+        return 2384.0
+    else:
+        return 2384.0
+def pv_kosten_richtwert_chf_kwp(pv_kwp):
+    if pv_kwp <= 0:
+        return 0.0
+
+    # logarithmische Interpolation auf Basis der Stützpunkte:
+    # 10 kWp = 3'141 CHF/kWp
+    # 30 kWp = 2'384 CHF/kWp
+    kosten = 4727.6 - 689.1 * np.log(pv_kwp)
+
+    return max(kosten, 0.0)
+def pv_kosten_richtwert_chf_kwp(pv_kwp):
+    if pv_kwp <= 0:
+        return 0.0
+
+    kosten = 4727.6 - 689.1 * np.log(pv_kwp)
+
+    return max(kosten, 0.0)
+
 
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
@@ -3151,20 +3182,26 @@ with col1:
     )
 
     if kostenmodus_pv == "Über Richtwert berechnen":
+        kosten_pv_vorschlag_chf_kwp = pv_kosten_richtwert_chf_kwp(gesamt_pv_peakleistung)
+
+        kosten_pv_chf_kwp_berechnet = pv_kosten_richtwert_chf_kwp(gesamt_pv_peakleistung)
+
         kosten_pv_chf_kwp = st.number_input(
             "Richtwert PV-Kosten in CHF/kWp",
             min_value=0.0,
             max_value=10000.0,
-            value=2800.0,
+            value=float(round(kosten_pv_chf_kwp_berechnet, 0)),
             step=100.0,
             format="%.0f"
         )
 
         pv_investition_brutto = gesamt_pv_peakleistung * kosten_pv_chf_kwp
-
         st.caption(
-            "Der Richtwert wird mit der installierten PV-Leistung multipliziert. "
-            "Falls eine konkrete Offerte vorliegt, können stattdessen die Gesamtkosten manuell eingegeben werden."
+            "Der Richtwert wird abhängig von der installierten PV-Leistung vorgeschlagen. "
+            "Für Anlagen bis 10 kWp wird ein Medianwert von 3'141 CHF/kWp verwendet, "
+            "für Anlagen von 10 bis 30 kWp ein Medianwert von 2'384 CHF/kWp. "
+            "Der Wert bezieht sich nur auf die PV-Anlage ohne Batteriespeicher. "
+            "Falls eine konkrete Offerte vorliegt, können die Kosten manuell überschrieben werden."
         )
 
     else:
@@ -3199,6 +3236,58 @@ with col1:
     st.caption(
         "Die Förderung wird vereinfacht als prozentualer Anteil der PV-Investition berücksichtigt."
     )
+
+    # Darstellung der PV-Kostenfunktion
+    with st.expander("PV-Kostenfunktion anzeigen"):
+        pv_leistungen = np.linspace(2, 30, 200)
+
+        df_pv_kosten = pd.DataFrame({
+            "PV-Leistung [kWp]": pv_leistungen,
+            "Kosten [CHF/kWp]": [
+                pv_kosten_richtwert_chf_kwp(pv) for pv in pv_leistungen
+            ]
+        })
+
+        df_stuetzpunkte = pd.DataFrame({
+            "PV-Leistung [kWp]": [10, 30],
+            "Kosten [CHF/kWp]": [3141, 2384]
+        })
+
+        fig = px.line(
+            df_pv_kosten,
+            x="PV-Leistung [kWp]",
+            y="Kosten [CHF/kWp]",
+            title="Logarithmische PV-Kostenfunktion"
+        )
+
+        fig.add_scatter(
+            x=df_stuetzpunkte["PV-Leistung [kWp]"],
+            y=df_stuetzpunkte["Kosten [CHF/kWp]"],
+            mode="markers",
+            name="Stützpunkte"
+        )
+
+        fig.add_scatter(
+            x=[gesamt_pv_peakleistung],
+            y=[pv_kosten_richtwert_chf_kwp(gesamt_pv_peakleistung)],
+            mode="markers",
+            name="Aktuelle Anlage"
+        )
+
+        fig.update_layout(
+            xaxis_title="Installierte PV-Leistung [kWp]",
+            yaxis_title="Spezifische PV-Kosten [CHF/kWp]",
+            hovermode="x unified"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.caption(
+            "Die logarithmische Funktion wurde anhand der Stützpunkte "
+            "10 kWp = 3'141 CHF/kWp und 30 kWp = 2'384 CHF/kWp angepasst. "
+            "Die aktuelle Anlagenleistung wird zusätzlich als Punkt dargestellt."
+        )
+    #-----------------------------
 
 with col2:
     if batterie_aktiv and batteriekapazität > 0:
@@ -3558,30 +3647,6 @@ if run_simulation:
         )
 
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
-        
-        # DEBUG Energiebilanz Batterie
-        batterie_ladung = df_ts["batterie_ladung_kWh"].sum()
-        batterie_entladung = df_ts["batterie_entladung_kWh"].sum()
-        batterieverlust = batterie_ladung - batterie_entladung
-
-        pv_eigenverbrauch_vereinfacht = (
-            df_ts["pv_kWh"].sum()
-            - df_ts["netzeinspeisung_kWh"].sum()
-            - df_ts["abregelung_kWh"].sum()
-        )
-
-        lastdeckung = (
-            df_ts["netzbezug_kWh"].sum()
-            + pv_eigenverbrauch_vereinfacht
-        )
-
-        bilanzdifferenz = lastdeckung - df_ts["gesamtlast_kWh"].sum()
-
-        st.write("DEBUG Batterie Ladung kWh/a:", round(batterie_ladung, 1))
-        st.write("DEBUG Batterie Entladung kWh/a:", round(batterie_entladung, 1))
-        st.write("DEBUG Batterieverlust kWh/a:", round(batterieverlust, 1))
-        st.write("DEBUG Bilanzdifferenz kWh/a:", round(bilanzdifferenz, 1))
-        #---------------------
 
         stromkosten_chf = df_ts["netzbezug_kWh"].sum() * strompreis_chf_kWh
         jahreskennzahlen["Stromkosten_CHF"] = stromkosten_chf
