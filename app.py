@@ -3238,7 +3238,7 @@ with col1:
     )
 
     # Darstellung der PV-Kostenfunktion
-    with st.expander("PV-Kostenfunktion anzeigen"):
+with st.expander("PV-Kostenfunktion anzeigen"):
         pv_leistungen = np.linspace(2, 30, 200)
 
         df_pv_kosten = pd.DataFrame({
@@ -3287,6 +3287,7 @@ with col1:
             "10 kWp = 3'141 CHF/kWp und 30 kWp = 2'384 CHF/kWp angepasst. "
             "Die aktuelle Anlagenleistung wird zusätzlich als Punkt dargestellt."
         )
+    #2–10 kWp: Median 3’141 CHF/kWp, 10–30 kWp: Median 2’384 CHF/kWp
     #-----------------------------
 
 with col2:
