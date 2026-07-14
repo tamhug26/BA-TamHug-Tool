@@ -163,6 +163,7 @@ df_Bautyp_Heizwaermebedarf = pd.DataFrame({
 })
 EVU = {
     "IWB": 12.88, #industrielle Werke Basel
+    "EOF": 45.4, #Energie Oberes Fricktal AG 
     "EBL": 50.1, #Elektra Baselland
     "BKW": 84, #Bernische Kraftwerke AG Energie AG
     "Elektra Zeiningen": 59, #Elektra Zeiningen
@@ -1430,7 +1431,7 @@ def simulate_ems(
 
         # Nicht steuerbares Warmwasser: feste Abendladung, nicht über EMS priorisiert
         if ww_config["aktiv"] and not ww_config["steuerbar"] and ww_rest > 0:
-            if ist_im_zeitfenster(i, "Abends", "Warmwasser"):
+            if ist_im_zeitfenster(i, WW_ABEND, "Warmwasser"):
                 max_step = ww_config["leistung_kw"] * delta_t
                 ladung = min(max_step, ww_rest)
 
@@ -2568,7 +2569,10 @@ with col1:
 
         ladezyklen_pro_tag = int(np.ceil(ww_tagesbedarf_liter / ww_speicher_liter))
 
-        st.write(f"Geschätzter Tagesbedarf WW für Haushalt (40L/p/Tag): {ww_tagesbedarf_liter:.0f} Liter/Tag")
+        st.write(
+            f"Berechnungsgrundlage WW: {personen * 45:.0f} Normliter/Tag "
+            f"({personen * 40:.0f} L/Tag Nutzwarmwasser + {personen * 5:.0f} L/Tag Ausstossverluste)"
+        )
         st.write(f"Gewählter Speicher: {ww_speicher_liter:.0f} Liter")
         st.write(f"Erforderliche Speicherladung: {ladezyklen_pro_tag}× pro Tag")
 
