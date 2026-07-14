@@ -1771,20 +1771,44 @@ def autarkie_farbe(wert):
 def add_g25_profile(df, g25_df, jahresstromverbrauch):
     df = df.copy()
 
+    # Tagtyp WT, SA, FT bestimmen
+    df["Tagtyp"] = df.index.map(get_day_type)
+
+    # Uhrzeit und Monat
     df["Zeit"] = df.index.strftime("%H:%M")
     df["Monat"] = df.index.month
 
-    g25 = g25_df.copy()
-    g25["Monat"] = g25["Monat"].astype(int)
-    g25["Zeit"] = g25["Zeit"].astype(str).str[:5]
+    # Excel vorbereiten
+    g25_lookup = g25_df.copy()
+    g25_lookup.columns = g25_lookup.columns.str.strip()
+    g25_lookup["Monat"] = g25_lookup["Monat"].astype(int)
+    g25_lookup["Zeit"] = g25_lookup["Zeit"].astype(str).str[:5]
 
-    g25_lookup = g25.set_index(["Monat", "Zeit"])
+    g25_lookup = g25_lookup.set_index(["Monat", "Zeit"])
 
-    df["g25_wert"] = [
-        g25_lookup.loc[(m, z), "G25"]
+    # Werte holen
+    df["SA"] = [
+        g25_lookup.loc[(m, z), "SA"]
         for m, z in zip(df["Monat"], df["Zeit"])
     ]
 
+    df["FT"] = [
+        g25_lookup.loc[(m, z), "FT"]
+        for m, z in zip(df["Monat"], df["Zeit"])
+    ]
+
+    df["WT"] = [
+        g25_lookup.loc[(m, z), "WT"]
+        for m, z in zip(df["Monat"], df["Zeit"])
+    ]
+
+    # richtigen Typtag wählen
+    df["g25_wert"] = np.where(
+        df["Tagtyp"] == "WT", df["WT"],
+        np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
+    )
+
+    # keine Dynamisierung bei G25
     faktor_summe = df["g25_wert"].sum()
 
     df["hauslast_kWh"] = (
