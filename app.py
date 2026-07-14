@@ -2908,209 +2908,219 @@ if strombedarf_rueckrechnung:
 
 st.write("------------------------------")
 st.subheader("Photovoltaikanlage")
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2 = st.columns(2)
 with col1:
     standort_auswahl = st.selectbox(
-        "Standort wählen",
-        list(standort_dateien.keys())
-    )
+            "Standort wählen",
+            list(standort_dateien.keys())
+        )
     meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
     station_info_ui = get_station_info(
-        meta_df,
-        standort_auswahl if "standort_auswahl" in locals() else list(standort_dateien.keys())[0],
-        standort_dateien
-    )
+            meta_df,
+            standort_auswahl if "standort_auswahl" in locals() else list(standort_dateien.keys())[0],
+            standort_dateien
+        )
 with col2:
     Höhenmeter_standort = st.number_input(
-        "Höhenmeter am Standort in m ü. M.",
-        50, 5000, int(station_info_ui["altitude"])
-    )
+            "Höhenmeter am Standort in m ü. M.",
+            50, 5000, int(station_info_ui["altitude"])
+        )
     st.caption(
-        f"MeteoSchweiz-Station an ihrem Standort: {station_info_ui['altitude']:.0f} m ü. M."
-    )
-with col3:
-    WechselrichterkW = st.number_input(
-        "Wechselrichter in kW",
-        min_value=1,
-        max_value=50,
-        value=10,
-        step=1
-    )
-with col4:
-    PVAnlagen = st.number_input(
-        "Anzahl PV-Anlagen",
-        min_value=1,
-        max_value=5,
-        value=1,
-        step=1
-    )
-    st.caption("Ein Anlage gleicht einer Ausrichtung.")
-with col5:
-    pv_bestehend = st.checkbox(
-        "PV-Anlage bereits vorhanden und reale Jahresproduktion bekannt",
-        value=False
-    )
-
-    pv_produktion_real_mittelwert = None
-
-    if pv_bestehend:
-        anzahl_pv_jahre = st.number_input(
-            "Anzahl Jahre für gemessene PV-Produktion",
+            f"MeteoSchweiz-Station an ihrem Standort: {station_info_ui['altitude']:.0f} m ü. M."
+        )
+pv_aktiv = st.checkbox("PV-Anlage vorhanden", value=True)
+gesamt_pv_peakleistung = 0
+EinspeisegrenzekW = 0
+pv_anlagen_daten = []
+WechselrichterkW = 0
+PVAnlagen = 0
+pv_bestehend = False
+pv_produktion_real_mittelwert = None
+if pv_aktiv:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        WechselrichterkW = st.number_input(
+            "Wechselrichter in kW",
             min_value=1,
-            max_value=10,
+            max_value=50,
+            value=10,
+            step=1
+        )
+    with col2:
+        PVAnlagen = st.number_input(
+            "Anzahl PV-Anlagen",
+            min_value=1,
+            max_value=5,
             value=1,
             step=1
         )
+        st.caption("Ein Anlage gleicht einer Ausrichtung.")
+    with col3:
+        pv_bestehend = st.checkbox(
+            "PV-Anlage bereits vorhanden und reale Jahresproduktion bekannt",
+            value=False
+        )
 
-        pv_jahre_daten = []
+        pv_produktion_real_mittelwert = None
 
-        for j in range(anzahl_pv_jahre):
-            col_pv_jahr, col_pv_produktion = st.columns(2)
+        if pv_bestehend:
+            anzahl_pv_jahre = st.number_input(
+                "Anzahl Jahre für gemessene PV-Produktion",
+                min_value=1,
+                max_value=10,
+                value=1,
+                step=1
+            )
 
-            with col_pv_jahr:
-                pv_jahr = st.number_input(
-                    f"PV-Jahr {j+1}",
-                    min_value=2000,
-                    max_value=2100,
-                    value=2024 - j,
-                    step=1,
-                    key=f"pv_jahr_{j}"
+            pv_jahre_daten = []
+
+            for j in range(anzahl_pv_jahre):
+                col_pv_jahr, col_pv_produktion = st.columns(2)
+
+                with col_pv_jahr:
+                    pv_jahr = st.number_input(
+                        f"PV-Jahr {j+1}",
+                        min_value=2000,
+                        max_value=2100,
+                        value=2024 - j,
+                        step=1,
+                        key=f"pv_jahr_{j}"
+                    )
+
+                with col_pv_produktion:
+                    pv_produktion = st.number_input(
+                        f"Gemessene PV-Produktion {j+1} in kWh/a",
+                        min_value=0.0,
+                        max_value=100000.0,
+                        value=12000.0,
+                        step=100.0,
+                        key=f"pv_produktion_{j}",
+                        format="%.1f"
+                    )
+
+                pv_jahre_daten.append({
+                    "jahr": int(pv_jahr),
+                    "produktion_kWh": float(pv_produktion)
+                })
+
+            pv_produktion_real_mittelwert = np.mean([
+                eintrag["produktion_kWh"]
+                for eintrag in pv_jahre_daten
+            ])
+
+            st.caption(
+                f"Verwendeter Mittelwert der gemessenen PV-Produktion: "
+                f"{pv_produktion_real_mittelwert:,.0f} kWh/a".replace(",", "'")
+            )
+    pv_anlagen_daten = []
+    # pro Zeile maximal 3 PV-Anlagen nebeneinander
+    for start in range(0, PVAnlagen, 3):
+        cols = st.columns(3)
+
+        for j in range(3):
+            i = start + j
+
+            if i >= PVAnlagen:
+                break
+
+            with cols[j]:
+                st.markdown(f"### PV-Anlage {i+1}")
+
+                Dachart = st.radio(
+                    "Dach auf welches die Photovoltaik montiert ist",
+                    ["Flachdach", "Schrägdach", "Fassade"],
+                    index=1,
+                    horizontal=True,
+                    key=f"dachart_{i}"
                 )
 
-            with col_pv_produktion:
-                pv_produktion = st.number_input(
-                    f"Gemessene PV-Produktion {j+1} in kWh/a",
-                    min_value=0.0,
-                    max_value=100000.0,
-                    value=12000.0,
-                    step=100.0,
-                    key=f"pv_produktion_{j}",
+                PV_Wirkungsgrad = st.number_input(
+                    "PV Wirkungsgrad in %",
+                    min_value=0.1,
+                    max_value=100.0,
+                    value=20.0,
+                    step=0.1,
+                    key=f"PV_Wirkungsgrad_{i}",
                     format="%.1f"
                 )
 
-            pv_jahre_daten.append({
-                "jahr": int(pv_jahr),
-                "produktion_kWh": float(pv_produktion)
-            })
-
-        pv_produktion_real_mittelwert = np.mean([
-            eintrag["produktion_kWh"]
-            for eintrag in pv_jahre_daten
-        ])
-
-        st.caption(
-            f"Verwendeter Mittelwert der gemessenen PV-Produktion: "
-            f"{pv_produktion_real_mittelwert:,.0f} kWh/a".replace(",", "'")
-        )
-pv_anlagen_daten = []
-# pro Zeile maximal 3 PV-Anlagen nebeneinander
-for start in range(0, PVAnlagen, 3):
-    cols = st.columns(3)
-
-    for j in range(3):
-        i = start + j
-
-        if i >= PVAnlagen:
-            break
-
-        with cols[j]:
-            st.markdown(f"### PV-Anlage {i+1}")
-
-            Dachart = st.radio(
-                "Dach auf welches die Photovoltaik montiert ist",
-                ["Flachdach", "Schrägdach", "Fassade"],
-                index=1,
-                horizontal=True,
-                key=f"dachart_{i}"
-            )
-
-            PV_Wirkungsgrad = st.number_input(
-                "PV Wirkungsgrad in %",
-                min_value=0.1,
-                max_value=100.0,
-                value=20.0,
-                step=0.1,
-                key=f"PV_Wirkungsgrad_{i}",
-                format="%.1f"
-            )
-
-            pv_Peakleistung = st.number_input(
-                "PV-Peakleistung in kWp",
-                min_value=0.0,
-                max_value=1000.0,
-                value=10.0,
-                step=0.1,
-                key=f"peakleistung_{i}",
-                format="%.1f"
-            )
-
-            gamma_pdc_input = st.number_input(
-                "Temperaturkoeffizient Pmax in 1/°C",
-                min_value=-0.02,
-                max_value=0.0,
-                value=-0.0040,
-                step=0.0001,
-                format="%.4f",
-                key=f"gamma_pdc_{i}"
-            )
-            if i == 0:
-                st.caption("Der Temperaturkoeffizient beschreibt die Änderung der maximalen Modulleistung pro 1 °C Zelltemperatur. Der Standardwert von −0,004 1/°C entspricht einer Leistungsabnahme von 0,4 % pro °C über den Standard-Testbedingungen (25 °C Zelltemperatur).")
-
-            nmot_input = st.number_input(
-                "NMOT / NOCT in °C",
-                min_value=20.0,
-                max_value=80.0,
-                value=45.0,
-                step=0.5,
-                key=f"nmot_{i}",
-                format="%.1f"
-            )
-            performance_ratio_input = st.number_input(
-                "Performance Ratio",
-                min_value=0.5,
-                max_value=1.1,
-                value=0.85,
-                step=0.01,
-                key=f"performance_ratio_{i}"
-            )
-            if i == 0:
-                st.caption(
-                    "NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. "
-                    "Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung."
+                pv_Peakleistung = st.number_input(
+                    "PV-Peakleistung in kWp",
+                    min_value=0.0,
+                    max_value=1000.0,
+                    value=10.0,
+                    step=0.1,
+                    key=f"peakleistung_{i}",
+                    format="%.1f"
                 )
-                st.caption(
-                    "Standardwert: 45 °C. Typischer NMOT-/NOCT-Wert moderner PV-Module gemäss Herstellerdatenblättern."
-                )
-            Dachneigung = st.number_input(
-                "Dachneigung in °",
-                min_value=0,
-                max_value=90,
-                value=45,
-                step=1,
-                key=f"neigung_{i}"
-            )
 
-            Dachausrichtung = st.number_input(
-                "Dachausrichtung / Azimut in °",
-                min_value=0,
-                max_value=380,
-                value=180,
-                step=1,
-                key=f"ausrichtung_{i}"
-            )
-            if i == 0:
-                st.caption("0 = Nord, 90 = Ost, 180 = Süd, 270 = West")
-            pv_anlagen_daten.append({
-                "Anlage": i + 1,
-                "Dachart": Dachart,
-                "PV_Wirkungsgrad": PV_Wirkungsgrad,
-                "pv_Peakleistung": pv_Peakleistung,
-                "Dachneigung": Dachneigung,
-                "Dachausrichtung": Dachausrichtung,
-                "gamma_pdc": gamma_pdc_input,
-                "nmot": nmot_input,
-                "performance_ratio": performance_ratio_input
-            })
+                gamma_pdc_input = st.number_input(
+                    "Temperaturkoeffizient Pmax in 1/°C",
+                    min_value=-0.02,
+                    max_value=0.0,
+                    value=-0.0040,
+                    step=0.0001,
+                    format="%.4f",
+                    key=f"gamma_pdc_{i}"
+                )
+                if i == 0:
+                    st.caption("Der Temperaturkoeffizient beschreibt die Änderung der maximalen Modulleistung pro 1 °C Zelltemperatur. Der Standardwert von −0,004 1/°C entspricht einer Leistungsabnahme von 0,4 % pro °C über den Standard-Testbedingungen (25 °C Zelltemperatur).")
+
+                nmot_input = st.number_input(
+                    "NMOT / NOCT in °C",
+                    min_value=20.0,
+                    max_value=80.0,
+                    value=45.0,
+                    step=0.5,
+                    key=f"nmot_{i}",
+                    format="%.1f"
+                )
+                performance_ratio_input = st.number_input(
+                    "Performance Ratio",
+                    min_value=0.5,
+                    max_value=1.1,
+                    value=0.85,
+                    step=0.01,
+                    key=f"performance_ratio_{i}"
+                )
+                if i == 0:
+                    st.caption(
+                        "NOCT/NMOT beschreibt die typische Modultemperatur unter realitätsnahen Betriebsbedingungen. "
+                        "Höhere Werte führen zu höheren Zelltemperaturen und tendenziell geringerer PV-Leistung."
+                    )
+                    st.caption(
+                        "Standardwert: 45 °C. Typischer NMOT-/NOCT-Wert moderner PV-Module gemäss Herstellerdatenblättern."
+                    )
+                Dachneigung = st.number_input(
+                    "Dachneigung in °",
+                    min_value=0,
+                    max_value=90,
+                    value=45,
+                    step=1,
+                    key=f"neigung_{i}"
+                )
+
+                Dachausrichtung = st.number_input(
+                    "Dachausrichtung / Azimut in °",
+                    min_value=0,
+                    max_value=380,
+                    value=180,
+                    step=1,
+                    key=f"ausrichtung_{i}"
+                )
+                if i == 0:
+                    st.caption("0 = Nord, 90 = Ost, 180 = Süd, 270 = West")
+                pv_anlagen_daten.append({
+                    "Anlage": i + 1,
+                    "Dachart": Dachart,
+                    "PV_Wirkungsgrad": PV_Wirkungsgrad,
+                    "pv_Peakleistung": pv_Peakleistung,
+                    "Dachneigung": Dachneigung,
+                    "Dachausrichtung": Dachausrichtung,
+                    "gamma_pdc": gamma_pdc_input,
+                    "nmot": nmot_input,
+                    "performance_ratio": performance_ratio_input
+                })
 
 st.write("------------------------------")
 # Batterie Einspeisen EMS Auspeisen
@@ -3162,10 +3172,19 @@ with col2:
     
     st.subheader("Einspeisen")
     # regel einbauen minSoC muss < sein als maxSoC
-    Einspeisegrenze = st.number_input("Einspeisegrenze in % bezogen auf die Peak-Leistung der PV-Anlage", 1, 100, 70)
     gesamt_pv_peakleistung = sum(anlage["pv_Peakleistung"] for anlage in pv_anlagen_daten)
-    EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
-    
+
+    if pv_aktiv and gesamt_pv_peakleistung > 0:
+        Einspeisegrenze = st.number_input(
+            "Einspeisegrenze in % bezogen auf die Peak-Leistung der PV-Anlage",
+            1, 100, 70
+        )
+        EinspeisegrenzekW = (Einspeisegrenze / 100) * gesamt_pv_peakleistung
+    else:
+        Einspeisegrenze = 0
+        EinspeisegrenzekW = 0
+        st.caption("Keine Einspeisegrenze, da keine PV-Anlage vorhanden ist.")
+        
     st.subheader("Netzbezug")
     Bezugsgrenze = st.number_input("Bezugsgrenze in kW bezieht sich auf die Absicherung des Gebäudes", 5, 100, 80)
     Strompreis = st.selectbox(
