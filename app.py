@@ -2336,10 +2336,22 @@ with col1:
                 reduktion = sum(reduktionen[typ] for typ in Sanierungstyp)
                 reduktion = min(reduktion, 0.75)
 
-                Heizwaermebedarf_vorschlag = Heizwaermebedarf_basis * (1 - reduktion)
+                # Standardmässig wird der typische Baujahrwert verwendet.
+                sanierungs_basis_hwb = Heizwaermebedarf_basis
+                basis_text = "typischer Heizwärmebedarf nach Baujahr"
+
+                # Wenn eine Haushaltsbasislast für Parameterstudien fixiert wurde,
+                # wird der aktuell verwendete/manuell angepasste Heizwärmebedarf als Referenz genommen.
+                if "fixe_basislast_kWh" in st.session_state:
+                    if "referenz_heizwaermebedarf_kWh" in st.session_state:
+                        sanierungs_basis_hwb = st.session_state["referenz_heizwaermebedarf_kWh"]
+                        basis_text = "fixierter Referenz-Heizwärmebedarf des Neuzustands"
+
+                Heizwaermebedarf_vorschlag = sanierungs_basis_hwb * (1 - reduktion)
 
                 st.caption(
-                    f"Ausgangswert: {Heizwaermebedarf_basis:,.0f} kWh/a, ".replace(",", "'") +
+                    f"Ausgangswert für Sanierung: {sanierungs_basis_hwb:,.0f} kWh/a "
+                    f"({basis_text}), ".replace(",", "'") +
                     f"Reduktion durch Sanierung: {reduktion*100:.0f} %, "
                     f"Vorschlagswert nach Sanierung: {Heizwaermebedarf_vorschlag:,.0f} kWh/a".replace(",", "'")
                 )
@@ -2901,6 +2913,7 @@ if strombedarf_rueckrechnung:
 
     if st.button("Haushaltsbasislast neu aus aktueller Stromrechnung berechnen"):
         st.session_state["fixe_basislast_kWh"] = basislast_berechnet
+        st.session_state["referenz_heizwaermebedarf_kWh"] = Heizwaermebedarf_input
         st.rerun()
     if "fixe_basislast_kWh" in st.session_state:
         st.success(
@@ -2910,6 +2923,7 @@ if strombedarf_rueckrechnung:
 
         if st.button("Fixierte Haushaltsbasislast löschen"):
             st.session_state.pop("fixe_basislast_kWh", None)
+            st.session_state.pop("referenz_heizwaermebedarf_kWh", None)
             st.rerun()
     abgezogene_anteile = wp_strom_ist + ww_strom_ist + ev_strom_ist
 
