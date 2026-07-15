@@ -2488,7 +2488,7 @@ with col2:
             horizontal=True
         )
         if fossil_typ == "Gas":
-            gas = Heizwaermebedarf_input / 10
+            gas = Heizwaermebedarf_input / 10.5
             Gasverbrauch_input = st.number_input(
                 "Gasverbrauch in m³/a",
                 value=int(gas)
