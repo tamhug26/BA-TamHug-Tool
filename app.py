@@ -174,7 +174,7 @@ EVU = {
     "Alpiq AG": 13.4,
     "Repower AG": 131,
     "Romande Energie": 11.3,
-    "Schweiz": 59
+    "Schweiz": 97.4
 }
 GEAK_Klassen = {
     "A": 25, 
