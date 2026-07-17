@@ -4364,6 +4364,7 @@ if "df_ts" in st.session_state:
             x,
             df_batt["Netzbezug"],
             marker="o",
+            color="#1f77b4",
             label="Netzbezug"
         )
 
@@ -4380,6 +4381,7 @@ if "df_ts" in st.session_state:
             df_batt["Autarkiegrad"],
             marker="s",
             linestyle="--",
+            color="#ff7f0e",
             label="Autarkiegrad"
         )
 
@@ -4388,6 +4390,7 @@ if "df_ts" in st.session_state:
             df_batt["Eigenverbrauchsquote"],
             marker="^",
             linestyle="--",
+            color="#2ca02c",
             label="Eigenverbrauch"
         )
 
@@ -4432,6 +4435,7 @@ if "df_ts" in st.session_state:
             x,
             df_batt_kosten["Netzbezug"],
             marker="o",
+            color="#1f77b4",
             label="Netzbezug"
         )
 
@@ -4447,6 +4451,7 @@ if "df_ts" in st.session_state:
             df_batt_kosten["Kosten brutto"],
             marker="s",
             linestyle="--",
+            color="#d62728",
             label="Kosten brutto"
         )
 
