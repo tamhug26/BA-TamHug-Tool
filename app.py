@@ -4329,6 +4329,7 @@ if "df_ts" in st.session_state:
         # ------------------------------------------------------------
         # Grafik: Parameterstudie Abregelungsverluste EFH
         # ------------------------------------------------------------
+        import matplotlib.pyplot as plt
 
         # Daten aus Tabelle 20
         df_abregelung = pd.DataFrame({
