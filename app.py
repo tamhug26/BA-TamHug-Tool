@@ -4328,9 +4328,13 @@ if "df_ts" in st.session_state:
 
         # ------------------------------------------------------------
         # Grafik: Parameterstudie Abregelungsverluste EFH
-        # 2 Reihen x 4 Spalten
+        # Layout: 3 oben, 3 Mitte, 2 unten
+        # Ohne Zahlenbeschriftung auf den Balken
         # ------------------------------------------------------------
+
         import matplotlib.pyplot as plt
+        import matplotlib.gridspec as gridspec
+ 
 
         df_abregelung = pd.DataFrame({
             "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6", "Fall 7"],
@@ -4350,14 +4354,6 @@ if "df_ts" in st.session_state:
         # Eine feste Farbe pro Fall
         farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
 
-        def format_zahl(v):
-            if abs(v) >= 1000:
-                return f"{v:,.0f}".replace(",", "'")
-            elif float(v).is_integer():
-                return f"{v:.0f}"
-            else:
-                return f"{v:.1f}"
-
         kennzahlen = [
             ("PV-Produktion", "kWh/a"),
             ("Strombedarf", "kWh/a"),
@@ -4369,46 +4365,49 @@ if "df_ts" in st.session_state:
             ("Max. Netzeinspeisung", "kW")
         ]
 
-        fig, axes = plt.subplots(2, 4, figsize=(22, 10))
-        axes = axes.flatten()
+        fig = plt.figure(figsize=(18, 15))
+        gs = gridspec.GridSpec(3, 6, figure=fig, hspace=0.55, wspace=0.55)
+
+        axes = [
+            fig.add_subplot(gs[0, 0:2]),
+            fig.add_subplot(gs[0, 2:4]),
+            fig.add_subplot(gs[0, 4:6]),
+
+            fig.add_subplot(gs[1, 0:2]),
+            fig.add_subplot(gs[1, 2:4]),
+            fig.add_subplot(gs[1, 4:6]),
+
+            fig.add_subplot(gs[2, 1:3]),
+            fig.add_subplot(gs[2, 3:5])
+        ]
 
         for ax, (spalte, einheit) in zip(axes, kennzahlen):
             werte = df_abregelung[spalte].values
 
-            bars = ax.bar(x, werte, color=farben)
+            ax.bar(x, werte, color=farben)
 
-            ax.set_title(spalte, fontsize=12, fontweight="bold")
-            ax.set_ylabel(einheit, fontsize=10)
+            ax.set_title(spalte, fontsize=13, fontweight="bold")
+            ax.set_ylabel(einheit, fontsize=11)
             ax.set_xticks(x)
-            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=9)
+            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=10)
 
             ymax = max(werte) if max(werte) > 0 else 1
-            ax.set_ylim(0, ymax * 1.25)
-
-            for bar, wert in zip(bars, werte):
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + ymax * 0.03,
-                    format_zahl(wert),
-                    ha="center",
-                    va="bottom",
-                    fontsize=8,
-                    rotation=90
-                )
+            ax.set_ylim(0, ymax * 1.12)
 
             ax.grid(axis="y", alpha=0.25)
+            ax.set_axisbelow(True)
 
         fig.suptitle(
-            "Parameterstudie: Einfluss von Einspeisegrenze, Batteriekapazität und EMS-Strategie",
-            fontsize=16,
-            fontweight="bold"
+            "Parameterstudie: Einfluss von Einspeisegrenze, Batteriespeicher und EMS-Strategie",
+            fontsize=17,
+            fontweight="bold",
+            y=0.98
         )
 
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-
+        # In Streamlit anzeigen
         st.pyplot(fig)
 
         # Scharf speichern für Word/Bericht
-        fig.savefig("parameterstudie_abregelung_2x4.pdf", bbox_inches="tight")
-        fig.savefig("parameterstudie_abregelung_2x4.svg", bbox_inches="tight")
-        fig.savefig("parameterstudie_abregelung_2x4.png", dpi=600, bbox_inches="tight")
+        fig.savefig("parameterstudie_abregelung_3_3_2.pdf", bbox_inches="tight")
+        fig.savefig("parameterstudie_abregelung_3_3_2.svg", bbox_inches="tight")
+        fig.savefig("parameterstudie_abregelung_3_3_2.png", dpi=600, bbox_inches="tight")
