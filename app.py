@@ -4328,10 +4328,10 @@ if "df_ts" in st.session_state:
 
         # ------------------------------------------------------------
         # Grafik: Parameterstudie Abregelungsverluste EFH
+        # 2 Reihen x 4 Spalten
         # ------------------------------------------------------------
         import matplotlib.pyplot as plt
 
-        # Daten aus Tabelle 20
         df_abregelung = pd.DataFrame({
             "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6", "Fall 7"],
             "PV-Produktion": [14564, 17305, 17305, 17305, 17305, 17305, 17305, 17305],
@@ -4347,7 +4347,7 @@ if "df_ts" in st.session_state:
         faelle = df_abregelung["Fall"]
         x = np.arange(len(faelle))
 
-        # Eine Farbe pro Fall, bleibt in allen Diagrammen gleich
+        # Eine feste Farbe pro Fall
         farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
 
         def format_zahl(v):
@@ -4358,7 +4358,6 @@ if "df_ts" in st.session_state:
             else:
                 return f"{v:.1f}"
 
-        # Kennzahlen ohne maximale Netzeinspeisung
         kennzahlen = [
             ("PV-Produktion", "kWh/a"),
             ("Strombedarf", "kWh/a"),
@@ -4366,23 +4365,25 @@ if "df_ts" in st.session_state:
             ("Netzeinspeisung", "kWh/a"),
             ("Abregelung", "kWh/a"),
             ("Eigenverbrauchsquote", "%"),
-            ("Autarkiegrad", "%")
+            ("Autarkiegrad", "%"),
+            ("Max. Netzeinspeisung", "kW")
         ]
 
-        fig, axes = plt.subplots(1, 7, figsize=(34, 7), sharex=False)
+        fig, axes = plt.subplots(2, 4, figsize=(22, 10))
+        axes = axes.flatten()
 
         for ax, (spalte, einheit) in zip(axes, kennzahlen):
             werte = df_abregelung[spalte].values
 
             bars = ax.bar(x, werte, color=farben)
 
-            ax.set_title(spalte, fontsize=11, fontweight="bold")
+            ax.set_title(spalte, fontsize=12, fontweight="bold")
+            ax.set_ylabel(einheit, fontsize=10)
             ax.set_xticks(x)
-            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=8)
-            ax.set_ylabel(einheit)
+            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=9)
 
             ymax = max(werte) if max(werte) > 0 else 1
-            ax.set_ylim(0, ymax * 1.22)
+            ax.set_ylim(0, ymax * 1.25)
 
             for bar, wert in zip(bars, werte):
                 ax.text(
@@ -4395,59 +4396,19 @@ if "df_ts" in st.session_state:
                     rotation=90
                 )
 
-            ax.grid(axis="y", alpha=0.3)
+            ax.grid(axis="y", alpha=0.25)
 
         fig.suptitle(
-            "Einfluss von Einspeisegrenze, Batteriekapazität und EMS-Strategie auf die Kennzahlen",
-            fontsize=14,
+            "Parameterstudie: Einfluss von Einspeisegrenze, Batteriekapazität und EMS-Strategie",
+            fontsize=16,
             fontweight="bold"
         )
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
 
-        # In Streamlit anzeigen
         st.pyplot(fig)
 
-        # Optional als Datei speichern
-        fig.savefig("parameterstudie_abregelung_kennzahlen.png", dpi=300, bbox_inches="tight")
-
-
-        # ------------------------------------------------------------
-        # Separate Grafik: Maximale Netzeinspeisung
-        # ------------------------------------------------------------
-
-        fig2, ax2 = plt.subplots(figsize=(10, 5))
-
-        werte = df_abregelung["Max. Netzeinspeisung"].values
-        bars = ax2.bar(x, werte, color=farben)
-
-        ax2.set_title("Maximale Netzeinspeisung", fontsize=13, fontweight="bold")
-        ax2.set_ylabel("kW")
-        ax2.set_xticks(x)
-        ax2.set_xticklabels(faelle, rotation=45, ha="right")
-        ax2.set_ylim(0, max(werte) * 1.25)
-        ax2.grid(axis="y", alpha=0.3)
-
-        for bar, wert in zip(bars, werte):
-            ax2.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + max(werte) * 0.03,
-                format_zahl(wert),
-                ha="center",
-                va="bottom",
-                fontsize=9
-            )
-
-        plt.tight_layout()
-
-        # In Streamlit anzeigen
-        st.pyplot(fig2)
-
-        # Optional als Datei speichern
-        fig.savefig("parameterstudie_abregelung_kennzahlen.pdf", bbox_inches="tight")
-        fig.savefig("parameterstudie_abregelung_kennzahlen.svg", bbox_inches="tight")
-        fig.savefig("parameterstudie_abregelung_kennzahlen.png", dpi=600, bbox_inches="tight")
-
-        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.pdf", bbox_inches="tight")
-        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.svg", bbox_inches="tight")
-        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.png", dpi=600, bbox_inches="tight")
+        # Scharf speichern für Word/Bericht
+        fig.savefig("parameterstudie_abregelung_2x4.pdf", bbox_inches="tight")
+        fig.savefig("parameterstudie_abregelung_2x4.svg", bbox_inches="tight")
+        fig.savefig("parameterstudie_abregelung_2x4.png", dpi=600, bbox_inches="tight")
