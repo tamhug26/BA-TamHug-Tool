@@ -4398,7 +4398,7 @@ if "df_ts" in st.session_state:
             ax.set_axisbelow(True)
 
         fig.suptitle(
-            "Parameterstudie: 4.3.1.	Abregelungsverluste in Abhängigkeit von PV-Ausrichtung, Einspeisegrenze, Batteriespeicher und EMS-Strategie",
+            "Parameterstudie: Abregelungsverluste in Abhängigkeit von PV-Ausrichtung, Einspeisegrenze, Batteriespeicher und EMS-Strategie",
             fontsize=17,
             fontweight="bold",
             y=0.98
