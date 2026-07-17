@@ -4470,3 +4470,71 @@ if "df_ts" in st.session_state:
         fig.savefig("batteriekapazitaet_netzbezug_kosten.pdf", bbox_inches="tight")
         fig.savefig("batteriekapazitaet_netzbezug_kosten.svg", bbox_inches="tight")
         fig.savefig("batteriekapazitaet_netzbezug_kosten.png", dpi=600, bbox_inches="tight")      
+
+        # ------------------------------------------------------------
+        # Grafik: Einfluss der EMS-Strategie
+        # Layout: 2 oben, 2 unten
+        # Achsen beginnen bei 0, Prozentachsen bis 100 %
+        # ------------------------------------------------------------
+
+
+        df_ems = pd.DataFrame({
+            "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6"],
+            "Strombedarf": [14639, 14639, 14639, 14639, 14639, 14639, 14639],
+            "Eigenverbrauchsquote": [49.3, 49.2, 48.3, 52.4, 49.3, 49.2, 49.3],
+            "Autarkiegrad": [48.2, 48.1, 47.2, 51.3, 48.2, 48.1, 48.2],
+            "Netzbezug": [7579, 7601, 7730, 7127, 7582, 7605, 7579],
+            "Netzeinspeisung": [7377, 7394, 7531, 6934, 7378, 7397, 7377],
+            "Max. Netzeinspeisung": [9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2]
+        })
+
+        faelle = df_ems["Fall"]
+        x = np.arange(len(faelle))
+
+        # Eine feste Farbe pro Fall
+        farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
+
+        kennzahlen = [
+            ("Netzbezug", "kWh/a"),
+            ("Netzeinspeisung", "kWh/a"),
+            ("Eigenverbrauchsquote", "%"),
+            ("Autarkiegrad", "%")
+        ]
+
+        fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+        axes = axes.flatten()
+
+        for ax, (spalte, einheit) in zip(axes, kennzahlen):
+            werte = df_ems[spalte].values
+
+            ax.bar(x, werte, color=farben)
+
+            ax.set_title(spalte, fontsize=13, fontweight="bold")
+            ax.set_ylabel(einheit, fontsize=11)
+            ax.set_xticks(x)
+            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=10)
+
+            # Achsen immer bei 0 starten
+            if einheit == "%":
+                ax.set_ylim(0, 100)
+            else:
+                ymax = max(werte) if max(werte) > 0 else 1
+                ax.set_ylim(0, ymax * 1.12)
+
+            ax.grid(axis="y", alpha=0.25)
+            ax.set_axisbelow(True)
+
+        fig.suptitle(
+            "Einfluss der EMS-Strategie auf Netzbezug, Netzeinspeisung, Eigenverbrauch und Autarkie",
+            fontsize=15,
+            fontweight="bold",
+            y=0.98
+        )
+
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+        st.pyplot(fig)
+
+        fig.savefig("parameterstudie_ems_strategien.pdf", bbox_inches="tight")
+        fig.savefig("parameterstudie_ems_strategien.svg", bbox_inches="tight")
+        fig.savefig("parameterstudie_ems_strategien.png", dpi=600, bbox_inches="tight")
