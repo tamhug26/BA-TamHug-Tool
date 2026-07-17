@@ -4326,490 +4326,122 @@ if "df_ts" in st.session_state:
         st.write("------------------------------")
         st.subheader("Grafische Darstellung der Parameterstudien")
 
+        # ------------------------------------------------------------
+        # Grafik: Parameterstudie Abregelungsverluste EFH
+        # ------------------------------------------------------------
 
-        # ============================================================
-        # Tabelle 9
-        # ============================================================
-
-        st.write("### Tabelle 9: Reduktion des Abregelungsverlusts durch Einspeisegrenze, Batteriekapazität und EMS-Strategie")
-
-        df_t9 = pd.DataFrame({
+        # Daten aus Tabelle 20
+        df_abregelung = pd.DataFrame({
             "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6", "Fall 7"],
-            "PV-Produktion kWh/a": [14564, 17305, 17305, 17305, 17305, 17305, 17305, 17305],
-            "Strombedarf kWh/a": [14639, 14639, 14639, 14639, 14639, 14639, 14639, 14639],
-            "Eigenverbrauchsquote %": [49.3, 41.9, 41.9, 41.9, 49.7, 53.8, 39.7, 47.4],
-            "Autarkiegrad %": [48.2, 48.6, 48.6, 48.6, 57.3, 62.0, 46.0, 54.7],
-            "Netzbezug kWh/a": [7579, 7529, 7529, 7529, 6247, 5565, 7900, 6628],
-            "Netzeinspeisung kWh/a": [7377, 10058, 10058, 9315, 8063, 7414, 9698, 8454],
-            "Maximale Netzeinspeisung kW": [9.2, 9.44, 9.44, 7.7, 7.7, 7.7, 7.7, 7.7],
-            "Abregelung kWh/a": [0, 0, 0, 744, 649, 578, 744, 649],
+            "PV-Produktion": [14564, 17305, 17305, 17305, 17305, 17305, 17305, 17305],
+            "Strombedarf": [14639, 14639, 14639, 14639, 14639, 14639, 14639, 14639],
+            "Eigenverbrauchsquote": [49.3, 41.9, 41.9, 41.9, 49.7, 53.8, 39.7, 47.4],
+            "Autarkiegrad": [48.2, 48.6, 48.6, 48.6, 57.3, 62.0, 46.0, 54.7],
+            "Netzbezug": [7579, 7529, 7529, 7529, 6247, 5565, 7900, 6628],
+            "Netzeinspeisung": [7377, 10058, 10058, 9315, 8063, 7414, 9698, 8454],
+            "Abregelung": [0, 0, 0, 744, 649, 578, 744, 649],
+            "Max. Netzeinspeisung": [9.2, 9.44, 9.44, 7.7, 7.7, 7.7, 7.7, 7.7]
         })
 
-        fig_t9_abregelung = go.Figure()
+        faelle = df_abregelung["Fall"]
+        x = np.arange(len(faelle))
 
-        fig_t9_abregelung.add_trace(go.Bar(
-            x=df_t9["Fall"],
-            y=df_t9["Abregelung kWh/a"],
-            name="Abregelung"
-        ))
+        # Eine Farbe pro Fall, bleibt in allen Diagrammen gleich
+        farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
 
-        fig_t9_abregelung.update_layout(
-            title="Tabelle 9: Abregelung je Fall",
-            xaxis_title="Fall",
-            yaxis_title="Abregelung in kWh/a",
-            height=450,
-            yaxis=dict(
-                tickmode="array",
-                tickvals=[0, 100, 200, 300, 400, 500, 600, 700, 800],
-                range=[0, 800]
+        def format_zahl(v):
+            if abs(v) >= 1000:
+                return f"{v:,.0f}".replace(",", "'")
+            elif float(v).is_integer():
+                return f"{v:.0f}"
+            else:
+                return f"{v:.1f}"
+
+        # Kennzahlen ohne maximale Netzeinspeisung
+        kennzahlen = [
+            ("PV-Produktion", "kWh/a"),
+            ("Strombedarf", "kWh/a"),
+            ("Netzbezug", "kWh/a"),
+            ("Netzeinspeisung", "kWh/a"),
+            ("Abregelung", "kWh/a"),
+            ("Eigenverbrauchsquote", "%"),
+            ("Autarkiegrad", "%")
+        ]
+
+        fig, axes = plt.subplots(1, 7, figsize=(28, 5), sharex=False)
+
+        for ax, (spalte, einheit) in zip(axes, kennzahlen):
+            werte = df_abregelung[spalte].values
+
+            bars = ax.bar(x, werte, color=farben)
+
+            ax.set_title(spalte, fontsize=11, fontweight="bold")
+            ax.set_xticks(x)
+            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=8)
+            ax.set_ylabel(einheit)
+
+            ymax = max(werte) if max(werte) > 0 else 1
+            ax.set_ylim(0, ymax * 1.22)
+
+            for bar, wert in zip(bars, werte):
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + ymax * 0.03,
+                    format_zahl(wert),
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=90
+                )
+
+            ax.grid(axis="y", alpha=0.3)
+
+        fig.suptitle(
+            "Einfluss von Einspeisegrenze, Batteriekapazität und EMS-Strategie auf die Kennzahlen",
+            fontsize=14,
+            fontweight="bold"
+        )
+
+        plt.tight_layout()
+
+        # In Streamlit anzeigen
+        st.pyplot(fig)
+
+        # Optional als Datei speichern
+        fig.savefig("parameterstudie_abregelung_kennzahlen.png", dpi=300, bbox_inches="tight")
+
+
+        # ------------------------------------------------------------
+        # Separate Grafik: Maximale Netzeinspeisung
+        # ------------------------------------------------------------
+
+        fig2, ax2 = plt.subplots(figsize=(10, 5))
+
+        werte = df_abregelung["Max. Netzeinspeisung"].values
+        bars = ax2.bar(x, werte, color=farben)
+
+        ax2.set_title("Maximale Netzeinspeisung", fontsize=13, fontweight="bold")
+        ax2.set_ylabel("kW")
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(faelle, rotation=45, ha="right")
+        ax2.set_ylim(0, max(werte) * 1.25)
+        ax2.grid(axis="y", alpha=0.3)
+
+        for bar, wert in zip(bars, werte):
+            ax2.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + max(werte) * 0.03,
+                format_zahl(wert),
+                ha="center",
+                va="bottom",
+                fontsize=9
             )
-        )
 
-        st.plotly_chart(fig_t9_abregelung, use_container_width=True)
+        plt.tight_layout()
 
+        # In Streamlit anzeigen
+        st.pyplot(fig2)
 
-        fig_t9_anteile = go.Figure()
-
-        fig_t9_anteile.add_trace(go.Bar(
-            x=df_t9["Fall"],
-            y=df_t9["Autarkiegrad %"],
-            name="Autarkiegrad"
-        ))
-
-        fig_t9_anteile.add_trace(go.Bar(
-            x=df_t9["Fall"],
-            y=df_t9["Eigenverbrauchsquote %"],
-            name="Eigenverbrauchsquote"
-        ))
-
-        fig_t9_anteile.update_layout(
-            title="Tabelle 9: Autarkiegrad und Eigenverbrauchsquote je Fall",
-            xaxis_title="Fall",
-            yaxis_title="Anteil in %",
-            barmode="group",
-            height=450,
-            yaxis=dict(range=[0, 70])
-        )
-
-        st.plotly_chart(fig_t9_anteile, use_container_width=True)
-
-
-        fig_t9_energie = go.Figure()
-
-        fig_t9_energie.add_trace(go.Bar(
-            x=df_t9["Fall"],
-            y=df_t9["Netzbezug kWh/a"],
-            name="Netzbezug"
-        ))
-
-        fig_t9_energie.add_trace(go.Bar(
-            x=df_t9["Fall"],
-            y=df_t9["Netzeinspeisung kWh/a"],
-            name="Netzeinspeisung"
-        ))
-
-        fig_t9_energie.update_layout(
-            title="Tabelle 9: Netzbezug und Netzeinspeisung je Fall",
-            xaxis_title="Fall",
-            yaxis_title="Energie in kWh/a",
-            barmode="group",
-            height=450
-        )
-
-        st.plotly_chart(fig_t9_energie, use_container_width=True)
-
-
-        # ============================================================
-        # Tabelle 11
-        # ============================================================
-
-        st.write("### Tabelle 11: Einfluss von verschiedenen EMS-Fällen")
-
-        df_t11 = pd.DataFrame({
-            "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6"],
-            "Strombedarf kWh/a": [14639, 14639, 14639, 14639, 14639, 14639, 14639],
-            "Eigenverbrauchsquote %": [49.3, 49.2, 48.3, 52.4, 49.3, 49.2, 49.3],
-            "Autarkiegrad %": [48.2, 48.1, 47.2, 51.3, 48.2, 48.1, 48.2],
-            "Netzbezug kWh/a": [7579, 7601, 7730, 7127, 7582, 7605, 7579],
-            "Netzeinspeisung kWh/a": [7377, 7394, 7531, 6934, 7378, 7397, 7377],
-            "Maximale Netzeinspeisung kW": [9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2],
-        })
-
-        fig_t11_anteile = go.Figure()
-
-        fig_t11_anteile.add_trace(go.Bar(
-            x=df_t11["Fall"],
-            y=df_t11["Autarkiegrad %"],
-            name="Autarkiegrad"
-        ))
-
-        fig_t11_anteile.add_trace(go.Bar(
-            x=df_t11["Fall"],
-            y=df_t11["Eigenverbrauchsquote %"],
-            name="Eigenverbrauchsquote"
-        ))
-
-        fig_t11_anteile.update_layout(
-            title="Tabelle 11: Einfluss der EMS-Fälle auf Autarkiegrad und Eigenverbrauchsquote",
-            xaxis_title="EMS-Fall",
-            yaxis_title="Anteil in %",
-            barmode="group",
-            height=450,
-            yaxis=dict(range=[0, 60])
-        )
-
-        st.plotly_chart(fig_t11_anteile, use_container_width=True)
-
-
-        fig_t11_energie = go.Figure()
-
-        fig_t11_energie.add_trace(go.Bar(
-            x=df_t11["Fall"],
-            y=df_t11["Netzbezug kWh/a"],
-            name="Netzbezug"
-        ))
-
-        fig_t11_energie.add_trace(go.Bar(
-            x=df_t11["Fall"],
-            y=df_t11["Netzeinspeisung kWh/a"],
-            name="Netzeinspeisung"
-        ))
-
-        fig_t11_energie.update_layout(
-            title="Tabelle 11: Netzbezug und Netzeinspeisung bei verschiedenen EMS-Fällen",
-            xaxis_title="EMS-Fall",
-            yaxis_title="Energie in kWh/a",
-            barmode="group",
-            height=450
-        )
-
-        st.plotly_chart(fig_t11_energie, use_container_width=True)
-
-
-        # ============================================================
-        # Tabelle 12
-        # ============================================================
-
-        st.write("### Tabelle 12: Einfluss verschiedener Sanierungsszenarien auf Strombedarf, Eigenverbrauch, Autarkiegrad, Netzbezug und maximale Netzeinspeisung")
-
-        df_t12 = pd.DataFrame({
-            "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3"],
-            "Strombedarf kWh/a": [14638.7, 12530, 13795.5, 11687.4],
-            "Eigenverbrauchsquote %": [49.3, 46.9, 48.4, 45.8],
-            "Autarkiegrad %": [48.2, 53.5, 50.2, 55.9],
-            "Netzbezug kWh/a": [7579.2, 5832, 6875, 5149],
-            "Netzeinspeisung kWh/a": [7377, 7733, 7514, 7891],
-            "Maximale Netzeinspeisung kW": [9.21, 9.23, 9.22, 9.24],
-        })
-
-        fig_t12_strom = go.Figure()
-
-        fig_t12_strom.add_trace(go.Bar(
-            x=df_t12["Fall"],
-            y=df_t12["Strombedarf kWh/a"],
-            name="Strombedarf"
-        ))
-
-        fig_t12_strom.add_trace(go.Bar(
-            x=df_t12["Fall"],
-            y=df_t12["Netzbezug kWh/a"],
-            name="Netzbezug"
-        ))
-
-        fig_t12_strom.update_layout(
-            title="Tabelle 12: Strombedarf und Netzbezug bei Sanierungsszenarien",
-            xaxis_title="Sanierungsfall",
-            yaxis_title="Energie in kWh/a",
-            barmode="group",
-            height=450
-        )
-
-        st.plotly_chart(fig_t12_strom, use_container_width=True)
-
-
-        fig_t12_anteile = go.Figure()
-
-        fig_t12_anteile.add_trace(go.Bar(
-            x=df_t12["Fall"],
-            y=df_t12["Autarkiegrad %"],
-            name="Autarkiegrad"
-        ))
-
-        fig_t12_anteile.add_trace(go.Bar(
-            x=df_t12["Fall"],
-            y=df_t12["Eigenverbrauchsquote %"],
-            name="Eigenverbrauchsquote"
-        ))
-
-        fig_t12_anteile.update_layout(
-            title="Tabelle 12: Autarkiegrad und Eigenverbrauchsquote bei Sanierungsszenarien",
-            xaxis_title="Sanierungsfall",
-            yaxis_title="Anteil in %",
-            barmode="group",
-            height=450,
-            yaxis=dict(range=[0, 65])
-        )
-
-        st.plotly_chart(fig_t12_anteile, use_container_width=True)
-
-
-        fig_t12_einspeisung = go.Figure()
-
-        fig_t12_einspeisung.add_trace(go.Bar(
-            x=df_t12["Fall"],
-            y=df_t12["Netzeinspeisung kWh/a"],
-            name="Netzeinspeisung"
-        ))
-
-        fig_t12_einspeisung.update_layout(
-            title="Tabelle 12: Netzeinspeisung bei Sanierungsszenarien",
-            xaxis_title="Sanierungsfall",
-            yaxis_title="Netzeinspeisung in kWh/a",
-            height=450
-        )
-
-        st.plotly_chart(fig_t12_einspeisung, use_container_width=True)
-
-
-        # ============================================================
-        # Tabelle 13
-        # ============================================================
-
-        st.write("### Tabelle 13: Vergleich der energetischen Kennzahlen und Umweltwirkungen zwischen dem elektrifizierten Standardszenario und Varianten mit fossiler bzw. Pellet-Heizung")
-
-        df_t13 = pd.DataFrame({
-            "Fall": ["Fall 0", "Fall 1 Gas", "Fall 1 Öl", "Fall 1 Pellets"],
-            "Strombedarf kWh/a": [14639, 9064, 9064, 9064],
-            "Eigenverbrauchsquote %": [49, 42, 42, 42],
-            "Autarkiegrad %": [48, 65, 65, 65],
-            "Netzbezug kWh/a": [7579, 3144, 3144, 3144],
-            "Netzeinspeisung kWh/a": [7377, 8504, 8504, 8504],
-            "Maximale Netzeinspeisung kW": [9.21, 9.26, 9.26, 9.26],
-            "Total UBP/a": [2331, 7825, 11275, 4833],
-            "Total kg CO2eq/a": [1144, 5875, 8256, 1595],
-        })
-
-        fig_t13_energie = go.Figure()
-
-        fig_t13_energie.add_trace(go.Bar(
-            x=df_t13["Fall"],
-            y=df_t13["Strombedarf kWh/a"],
-            name="Strombedarf"
-        ))
-
-        fig_t13_energie.add_trace(go.Bar(
-            x=df_t13["Fall"],
-            y=df_t13["Netzbezug kWh/a"],
-            name="Netzbezug"
-        ))
-
-        fig_t13_energie.update_layout(
-            title="Tabelle 13: Strombedarf und Netzbezug nach Heizsystem",
-            xaxis_title="Fall",
-            yaxis_title="Energie in kWh/a",
-            barmode="group",
-            height=450
-        )
-
-        st.plotly_chart(fig_t13_energie, use_container_width=True)
-
-
-        fig_t13_co2 = go.Figure()
-
-        fig_t13_co2.add_trace(go.Bar(
-            x=df_t13["Fall"],
-            y=df_t13["Total kg CO2eq/a"],
-            name="Treibhausgasemissionen"
-        ))
-
-        fig_t13_co2.update_layout(
-            title="Tabelle 13: Treibhausgasemissionen nach Heizsystem",
-            xaxis_title="Fall",
-            yaxis_title="kg CO₂-eq/a",
-            height=450
-        )
-
-        st.plotly_chart(fig_t13_co2, use_container_width=True)
-
-
-        fig_t13_ubp = go.Figure()
-
-        fig_t13_ubp.add_trace(go.Bar(
-            x=df_t13["Fall"],
-            y=df_t13["Total UBP/a"],
-            name="UBP"
-        ))
-
-        fig_t13_ubp.update_layout(
-            title="Tabelle 13: Umweltbelastungspunkte nach Heizsystem",
-            xaxis_title="Fall",
-            yaxis_title="UBP/a",
-            height=450
-        )
-
-        st.plotly_chart(fig_t13_ubp, use_container_width=True)
-
-
-        # ============================================================
-        # Tabelle 14
-        # ============================================================
-
-        st.write("### Tabelle 14: Einfluss des Fahrzeugantriebs auf Strombedarf, Eigenverbrauch, Autarkiegrad, Netzbezug, Netzeinspeisung und Umweltwirkungen bei gleichem Fahrprofil")
-
-        df_t14 = pd.DataFrame({
-            "Fall": ["Fall 0", "Fall 2 Benzin", "Fall 2 Diesel", "Fall 2 Gas"],
-            "Strombedarf kWh/a": [14638.7, 13021, 13021, 13021],
-            "Eigenverbrauchsquote %": [49.3, 47, 47, 47],
-            "Autarkiegrad %": [48.2, 51, 51, 51],
-            "Netzbezug kWh/a": [7579, 6356, 6356, 6356],
-            "Netzeinspeisung kWh/a": [7377, 7779, 7779, 7779],
-            "Maximale Netzeinspeisung kW": [9.21, 9.21, 9.21, 9.21],
-            "Total UBP/a": [2331, 5595, 5285, 5122],
-            "Total kg CO2eq/a": [1144, 2924, 2702, 2577],
-        })
-
-        fig_t14_energie = go.Figure()
-
-        fig_t14_energie.add_trace(go.Bar(
-            x=df_t14["Fall"],
-            y=df_t14["Strombedarf kWh/a"],
-            name="Strombedarf"
-        ))
-
-        fig_t14_energie.add_trace(go.Bar(
-            x=df_t14["Fall"],
-            y=df_t14["Netzbezug kWh/a"],
-            name="Netzbezug"
-        ))
-
-        fig_t14_energie.update_layout(
-            title="Tabelle 14: Strombedarf und Netzbezug nach Fahrzeugantrieb",
-            xaxis_title="Fall",
-            yaxis_title="Energie in kWh/a",
-            barmode="group",
-            height=450
-        )
-
-        st.plotly_chart(fig_t14_energie, use_container_width=True)
-
-
-        fig_t14_co2 = go.Figure()
-
-        fig_t14_co2.add_trace(go.Bar(
-            x=df_t14["Fall"],
-            y=df_t14["Total kg CO2eq/a"],
-            name="Treibhausgasemissionen"
-        ))
-
-        fig_t14_co2.update_layout(
-            title="Tabelle 14: Treibhausgasemissionen nach Fahrzeugantrieb",
-            xaxis_title="Fall",
-            yaxis_title="kg CO₂-eq/a",
-            height=450
-        )
-
-        st.plotly_chart(fig_t14_co2, use_container_width=True)
-
-
-        fig_t14_ubp = go.Figure()
-
-        fig_t14_ubp.add_trace(go.Bar(
-            x=df_t14["Fall"],
-            y=df_t14["Total UBP/a"],
-            name="UBP"
-        ))
-
-        fig_t14_ubp.update_layout(
-            title="Tabelle 14: Umweltbelastungspunkte nach Fahrzeugantrieb",
-            xaxis_title="Fall",
-            yaxis_title="UBP/a",
-            height=450
-        )
-
-        st.plotly_chart(fig_t14_ubp, use_container_width=True)
-
-
-        # ============================================================
-        # Tabelle 15
-        # ============================================================
-
-        st.write("### Tabelle 15: Einfluss der Batteriekapazität auf Netzbezug, betriebsbedingte CO₂-Emissionen des Netzstrombezugs und herstellungsbedingte CO₂-Emissionen der Batterie")
-
-        df_t15 = pd.DataFrame({
-            "Batterie": ["1 kWh", "9 kWh", "15 kWh", "33 kWh"],
-            "Batteriekapazität kWh": [1, 9, 15, 33],
-            "Netzbezug kWh/a": [9706, 7579, 6600, 5858],
-            "CO2 Betrieb Netzstrom kg CO2eq/a": [116, 91, 79, 70],
-            "CO2 Batterie Herstellung kg CO2eq/a": [24, 100, 166, 365],
-            "CO2 total kg CO2eq/a": [1095, 1144, 1199, 1389],
-        })
-
-        fig_t15_netzbezug = go.Figure()
-
-        fig_t15_netzbezug.add_trace(go.Scatter(
-            x=df_t15["Batteriekapazität kWh"],
-            y=df_t15["Netzbezug kWh/a"],
-            mode="lines+markers",
-            name="Netzbezug"
-        ))
-
-        fig_t15_netzbezug.update_layout(
-            title="Tabelle 15: Netzbezug in Abhängigkeit der Batteriekapazität",
-            xaxis_title="Batteriekapazität in kWh",
-            yaxis_title="Netzbezug in kWh/a",
-            height=450,
-            xaxis=dict(
-                tickmode="array",
-                tickvals=df_t15["Batteriekapazität kWh"]
-            )
-        )
-
-        st.plotly_chart(fig_t15_netzbezug, use_container_width=True)
-
-
-        fig_t15_co2_stack = go.Figure()
-
-        fig_t15_co2_stack.add_trace(go.Bar(
-            x=df_t15["Batterie"],
-            y=df_t15["CO2 Betrieb Netzstrom kg CO2eq/a"],
-            name="CO₂ Betrieb Netzstrom"
-        ))
-
-        fig_t15_co2_stack.add_trace(go.Bar(
-            x=df_t15["Batterie"],
-            y=df_t15["CO2 Batterie Herstellung kg CO2eq/a"],
-            name="CO₂ Batterie Herstellung"
-        ))
-
-        fig_t15_co2_stack.update_layout(
-            title="Tabelle 15: CO₂-Beiträge von Netzstrombetrieb und Batterieherstellung",
-            xaxis_title="Batteriekapazität",
-            yaxis_title="kg CO₂-eq/a",
-            barmode="stack",
-            height=450
-        )
-
-        st.plotly_chart(fig_t15_co2_stack, use_container_width=True)
-
-
-        fig_t15_co2_total = go.Figure()
-
-        fig_t15_co2_total.add_trace(go.Scatter(
-            x=df_t15["Batteriekapazität kWh"],
-            y=df_t15["CO2 total kg CO2eq/a"],
-            mode="lines+markers",
-            name="CO₂ total"
-        ))
-
-        fig_t15_co2_total.update_layout(
-            title="Tabelle 15: Gesamte CO₂-Emissionen in Abhängigkeit der Batteriekapazität",
-            xaxis_title="Batteriekapazität in kWh",
-            yaxis_title="kg CO₂-eq/a",
-            height=450,
-            xaxis=dict(
-                tickmode="array",
-                tickvals=df_t15["Batteriekapazität kWh"]
-            )
-        )
-
-        st.plotly_chart(fig_t15_co2_total, use_container_width=True)
+        # Optional als Datei speichern
+        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.png", dpi=300, bbox_inches="tight")
+        
