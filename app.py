@@ -4416,60 +4416,51 @@ if "df_ts" in st.session_state:
         # Kosten-Nutzen-Grafik Batteriekapazität EFH
         # ------------------------------------------------------------
 
-
         df_batt = pd.DataFrame({
             "Batteriekapazität": [0, 1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
             "Netzbezug": [10115, 9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
             "Autarkiegrad": [30.9, 33.7, 37.9, 43.3, 48.2, 52.1, 54.9, 57.0, 58.2, 59.0, 59.5, 59.7, 60.0, 60.7],
             "Eigenverbrauchsquote": [31.0, 34.0, 38.4, 44.2, 49.3, 53.4, 56.4, 58.6, 59.8, 60.7, 61.2, 61.5, 61.7, 62.4],
+            "Max. Einspeiseleistung": [9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2],
             "Kosten brutto": [46282, 47182, 48982, 51682, 54382, 56182, 57182, 57882, 58882, 60682, 62482, 64282, 66082, 76282]
         })
 
-        # Zusätzliche Werte berechnen
-        df_batt["Netzbezug Reduktion ggü. 0 kWh"] = df_batt["Netzbezug"].iloc[0] - df_batt["Netzbezug"]
-        df_batt["Mehrkosten ggü. 0 kWh"] = df_batt["Kosten brutto"] - df_batt["Kosten brutto"].iloc[0]
-
-        # Marginaler Nutzen zwischen zwei aufeinanderfolgenden Varianten
-        df_batt["zusätzliche Netzbezugsreduktion"] = df_batt["Netzbezug"].shift(1) - df_batt["Netzbezug"]
-        df_batt["zusätzliche Kosten"] = df_batt["Kosten brutto"] - df_batt["Kosten brutto"].shift(1)
-        df_batt["kWh Reduktion pro 1000 CHF Mehrkosten"] = (
-            df_batt["zusätzliche Netzbezugsreduktion"] / df_batt["zusätzliche Kosten"] * 1000
-        )
-
-        # ------------------------------------------------------------
-        # Grafik 1: Netzbezug und Kosten
-        # ------------------------------------------------------------
-        fig, ax1 = plt.subplots(figsize=(10, 5.8))
-
         x = df_batt["Batteriekapazität"]
 
-        ax1.plot(x, df_batt["Netzbezug"], marker="o", label="Netzbezug")
+        fig, ax1 = plt.subplots(figsize=(10, 5.8))
+
+        # Linke Achse: Netzbezug
+        line1 = ax1.plot(
+            x,
+            df_batt["Netzbezug"],
+            marker="o",
+            label="Netzbezug"
+        )
+
         ax1.set_xlabel("Batteriekapazität in kWh")
         ax1.set_ylabel("Netzbezug in kWh/a")
         ax1.grid(True, alpha=0.3)
 
+        # Rechte Achse: Kosten
         ax2 = ax1.twinx()
-        ax2.plot(x, df_batt["Kosten brutto"], marker="s", linestyle="--", label="Kosten brutto")
-        ax2.set_ylabel("Kosten brutto in CHF")
 
-        # Markierung für ungefähren Sättigungsbereich
-        ax1.axvspan(15, 24, alpha=0.12)
-        ax1.text(
-            19.5,
-            ax1.get_ylim()[0] + (ax1.get_ylim()[1] - ax1.get_ylim()[0]) * 0.12,
-            "abnehmender\nZusatznutzen",
-            ha="center",
-            va="bottom",
-            fontsize=9
+        line2 = ax2.plot(
+            x,
+            df_batt["Kosten brutto"],
+            marker="s",
+            linestyle="--",
+            label="Kosten brutto"
         )
 
+        ax2.set_ylabel("Kosten brutto in CHF")
+
         # Gemeinsame Legende
-        lines_1, labels_1 = ax1.get_legend_handles_labels()
-        lines_2, labels_2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper right")
+        lines = line1 + line2
+        labels = [line.get_label() for line in lines]
+        ax1.legend(lines, labels, loc="center right")
 
         fig.suptitle(
-            "Batteriekapazität: Netzbezug und Bruttokosten",
+            "Batteriekapazität, Netzbezug und Bruttokosten",
             fontsize=13,
             fontweight="bold"
         )
@@ -4481,46 +4472,3 @@ if "df_ts" in st.session_state:
         fig.savefig("batteriekapazitaet_netzbezug_kosten.pdf", bbox_inches="tight")
         fig.savefig("batteriekapazitaet_netzbezug_kosten.svg", bbox_inches="tight")
         fig.savefig("batteriekapazitaet_netzbezug_kosten.png", dpi=600, bbox_inches="tight")
-
-
-        # ------------------------------------------------------------
-        # Grafik 2: Zusätzlicher Nutzen pro zusätzlichen Kosten
-        # ------------------------------------------------------------
-        fig2, ax = plt.subplots(figsize=(10, 5.8))
-
-        # erste Zeile 0 kWh hat keinen marginalen Wert, deshalb ab 1 kWh
-        df_marginal = df_batt.dropna(subset=["kWh Reduktion pro 1000 CHF Mehrkosten"])
-
-        ax.bar(
-            df_marginal["Batteriekapazität"],
-            df_marginal["kWh Reduktion pro 1000 CHF Mehrkosten"],
-            width=1.8
-        )
-
-        ax.set_xlabel("Batteriekapazität in kWh")
-        ax.set_ylabel("Zusätzliche Netzbezugsreduktion in kWh/a pro 1’000 CHF Mehrkosten")
-        ax.set_title(
-            "Abnehmender Zusatznutzen steigender Batteriekapazität",
-            fontsize=13,
-            fontweight="bold"
-        )
-        ax.grid(axis="y", alpha=0.3)
-
-        # Markierung ab ca. 15 kWh
-        ax.axvspan(15, 50, alpha=0.10)
-        ax.text(
-            32,
-            ax.get_ylim()[1] * 0.85,
-            "geringerer Zusatznutzen\nbei grösseren Speichern",
-            ha="center",
-            va="top",
-            fontsize=9
-        )
-
-        plt.tight_layout()
-
-        st.pyplot(fig2)
-
-        fig2.savefig("batteriekapazitaet_marginaler_nutzen.pdf", bbox_inches="tight")
-        fig2.savefig("batteriekapazitaet_marginaler_nutzen.svg", bbox_inches="tight")
-        fig2.savefig("batteriekapazitaet_marginaler_nutzen.png", dpi=600, bbox_inches="tight")
