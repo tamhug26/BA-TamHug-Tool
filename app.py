@@ -4399,7 +4399,7 @@ if "df_ts" in st.session_state:
         # Gemeinsame Legende
         lines = line1 + line2 + line3
         labels = [line.get_label() for line in lines]
-        ax1.legend(lines, labels, loc="center right")
+        ax1.legend(lines, labels, loc="upper right")
 
         fig.suptitle(
             "Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
