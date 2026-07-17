@@ -4369,7 +4369,7 @@ if "df_ts" in st.session_state:
             ("Autarkiegrad", "%")
         ]
 
-        fig, axes = plt.subplots(1, 7, figsize=(28, 5), sharex=False)
+        fig, axes = plt.subplots(1, 7, figsize=(34, 7), sharex=False)
 
         for ax, (spalte, einheit) in zip(axes, kennzahlen):
             werte = df_abregelung[spalte].values
@@ -4444,5 +4444,10 @@ if "df_ts" in st.session_state:
         st.pyplot(fig2)
 
         # Optional als Datei speichern
-        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.png", dpi=300, bbox_inches="tight")
-        
+        fig.savefig("parameterstudie_abregelung_kennzahlen.pdf", bbox_inches="tight")
+        fig.savefig("parameterstudie_abregelung_kennzahlen.svg", bbox_inches="tight")
+        fig.savefig("parameterstudie_abregelung_kennzahlen.png", dpi=600, bbox_inches="tight")
+
+        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.pdf", bbox_inches="tight")
+        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.svg", bbox_inches="tight")
+        fig2.savefig("parameterstudie_abregelung_max_netzeinspeisung.png", dpi=600, bbox_inches="tight")
