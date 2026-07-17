@@ -4347,95 +4347,12 @@ if "df_ts" in st.session_state:
 
         import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
- 
-
-        df_abregelung = pd.DataFrame({
-            "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6", "Fall 7"],
-            "PV-Produktion": [14564, 17305, 17305, 17305, 17305, 17305, 17305, 17305],
-            "Strombedarf": [14639, 14639, 14639, 14639, 14639, 14639, 14639, 14639],
-            "Eigenverbrauchsquote": [49.3, 41.9, 41.9, 41.9, 49.7, 53.8, 39.7, 47.4],
-            "Autarkiegrad": [48.2, 48.6, 48.6, 48.6, 57.3, 62.0, 46.0, 54.7],
-            "Netzbezug": [7579, 7529, 7529, 7529, 6247, 5565, 7900, 6628],
-            "Netzeinspeisung": [7377, 10058, 10058, 9315, 8063, 7414, 9698, 8454],
-            "Abregelung": [0, 0, 0, 744, 649, 578, 744, 649],
-            "Max. Netzeinspeisung": [9.2, 9.44, 9.44, 7.7, 7.7, 7.7, 7.7, 7.7]
-        })
-
-        faelle = df_abregelung["Fall"]
-        x = np.arange(len(faelle))
-
-        # Eine feste Farbe pro Fall
-        farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
-
-        kennzahlen = [
-            ("PV-Produktion", "kWh/a"),
-            ("Strombedarf", "kWh/a"),
-            ("Netzbezug", "kWh/a"),
-            ("Netzeinspeisung", "kWh/a"),
-            ("Abregelung", "kWh/a"),
-            ("Eigenverbrauchsquote", "%"),
-            ("Autarkiegrad", "%"),
-            ("Max. Netzeinspeisung", "kW")
-        ]
-
-        fig = plt.figure(figsize=(18, 15))
-        gs = gridspec.GridSpec(3, 6, figure=fig, hspace=0.55, wspace=0.55)
-
-        axes = [
-            fig.add_subplot(gs[0, 0:2]),
-            fig.add_subplot(gs[0, 2:4]),
-            fig.add_subplot(gs[0, 4:6]),
-
-            fig.add_subplot(gs[1, 0:2]),
-            fig.add_subplot(gs[1, 2:4]),
-            fig.add_subplot(gs[1, 4:6]),
-
-            fig.add_subplot(gs[2, 1:3]),
-            fig.add_subplot(gs[2, 3:5])
-        ]
-
-        for ax, (spalte, einheit) in zip(axes, kennzahlen):
-            werte = df_abregelung[spalte].values
-
-            ax.bar(x, werte, color=farben)
-
-            ax.set_title(spalte, fontsize=13, fontweight="bold")
-            ax.set_ylabel(einheit, fontsize=11)
-            ax.set_xticks(x)
-            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=10)
-
-            ymax = max(werte) if max(werte) > 0 else 1
-            ax.set_ylim(0, ymax * 1.12)
-
-            ax.grid(axis="y", alpha=0.25)
-            ax.set_axisbelow(True)
-
-        fig.suptitle(
-            "Parameterstudie: Abregelungsverluste in Abhängigkeit von PV-Ausrichtung, Einspeisegrenze, Batteriespeicher und EMS-Strategie",
-            fontsize=17,
-            fontweight="bold",
-            y=0.98
-        )
-
-        # In Streamlit anzeigen
-        st.pyplot(fig)
-
-        # Scharf speichern für Word/Bericht
-        fig.savefig("parameterstudie_abregelung_3_3_2.pdf", bbox_inches="tight")
-        fig.savefig("parameterstudie_abregelung_3_3_2.svg", bbox_inches="tight")
-        fig.savefig("parameterstudie_abregelung_3_3_2.png", dpi=600, bbox_inches="tight")
-
-        # ------------------------------------------------------------
-        # Kosten-Nutzen-Grafik Batteriekapazität EFH
-        # ------------------------------------------------------------
 
         df_batt = pd.DataFrame({
-        "Batteriekapazität": [0, 1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
-        "Netzbezug": [10115, 9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
-        "Autarkiegrad": [30.9, 33.7, 37.9, 43.3, 48.2, 52.1, 54.9, 57.0, 58.2, 59.0, 59.5, 59.7, 60.0, 60.7],
-        "Eigenverbrauchsquote": [31.0, 34.0, 38.4, 44.2, 49.3, 53.4, 56.4, 58.6, 59.8, 60.7, 61.2, 61.5, 61.7, 62.4],
-        "Max. Einspeiseleistung": [9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2],
-        "Kosten brutto": [46282, 47182, 48982, 51682, 54382, 56482, 58282, 60082, 61882, 63682, 65482, 67282, 69082, 79282]
+            "Batteriekapazität": [1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
+            "Netzbezug": [9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
+            "Autarkiegrad": [33.7, 37.9, 43.3, 48.2, 52.1, 54.9, 57.0, 58.2, 59.0, 59.5, 59.7, 60.0, 60.7],
+            "Eigenverbrauchsquote": [34.0, 38.4, 44.2, 49.3, 53.4, 56.4, 58.6, 59.8, 60.7, 61.2, 61.5, 61.7, 62.4]
         })
 
         x = df_batt["Batteriekapazität"]
@@ -4452,22 +4369,90 @@ if "df_ts" in st.session_state:
 
         ax1.set_xlabel("Batteriekapazität in kWh")
         ax1.set_ylabel("Netzbezug in kWh/a")
+        ax1.set_ylim(0, df_batt["Netzbezug"].max() * 1.10)
         ax1.grid(True, alpha=0.3)
 
-        # Rechte Achse: Kosten
+        # Rechte Achse: Autarkie und Eigenverbrauch
         ax2 = ax1.twinx()
 
         line2 = ax2.plot(
             x,
-            df_batt["Kosten brutto"],
+            df_batt["Autarkiegrad"],
+            marker="s",
+            linestyle="--",
+            label="Autarkiegrad"
+        )
+
+        line3 = ax2.plot(
+            x,
+            df_batt["Eigenverbrauchsquote"],
+            marker="^",
+            linestyle="--",
+            label="Eigenverbrauch"
+        )
+
+        ax2.set_ylabel("Autarkiegrad / Eigenverbrauch in %")
+        ax2.set_ylim(0, max(df_batt["Autarkiegrad"].max(), df_batt["Eigenverbrauchsquote"].max()) * 1.10)
+
+        # Gemeinsame Legende
+        lines = line1 + line2 + line3
+        labels = [line.get_label() for line in lines]
+        ax1.legend(lines, labels, loc="center right")
+
+        fig.suptitle(
+            "Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
+            fontsize=13,
+            fontweight="bold"
+        )
+
+        plt.tight_layout()
+
+        st.pyplot(fig)
+
+        fig.savefig("batteriekapazitaet_netzbezug_autarkie_eigenverbrauch.pdf", bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_netzbezug_autarkie_eigenverbrauch.svg", bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_netzbezug_autarkie_eigenverbrauch.png", dpi=600, bbox_inches="tight")
+
+        # ------------------------------------------------------------
+        # Grafik: Batteriekapazität, Netzbezug und Bruttokosten
+        # Achsen beginnen bei 0
+        # ------------------------------------------------------------
+
+        df_batt_kosten = pd.DataFrame({
+            "Batteriekapazität": [0, 1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
+            "Netzbezug": [10115, 9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
+            "Kosten brutto": [46282, 47182, 48982, 51682, 54382, 56482, 58282, 60082, 61882, 63682, 65482, 67282, 69082, 79282]
+        })
+
+        x = df_batt_kosten["Batteriekapazität"]
+
+        fig, ax1 = plt.subplots(figsize=(10, 5.8))
+
+        line1 = ax1.plot(
+            x,
+            df_batt_kosten["Netzbezug"],
+            marker="o",
+            label="Netzbezug"
+        )
+
+        ax1.set_xlabel("Batteriekapazität in kWh")
+        ax1.set_ylabel("Netzbezug in kWh/a")
+        ax1.set_ylim(0, df_batt_kosten["Netzbezug"].max() * 1.10)
+        ax1.grid(True, alpha=0.3)
+
+        ax2 = ax1.twinx()
+
+        line2 = ax2.plot(
+            x,
+            df_batt_kosten["Kosten brutto"],
             marker="s",
             linestyle="--",
             label="Kosten brutto"
         )
 
         ax2.set_ylabel("Kosten brutto in CHF")
+        ax2.set_ylim(0, df_batt_kosten["Kosten brutto"].max() * 1.10)
 
-        # Gemeinsame Legende
         lines = line1 + line2
         labels = [line.get_label() for line in lines]
         ax1.legend(lines, labels, loc="center right")
@@ -4484,4 +4469,4 @@ if "df_ts" in st.session_state:
 
         fig.savefig("batteriekapazitaet_netzbezug_kosten.pdf", bbox_inches="tight")
         fig.savefig("batteriekapazitaet_netzbezug_kosten.svg", bbox_inches="tight")
-        fig.savefig("batteriekapazitaet_netzbezug_kosten.png", dpi=600, bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_netzbezug_kosten.png", dpi=600, bbox_inches="tight")      
