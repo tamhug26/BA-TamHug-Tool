@@ -4429,59 +4429,59 @@ if "df_ts" in st.session_state:
         # Kosten-Nutzen-Grafik Batteriekapazität EFH
         # ------------------------------------------------------------
 
-    df_batt = pd.DataFrame({
+        df_batt = pd.DataFrame({
         "Batteriekapazität": [0, 1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
         "Netzbezug": [10115, 9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
         "Autarkiegrad": [30.9, 33.7, 37.9, 43.3, 48.2, 52.1, 54.9, 57.0, 58.2, 59.0, 59.5, 59.7, 60.0, 60.7],
         "Eigenverbrauchsquote": [31.0, 34.0, 38.4, 44.2, 49.3, 53.4, 56.4, 58.6, 59.8, 60.7, 61.2, 61.5, 61.7, 62.4],
         "Max. Einspeiseleistung": [9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2],
         "Kosten brutto": [46282, 47182, 48982, 51682, 54382, 56182, 57182, 57882, 58882, 60682, 62482, 64282, 66082, 76282]
-    })
+            })
 
-    x = df_batt["Batteriekapazität"]
+        x = df_batt["Batteriekapazität"]
 
-    fig, ax1 = plt.subplots(figsize=(10, 5.8))
+        fig, ax1 = plt.subplots(figsize=(10, 5.8))
 
-    # Linke Achse: Netzbezug
-    line1 = ax1.plot(
-        x,
-        df_batt["Netzbezug"],
-        marker="o",
-        label="Netzbezug"
-    )
+        # Linke Achse: Netzbezug
+        line1 = ax1.plot(
+            x,
+            df_batt["Netzbezug"],
+            marker="o",
+            label="Netzbezug"
+        )
 
-    ax1.set_xlabel("Batteriekapazität in kWh")
-    ax1.set_ylabel("Netzbezug in kWh/a")
-    ax1.grid(True, alpha=0.3)
+        ax1.set_xlabel("Batteriekapazität in kWh")
+        ax1.set_ylabel("Netzbezug in kWh/a")
+        ax1.grid(True, alpha=0.3)
 
-    # Rechte Achse: Kosten
-    ax2 = ax1.twinx()
+        # Rechte Achse: Kosten
+        ax2 = ax1.twinx()
 
-    line2 = ax2.plot(
-        x,
-        df_batt["Kosten brutto"],
-        marker="s",
-        linestyle="--",
-        label="Kosten brutto"
-    )
+        line2 = ax2.plot(
+            x,
+            df_batt["Kosten brutto"],
+            marker="s",
+            linestyle="--",
+            label="Kosten brutto"
+        )
 
-    ax2.set_ylabel("Kosten brutto in CHF")
+        ax2.set_ylabel("Kosten brutto in CHF")
 
-    # Gemeinsame Legende
-    lines = line1 + line2
-    labels = [line.get_label() for line in lines]
-    ax1.legend(lines, labels, loc="center right")
+        # Gemeinsame Legende
+        lines = line1 + line2
+        labels = [line.get_label() for line in lines]
+        ax1.legend(lines, labels, loc="center right")
 
-    fig.suptitle(
-        "Batteriekapazität, Netzbezug und Bruttokosten",
-        fontsize=13,
-        fontweight="bold"
-    )
+        fig.suptitle(
+            "Batteriekapazität, Netzbezug und Bruttokosten",
+            fontsize=13,
+            fontweight="bold"
+        )
 
-    plt.tight_layout()
+        plt.tight_layout()
 
-    st.pyplot(fig)
+        st.pyplot(fig)
 
-    fig.savefig("batteriekapazitaet_netzbezug_kosten.pdf", bbox_inches="tight")
-    fig.savefig("batteriekapazitaet_netzbezug_kosten.svg", bbox_inches="tight")
-    fig.savefig("batteriekapazitaet_netzbezug_kosten.png", dpi=600, bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_netzbezug_kosten.pdf", bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_netzbezug_kosten.svg", bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_netzbezug_kosten.png", dpi=600, bbox_inches="tight")
