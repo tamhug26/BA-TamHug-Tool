@@ -4630,7 +4630,8 @@ if "df_ts" in st.session_state:
 
         # ------------------------------------------------------------
         # Grafik: Einfluss zusätzlicher PV-Flächen auf Stromkennzahlen
-        # Layout: 3 oben, 2 Mitte, 2 unten
+        # Layout: 2 Reihen mit je 3 Diagrammen
+        # Ohne Abregelung, da in allen Fällen 0 kWh/a
         # ------------------------------------------------------------
 
         df_pv_flaechen = pd.DataFrame({
@@ -4640,8 +4641,7 @@ if "df_ts" in st.session_state:
             "Autarkiegrad": [45.0, 51.7, 58.7, 61.9, 65.7, 52.9, 55.0],
             "Netzbezug": [27913, 24645, 21205, 19638, 17728, 23966, 22905],
             "Netzeinspeisung": [3480, 9491, 18808, 23872, 30235, 13166, 15215],
-            "Max. Einspeiseleistung": [15.8, 22.1, 23.7, 23.75, 23.75, 23.6, 23.6],
-            "Abregelung bei 70 %": [0, 0, 0, 0, 0, 0, 0]
+            "Max. Einspeiseleistung": [15.8, 22.1, 23.7, 23.75, 23.75, 23.6, 23.6]
         })
 
         faelle = df_pv_flaechen["Fall"]
@@ -4654,27 +4654,15 @@ if "df_ts" in st.session_state:
             ("Autarkiegrad", "%"),
             ("Netzbezug", "kWh/a"),
             ("Netzeinspeisung", "kWh/a"),
-            ("Max. Einspeiseleistung", "kW"),
-            ("Abregelung bei 70 %", "kWh/a")
+            ("Max. Einspeiseleistung", "kW")
         ]
 
-        fig = plt.figure(figsize=(18, 14))
-        gs = gridspec.GridSpec(3, 6, figure=fig, hspace=0.55, wspace=0.55)
-
-        axes = [
-            fig.add_subplot(gs[0, 0:2]),
-            fig.add_subplot(gs[0, 2:4]),
-            fig.add_subplot(gs[0, 4:6]),
-
-            fig.add_subplot(gs[1, 0:3]),
-            fig.add_subplot(gs[1, 3:6]),
-
-            fig.add_subplot(gs[2, 0:3]),
-            fig.add_subplot(gs[2, 3:6])
-        ]
+        fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+        axes = axes.flatten()
 
         for ax, (spalte, einheit) in zip(axes, kennzahlen):
             werte = df_pv_flaechen[spalte].values
+
             ax.bar(x, werte, color=farben)
 
             ax.set_title(spalte, fontsize=13, fontweight="bold")
@@ -4697,6 +4685,8 @@ if "df_ts" in st.session_state:
             fontweight="bold",
             y=0.98
         )
+
+        plt.tight_layout(rect=[0, 0, 1, 0.94])
 
         st.pyplot(fig)
 
