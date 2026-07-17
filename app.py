@@ -4381,7 +4381,7 @@ if "df_ts" in st.session_state:
             df_batt["Autarkiegrad"],
             marker="s",
             linestyle="--",
-            color="#ff7f0e",
+            color="#2ca02c",
             label="Autarkiegrad"
         )
 
@@ -4390,13 +4390,12 @@ if "df_ts" in st.session_state:
             df_batt["Eigenverbrauchsquote"],
             marker="^",
             linestyle="--",
-            color="#2ca02c",
+            color="#ff7f0e",
             label="Eigenverbrauch"
         )
 
         ax2.set_ylabel("Autarkiegrad / Eigenverbrauch in %")
-        ax2.set_ylim(0, max(df_batt["Autarkiegrad"].max(), df_batt["Eigenverbrauchsquote"].max()) * 1.10)
-
+        ax2.set_ylim(0, 100)
         # Gemeinsame Legende
         lines = line1 + line2 + line3
         labels = [line.get_label() for line in lines]
@@ -4420,17 +4419,13 @@ if "df_ts" in st.session_state:
         # Grafik: Batteriekapazität, Netzbezug und Bruttokosten
         # Achsen beginnen bei 0
         # ------------------------------------------------------------
-
         df_batt_kosten = pd.DataFrame({
             "Batteriekapazität": [0, 1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
             "Netzbezug": [10115, 9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
             "Kosten brutto": [46282, 47182, 48982, 51682, 54382, 56482, 58282, 60082, 61882, 63682, 65482, 67282, 69082, 79282]
         })
-
         x = df_batt_kosten["Batteriekapazität"]
-
         fig, ax1 = plt.subplots(figsize=(10, 5.8))
-
         line1 = ax1.plot(
             x,
             df_batt_kosten["Netzbezug"],
