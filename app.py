@@ -4538,3 +4538,92 @@ if "df_ts" in st.session_state:
         fig.savefig("parameterstudie_ems_strategien.pdf", bbox_inches="tight")
         fig.savefig("parameterstudie_ems_strategien.svg", bbox_inches="tight")
         fig.savefig("parameterstudie_ems_strategien.png", dpi=600, bbox_inches="tight")
+
+        # ------------------------------------------------------------
+        # Grafik: Batteriekapazität, Netzbezug und CO2-Bilanz
+        # ------------------------------------------------------------
+
+        import matplotlib.pyplot as plt
+        import pandas as pd
+
+        df_batt_co2 = pd.DataFrame({
+            "Batteriekapazität": [0, 1, 9, 15, 33],
+            "Netzbezug": [10115, 9706, 7579, 6600, 5858],
+            "CO2_total_IWB": [1893, 1913, 1963, 2017, 2207],
+            "CO2_total_CH": [2757, 2742, 2609, 2581, 2708],
+            "CO2_Batterie_Herstellung": [0, 24, 100, 166, 365]
+        })
+
+        x = df_batt_co2["Batteriekapazität"]
+
+        fig, ax1 = plt.subplots(figsize=(10, 5.8))
+
+        line1 = ax1.plot(
+            x,
+            df_batt_co2["CO2_total_IWB"],
+            marker="o",
+            color="#1f77b4",
+            label="CO₂ total mit IWB-Strom"
+        )
+
+        line2 = ax1.plot(
+            x,
+            df_batt_co2["CO2_total_CH"],
+            marker="s",
+            color="#2ca02c",
+            label="CO₂ total mit CH-Strommix"
+        )
+
+        line3 = ax1.plot(
+            x,
+            df_batt_co2["CO2_Batterie_Herstellung"],
+            marker="^",
+            linestyle="--",
+            color="#ff7f0e",
+            label="CO₂ Batterieherstellung"
+        )
+
+        ax1.set_xlabel("Batteriekapazität in kWh")
+        ax1.set_ylabel("CO₂-Emissionen in kg CO₂-eq/a")
+        ax1.set_ylim(0, df_batt_co2["CO2_total_CH"].max() * 1.15)
+        ax1.grid(True, alpha=0.3)
+
+        ax2 = ax1.twinx()
+
+        line4 = ax2.plot(
+            x,
+            df_batt_co2["Netzbezug"],
+            marker="d",
+            linestyle=":",
+            color="#d62728",
+            label="Netzbezug"
+        )
+
+        ax2.set_ylabel("Netzbezug in kWh/a")
+        ax2.set_ylim(0, df_batt_co2["Netzbezug"].max() * 1.10)
+
+        lines = line1 + line2 + line3 + line4
+        labels = [line.get_label() for line in lines]
+
+        ax1.legend(
+            lines,
+            labels,
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.14),
+            ncol=2,
+            frameon=True
+        )
+
+        fig.suptitle(
+            "Einfluss der Batteriekapazität auf Netzbezug und CO₂-Bilanz",
+            fontsize=13,
+            fontweight="bold"
+        )
+
+        plt.tight_layout(rect=[0, 0.10, 1, 1])
+
+        st.pyplot(fig)
+
+        fig.savefig("batteriekapazitaet_co2_bilanz.pdf", bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_co2_bilanz.svg", bbox_inches="tight")
+        fig.savefig("batteriekapazitaet_co2_bilanz.png", dpi=600, bbox_inches="tight")
