@@ -15,8 +15,6 @@ PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
 
-st.write("Prototyp 2 test5")
-
 #https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
 
 
