@@ -4627,3 +4627,79 @@ if "df_ts" in st.session_state:
         fig.savefig("batteriekapazitaet_co2_bilanz.pdf", bbox_inches="tight")
         fig.savefig("batteriekapazitaet_co2_bilanz.svg", bbox_inches="tight")
         fig.savefig("batteriekapazitaet_co2_bilanz.png", dpi=600, bbox_inches="tight")
+
+        # ------------------------------------------------------------
+        # Grafik: Einfluss zusätzlicher PV-Flächen auf Stromkennzahlen
+        # Layout: 3 oben, 2 Mitte, 2 unten
+        # ------------------------------------------------------------
+
+        df_pv_flaechen = pd.DataFrame({
+            "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6"],
+            "PV-Produktion": [26457, 36078, 49297, 56159, 64567, 40336, 43475],
+            "Eigenverbrauchsquote": [86.8, 73.7, 61.8, 57.5, 53.2, 67.4, 65.0],
+            "Autarkiegrad": [45.0, 51.7, 58.7, 61.9, 65.7, 52.9, 55.0],
+            "Netzbezug": [27913, 24645, 21205, 19638, 17728, 23966, 22905],
+            "Netzeinspeisung": [3480, 9491, 18808, 23872, 30235, 13166, 15215],
+            "Max. Einspeiseleistung": [15.8, 22.1, 23.7, 23.75, 23.75, 23.6, 23.6],
+            "Abregelung bei 70 %": [0, 0, 0, 0, 0, 0, 0]
+        })
+
+        faelle = df_pv_flaechen["Fall"]
+        x = np.arange(len(faelle))
+        farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
+
+        kennzahlen = [
+            ("PV-Produktion", "kWh/a"),
+            ("Eigenverbrauchsquote", "%"),
+            ("Autarkiegrad", "%"),
+            ("Netzbezug", "kWh/a"),
+            ("Netzeinspeisung", "kWh/a"),
+            ("Max. Einspeiseleistung", "kW"),
+            ("Abregelung bei 70 %", "kWh/a")
+        ]
+
+        fig = plt.figure(figsize=(18, 14))
+        gs = gridspec.GridSpec(3, 6, figure=fig, hspace=0.55, wspace=0.55)
+
+        axes = [
+            fig.add_subplot(gs[0, 0:2]),
+            fig.add_subplot(gs[0, 2:4]),
+            fig.add_subplot(gs[0, 4:6]),
+
+            fig.add_subplot(gs[1, 0:3]),
+            fig.add_subplot(gs[1, 3:6]),
+
+            fig.add_subplot(gs[2, 0:3]),
+            fig.add_subplot(gs[2, 3:6])
+        ]
+
+        for ax, (spalte, einheit) in zip(axes, kennzahlen):
+            werte = df_pv_flaechen[spalte].values
+            ax.bar(x, werte, color=farben)
+
+            ax.set_title(spalte, fontsize=13, fontweight="bold")
+            ax.set_ylabel(einheit, fontsize=11)
+            ax.set_xticks(x)
+            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=10)
+
+            if einheit == "%":
+                ax.set_ylim(0, 100)
+            else:
+                ymax = max(werte) if max(werte) > 0 else 1
+                ax.set_ylim(0, ymax * 1.12)
+
+            ax.grid(axis="y", alpha=0.25)
+            ax.set_axisbelow(True)
+
+        fig.suptitle(
+            "Einfluss zusätzlicher PV-Flächen auf die Stromkennzahlen des Gemeindehauses",
+            fontsize=17,
+            fontweight="bold",
+            y=0.98
+        )
+
+        st.pyplot(fig)
+
+        fig.savefig("gemeindehaus_zusaetzliche_pv_flaechen.pdf", bbox_inches="tight")
+        fig.savefig("gemeindehaus_zusaetzliche_pv_flaechen.svg", bbox_inches="tight")
+        fig.savefig("gemeindehaus_zusaetzliche_pv_flaechen.png", dpi=600, bbox_inches="tight")
