@@ -80,7 +80,7 @@ LebenszeitJahre = {
     "Batterie": 30, 
     "Fossil/Holzheizung": 20,
     "Erdsonde": 50,
-    "Wechselreichter": 15,
+    "Wechselrichter": 15,
     "PV": 30,
 }
 Auto_Faktoren = {
@@ -161,7 +161,7 @@ df_Bautyp_Heizwaermebedarf = pd.DataFrame({
 })
 EVU = {
     "IWB": 12.88, #industrielle Werke Basel
-    "EOF": 45.4, #Energie Oberes Fricktal AG 
+    "EOF": 24.4, #Energie Oberes Fricktal AG 
     "EBL": 50.1, #Elektra Baselland
     "BKW": 84, #Bernische Kraftwerke AG Energie AG
     "Elektra Zeiningen": 59, #Elektra Zeiningen
@@ -1587,7 +1587,7 @@ def berechne_umweltwirkung(
     lebensdauer_batterie=LebenszeitJahre["Batterie"],
     lebensdauer_wp=LebenszeitJahre["WP"],
     lebensdauer_waermeerzeuger=LebenszeitJahre["Fossil/Holzheizung"],
-    lebensdauer_wechselrichter=LebenszeitJahre["Wechselreichter"],
+    lebensdauer_wechselrichter=LebenszeitJahre["Wechselrichter"],
     auto_aktiv=False,
     auto_typ=None,
     auto_km_jahr=0.0,
@@ -3183,7 +3183,7 @@ with col1:
         batteriekapazität = st.slider("Batteriekapazität in kWh", 1, 50, 10)
         maxLadeleistungBatterie = st.slider("Maximale Ladeleistung der Batterie in kW", 1, 20, 10)
         maxEntladeleistungBatterie = st.slider("Maximale Entladeleistung der Batterie in kW", 1, 20, 10)
-        minSoC = st.number_input("Mininmal SoC in %", 0, 50, 20)
+        minSoC = st.number_input("Minimal SoC in %", 0, 50, 20)
         maxSoC = st.number_input("Maximal SoC in %", 60, 100, 80)
         st.caption("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
         batterieWirkungsgrad = st.number_input("Wirkungsgrad Batterie in %", 80, 100, 95)
@@ -4157,7 +4157,7 @@ if "df_ts" in st.session_state:
                 name="Gesamtlast"
             ))
             fig_year.update_layout(
-                title="Monatliche Gesamtlast Strom (kWh/Monat)",
+                title="Monatliche Gesamtlast Strom in kWh/Monat",
                 xaxis_title="Monat",
                 yaxis_title="Elektrische Gesamtlast in kWh pro Monat",
                 height=450
@@ -4170,10 +4170,6 @@ if "df_ts" in st.session_state:
 
             st.plotly_chart(fig_year, use_container_width=True)
             
-            st.write("PV-Produktion Jahreswert in kWh/Jahr:", round(df_ts["pv_kWh"].sum(), 1))
-            st.write("PV-Leistung Maximum in kW:", round(df_ts["pv_power_kW"].max(), 2))
-            st.write("Netzeinspeisung Jahreswert in kWh/Jahr:", round(df_ts["netzeinspeisung_kWh"].sum(), 1))
-            st.write("Jahresstrombedarf in kWh:", round(df_ts["gesamtlast_kWh"].sum(), 1))
             pv_monat = df_ts["pv_kWh"].resample("MS").sum()
 
         with col2: 
@@ -4185,7 +4181,7 @@ if "df_ts" in st.session_state:
             ))
 
             fig_pv_monat.update_layout(
-                title="Monatliche PV-Produktion",
+                title="Monatliche PV-Produktion in kWh/Monat",
                 xaxis_title="Monat",
                 yaxis_title="PV-Produktion in kWh pro Monat",
                 height=450
