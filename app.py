@@ -9,16 +9,12 @@ from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import plotly.express as px
-#import matplotlib.pyplot as plt
 import copy
 PROFILE_DIR = "profiles"
 os.makedirs(PROFILE_DIR, exist_ok=True)
 st.set_page_config(layout="wide")
 
-#https://ba-tamhug-tool-j82ipmep3hfrkgr36hxv9e.streamlit.app/#dimensionierungstool
-
-
-#Herstellung und Entsorgung
+# Umweltkennwerte für die Herstellung und Entsorgung der Systemkomponenten
 UBP = {
     "HeizölEL pro kWh":437,
     "Erdgas pro kWh": 279,
@@ -35,8 +31,6 @@ UBP = {
     "Solarstromanlage Schrägdach Marktmix, Max. Leistung kWp": 2090000,
     "Solarstromanlage Flachdach Marktmix, Max. Leistung kWp": 2370000,
     "Solarstromanlage Fassade Marktmix, Max. Leistung kWp": 2890000,
-    #"Solarstromanlage Schrägdach Kleinanlage Mono-Si, Max. Leistung kWp": 2940000,
-    #"Solarstromanlage Schrägdach Kleinanlage Multi-Si, Max. Leistung kWp": 2980000,
     "Wechselrichter 2.5 kW, Max. Leistung kWp": 534000,
     "Wechselrichter 5 kW, Max. Leistung kWp": 428000,
     "Wechselrichter 10 kW, Max. Leistung kWp": 343000,
@@ -46,7 +40,8 @@ UBP = {
     "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF in m²": 5420,
     "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF in m²": 9030,
 }
-#Herstellung und Entsorgung
+
+# Umweltkennwerte für die Herstellung und Entsorgung der Systemkomponenten
 kgCO2eq = {
     "HeizölEL pro kWh": 0.343,
     "Erdgas pro kWh": 0.234,
@@ -63,8 +58,6 @@ kgCO2eq = {
     "Solarstromanlage Schrägdach Marktmix, Max. Leistung kWp": 1000.00,
     "Solarstromanlage Flachdach Marktmix, Max. Leistung kWp": 1140.00,
     "Solarstromanlage Fassade Marktmix, Max. Leistung kWp": 1220.00,
-    #"Solarstromanlage Schrägdach Kleinanlage Mono-Si, Max. Leistung kWp": 1260.00,
-    #"Solarstromanlage Schrägdach Kleinanlage Multi-Si, Max. Leistung kWp": 1250.00,
     "Wechselrichter 2.5 kW, Max. Leistung kWp": 144.00,
     "Wechselrichter 5 kW, Max. Leistung kWp": 115.00,
     "Wechselrichter 10 kW, Max. Leistung kWp": 92.50,
@@ -74,7 +67,8 @@ kgCO2eq = {
     "Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF in m²": 2.58,
     "Wärmeerzeuger spez. Leistungsbedarf 50 W/m², EBF in m²": 4.29,
 }
-#lebenszeit Hausgeräte
+
+# Angenommene Lebensdauer der betrachteten Systemkomponenten in Jahren
 LebenszeitJahre = {
     "WP": 20,
     "Batterie": 30, 
@@ -83,6 +77,7 @@ LebenszeitJahre = {
     "Wechselrichter": 15,
     "PV": 30,
 }
+
 Auto_Faktoren = {
     "Benzin": {"UBP/Fzkm": 442, "kg CO2-eq/Fzkm": 0.243, "MJ/Fzkm": 4.07},
     "Diesel": {"UBP/Fzkm": 400, "kg CO2-eq/Fzkm": 0.213, "MJ/Fzkm": 3.54},
@@ -90,6 +85,7 @@ Auto_Faktoren = {
     "E-Auto": {"UBP/Fzkm": 351, "kg CO2-eq/Fzkm": 0.1108, "MJ/Fzkm": 0.0},
 }
 
+# Vordefinierte Strompreise
 strompreis_mapping = {
     "9,64": 9.64,
     "20,96": 20.96,
@@ -97,9 +93,8 @@ strompreis_mapping = {
     "43,61": 43.61
 }
 
+# Wetterdatensätze der verfügbaren MeteoSchweiz-Standorte
 basis_pfad_weather = "Weather_data"
-#dateipfad = f"{basis_pfad_weather}/{dateiname}"
-
 standort_dateien = {
     "Aadorf / Tänikon": "TAE_2023_DRY.csv",
     "Aigle": "AIG_2023_DRY.csv",
@@ -142,6 +137,8 @@ standort_dateien = {
     "Zürich-Kloten": "KLO_2023_DRY.csv",
     "Zürich-MeteoSchweiz": "ZUESTA_2023_DRY.csv"
 }  
+
+# Vereinfachte Zuordnung des jährlichen Heizwärmebedarfs nach Baujahr
 df_Bautyp_Heizwaermebedarf = pd.DataFrame({
     "Bautyp" : list(range(1901, 2016)) + ["Minergie", "Minergie-P"],
     "Heizwaermebedarf" : (
@@ -159,6 +156,8 @@ df_Bautyp_Heizwaermebedarf = pd.DataFrame({
     [30]
     )
 })
+
+# Durchschnittliche Einspeisevergütungen ausgewählter Energieversorger
 EVU = {
     "IWB": 12.88, #industrielle Werke Basel
     "EOF": 24.4, #Energie Oberes Fricktal AG 
@@ -174,6 +173,8 @@ EVU = {
     "Romande Energie": 11.3,
     "Schweiz": 97.4
 }
+
+# Heizwärmebedarf gemäss GEAK-Energieklassen
 GEAK_Klassen = {
     "A": 25, 
     "B": 50, 
@@ -183,6 +184,8 @@ GEAK_Klassen = {
     "F": 150,
     "G": 175
 }
+
+# Annahmen zu möglichen Sanierungsmassnahmen
 reduktionen = {
                 "Dämmung Dach": 0.15,
                 "neue Fenster": 0.15,
@@ -190,31 +193,31 @@ reduktionen = {
                 "Dämmmung Kellerdecke": 0.1
             }
 
+# Vordefinierte Ladestrategien für E-Auto und Warmwasser
 EV_MORGEN = "Morgens (05:00–08:00 Uhr)"
 EV_PV = "PV-Überschussgeführt (11:00–15:00 Uhr)"
 EV_ABEND = "Abends (17:00–22:00 Uhr)"
 EV_KOMBI = "Kombiniert (05:00–08:00 Uhr und 17:00–22:00 Uhr)"
-
 WW_PV = "PV-Überschussgeführt (spätestens 11:00 Uhr)"
 WW_MORGEN = "Morgens (05:00–07:00 Uhr)"
 WW_ABEND = "Abends (17:00–20:00 Uhr)"
 WW_KOMBI = "Morgens + Abends (05:00–07:00 Uhr und 17:00–20:00 Uhr)"
 WW_NACHMITTAG_LWWP = "Nachmittags für Luft/Wasser-WP (14:00–17:00 Uhr)"
 
-#Standartlastprofile
-slp_df = pd.read_excel("Standartprofil H25.xlsx")
+# Einlesen der Standardlastprofile für Haushalte und Gewerbe
+slp_df = pd.read_excel("Standardprofil H25.xlsx")
 slp_df.columns = slp_df.columns.str.strip()
 slp_df["Monat"] = slp_df["Monat"].astype(int)
 slp_df["Zeit"] = pd.to_datetime(slp_df["Zeit"], format="%H:%M:%S").dt.strftime("%H:%M")
 
-g25_df = pd.read_excel("Standartprofil G25.xlsx")
+g25_df = pd.read_excel("Standardprofil G25.xlsx")
 g25_df.columns = g25_df.columns.str.strip()
 g25_df["Monat"] = g25_df["Monat"].astype(int)
 g25_df["Zeit"] = pd.to_datetime(
     g25_df["Zeit"], format="%H:%M:%S"
 ).dt.strftime("%H:%M")
 
-#def Zeitdimension mit Dataframe
+# Erstellung des zeitlichen Grundgerüsts der Simulation
 def create_base_dataframe(year=2025):
     zeitindex = pd.date_range(
         start=f"{year}-01-01 00:00",
@@ -227,40 +230,37 @@ def create_base_dataframe(year=2025):
     df["Stunde"] = df.index.hour
     df["Tag_im_Jahr"] = df.index.dayofyear
     return df
+# Zuordnung der Zeitstempel zu den Tagtypen des Standardlastprofils
 def get_day_type(timestamp):
     if timestamp.weekday() < 5:
         return "WT" #Werktag
     elif timestamp.weekday() == 5:
         return "SA" #Saturday
     else:
-        return "FT" #Feiertag bzw sonntag
+        return "FT" #Feiertag bzw. Sonntag
+# Erstellung des Haushaltslastprofils auf Basis des Standardlastprofils H25
 def add_slp_profile(df, slp_df, jahresstromverbrauch):
     df = df.copy()
-
-    # Tagtyp WT, SA FT bestimmen
+    # Zuordnung von Werktag, Samstag und Feiertag/Sonntag
     df["Tagtyp"] = df.index.map(get_day_type)
-
-    #Uhrzeit entnehmen
+    # Vorbereitung der Zeitangaben für die Profilzuordnung
     df["Zeit"] = df.index.strftime("%H:%M")
-
-    # Excel vorbereiten
+    # Excel vorbereiten 
     slp_lookup = slp_df.copy()
     slp_lookup["Monat"] = slp_lookup["Monat"].astype(int)
     slp_lookup["Zeit"] = slp_lookup["Zeit"].astype(str).str[:5]
-    slp_lookup = slp_lookup.set_index(["Monat", "Zeit"]) #Multiindex
-
-    # Werte holen
+    slp_lookup = slp_lookup.set_index(["Monat", "Zeit"])
+    # Übernahme der Profilwerte für die drei Tagtypen
     df["SA"] = [slp_lookup.loc[(m, z), "SA"] for m, z in zip(df["Monat"], df["Zeit"])]
     df["FT"] = [slp_lookup.loc[(m, z), "FT"] for m, z in zip(df["Monat"], df["Zeit"])]
-    df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]
-        
-    # richtigen Typtag wählen
+    df["WT"] = [slp_lookup.loc[(m, z), "WT"] for m, z in zip(df["Monat"], df["Zeit"])]  
+    # Auswahl des zum jeweiligen Zeitstempel passenden Profilwerts
     df["slp_wert"] = np.where(
         df["Tagtyp"] == "WT", df["WT"],
         np.where(df["Tagtyp"] == "SA", df["SA"], df["FT"])
     )
-
-    t = df["Tag_im_Jahr"].astype("float64") #Tagesnummern 1-365
+    t = df["Tag_im_Jahr"].astype("float64")
+    # Dynamisierung des Standardlastprofils über den Jahresverlauf
     dynamikfaktor = (
         - 3.92e-10 * t**4
         + 3.20e-7 * t**3
@@ -270,41 +270,34 @@ def add_slp_profile(df, slp_df, jahresstromverbrauch):
     )
     df["slp_dyn"] = df["slp_wert"] * dynamikfaktor
     df["slp_dyn"] = df["slp_dyn"].clip(lower=0)
-
-    # auf Jahresverbrauch normieren
-    faktor_summe = df["slp_dyn"].sum() #normierung auf Jahresverbrauch
+    # Normierung des Profils auf den eingegebenen Jahresstromverbrauch
+    faktor_summe = df["slp_dyn"].sum()
     df["hauslast_kWh"] = df["slp_dyn"] / faktor_summe * jahresstromverbrauch
 
     return df
+# Erstellung des zeitabhängigen Heizwärmeprofils aus den Wetterdaten
 def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, raumtemperatur=20, stationshoehe_m=None,standorthoehe_m=None, auslegetemperatur=-7, vorlauf_auslegung=40):
     df = df.copy()
-
     weather = df_weather[["temp"]].copy()
     weather["temp"] = pd.to_numeric(weather["temp"], errors="coerce")
-
     weather_15min = weather.resample("15min").ffill()
-
     df = df.join(weather_15min, how="left")
     df["temp"] = df["temp"].interpolate("time")
-
     if stationshoehe_m is not None and standorthoehe_m is not None:
         hoehenunterschied_m = standorthoehe_m - stationshoehe_m
 
         if abs(hoehenunterschied_m) >= 100:
             temperaturkorrektur = -0.65 * (hoehenunterschied_m / 100)
             df["temp"] = df["temp"] + temperaturkorrektur
-
     df["vorlauftemperatur_C"] = berechne_vorlauftemperatur(
         df["temp"],
         auslegetemperatur=auslegetemperatur,
         vorlauf_auslegung=vorlauf_auslegung,
         raumtemperatur=raumtemperatur
     )
-
     # Heizbedarf nur, wenn Aussentemperatur unter gewünschter Raumtemperatur liegt
     df["heiz_faktor"] = (raumtemperatur - df["temp"]).clip(lower=0)
-
-    #Normierung
+    # Normierung auf den eingegebenen jährlichen Heizwärmebedarf
     faktor_summe = df["heiz_faktor"].sum()
     if faktor_summe > 0:
         df["heizwaerme_kWh"] = (
@@ -312,8 +305,8 @@ def add_heating_profile_weather_based(df, df_weather, heizwaermebedarf_jahr, rau
         )
     else:
         df["heizwaerme_kWh"] = 0.0
-
     return df
+# Berechnung des zeitabhängigen Vorlauftemperaturverlaufs
 def berechne_vorlauftemperatur(temp_aussen, auslegetemperatur=-7, vorlauf_auslegung=40, raumtemperatur=20):
     steigung = (vorlauf_auslegung - raumtemperatur) / (auslegetemperatur - raumtemperatur)
 
@@ -323,6 +316,7 @@ def berechne_vorlauftemperatur(temp_aussen, auslegetemperatur=-7, vorlauf_ausleg
         lower=raumtemperatur,
         upper=vorlauf_auslegung
     )
+# Ergänzung des Wärmepumpenstromverbrauchs zur elektrischen Gebäudelast
 def add_heatpump_consumption(df, heizsystem, jaz=None, wp_typ=None, wp_strom_jahr=None):
     df = df.copy()
     if heizsystem == "Wärmepumpe" and wp_strom_jahr is not None:
@@ -339,6 +333,7 @@ def add_heatpump_consumption(df, heizsystem, jaz=None, wp_typ=None, wp_strom_jah
     df["gesamtlast_kWh"] = df["hauslast_kWh"] + df["wp_strom_kWh"]
 
     return df
+# Simulation der Energieflüsse zwischen PV-Anlage, Batterie, Gebäude und Netz
 def simulate_battery(
     df,
     batteriekapazitaet,
@@ -350,20 +345,17 @@ def simulate_battery(
     bezugsgrenze_kw,
     wirkungsgrad_roundtrip = 0.95
 ):
-    delta_t = 0.25  # 15 Minuten
-
+    delta_t = 0.25  # Dauer eines Simulationsschritts in Stunden
     # Rechnerische Aufteilung des Round-Trip-Wirkungsgrads
     eta_lade = np.sqrt(wirkungsgrad_roundtrip)
     eta_entlade = np.sqrt(wirkungsgrad_roundtrip)
-
     # Umrechnung der kW-Grenzen in kWh-Grenzen für dieses Intervall
     max_ladung_kWh = max_ladeleistung * delta_t
     max_entladung_kWh = max_entladeleistung * delta_t
     einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
     bezugsgrenze_kWh = bezugsgrenze_kw * delta_t
     df = df.copy()
-
-    # neue Spalten vorbereiten
+    # neue Spalten vorbereiten für Ergebnisgrössen
     df["direktverbrauch_pv_kWh"] = 0.0
     df["batterie_ladung_kWh"] = 0.0
     df["batterie_entladung_kWh"] = 0.0
@@ -372,46 +364,34 @@ def simulate_battery(
     df["netzeinspeisung_kWh"] = 0.0
     df["abregelung_kWh"] = 0.0
     df["unterdeckung_kWh"] = 0.0
-
     soc_min = batteriekapazitaet * (min_soc_prozent / 100)
     soc_max = batteriekapazitaet * (max_soc_prozent / 100)
-
-    # Startwert Batterie: Mitte zwischen min und max
+    # Initialisierung des Batterieladezustands
     soc = (soc_min + soc_max) / 2
-
     for i in df.index:
         last = df.at[i, "gesamtlast_kWh"]
         pv = df.at[i, "pv_kWh"]
-
-        # 1) direkter PV-Verbrauch
-        direktverbrauch = min(pv, last) #Pv zuerst im Haus verbraucht
-        pv_ueberschuss = pv - direktverbrauch # Es kann nie mehr direkt verbraucht werden als PV vorhanden ist oder als Last vorhanden ist.
+        # 1) Direkte Deckung der Gebäudelast durch PV
+        direktverbrauch = min(pv, last)
+        pv_ueberschuss = pv - direktverbrauch 
         restlast = last - direktverbrauch
-
-        # 2) Batterie laden bei PV-Überschuss
+        # 2) Laden der Batterie mit verbleibendem PV-Überschuss
         freie_kapazitaet = (soc_max - soc) /eta_lade
         batterie_ladung = min(pv_ueberschuss, max_ladung_kWh, freie_kapazitaet)
-        #Die Batterie kann nur so viel laden, wie: PV-Überschuss vorhanden ist, die maximale Ladeleistung erlaubt, und noch Platz in der Batterie ist.
         soc += batterie_ladung * eta_lade
         rest_pv_nach_batterie = pv_ueberschuss - batterie_ladung
-        #Batteriestand soc erhöht
-        
-        # 3) Einspeisen bis Grenze, Rest abregeln
+        # 3) Netzeinspeisung und Abregelung
         netzeinspeisung = min(rest_pv_nach_batterie, einspeisegrenze_kWh)
         abregelung = max(0.0, rest_pv_nach_batterie - netzeinspeisung)
-
-        # 4) Batterie entladen bei Restlast
+        # 4) Entladen der Batterie zur Deckung der verbleibenden Last
         verfuegbar_batterie_effektiv = (soc - soc_min) * eta_entlade
         batterie_entladung = min(restlast, max_entladung_kWh, verfuegbar_batterie_effektiv)
         soc -= batterie_entladung /eta_entlade
-
         restlast_nach_batterie = restlast - batterie_entladung
-
-        # 5) Netzbezug bis Grenze, Rest = Unterdeckung
+        # 5) Netzbezug und Ermittlung einer möglichen Unterdeckung
         netzbezug = min(restlast_nach_batterie, bezugsgrenze_kWh)
         unterdeckung = max(0.0, restlast_nach_batterie - netzbezug)
-
-        # speichern
+        # speichern der Werte
         df.at[i, "direktverbrauch_pv_kWh"] = direktverbrauch
         df.at[i, "batterie_ladung_kWh"] = batterie_ladung
         df.at[i, "batterie_entladung_kWh"] = batterie_entladung
@@ -420,33 +400,27 @@ def simulate_battery(
         df.at[i, "netzeinspeisung_kWh"] = netzeinspeisung
         df.at[i, "abregelung_kWh"] = abregelung
         df.at[i, "unterdeckung_kWh"] = unterdeckung
-
     return df
+# Zusammenfassung der simulierten Energieflüsse zu Monats- und Jahreswerten
 def create_energy_summary(df):
     df = df.copy()
-
-    # Eigenverbrauch aus PV:
-    # PV-Produktion minus Einspeisung minus Abregelung
+    # Ermittlung des zeitabhängigen PV-Eigenverbrauchs
     df["eigenverbrauch_kWh"] = df["pv_kWh"] - df["netzeinspeisung_kWh"] - df["abregelung_kWh"]
-
     # keine negativen Rundungsreste
     df["eigenverbrauch_kWh"] = df["eigenverbrauch_kWh"].clip(lower=0)
-
     # Monatsbilanz
-    monatsbilanz = df.groupby("Monat")[[ #groupierung nach Monat
+    monatsbilanz = df.groupby("Monat")[[
         "pv_kWh",
         "eigenverbrauch_kWh",
         "netzeinspeisung_kWh",
         "netzbezug_kWh"
     ]].sum()
-
     monatsbilanz = monatsbilanz.rename(columns={ # neubennennung der Spalten
         "pv_kWh": "Produktion_kWh",
         "eigenverbrauch_kWh": "Eigenverbrauch_kWh",
         "netzeinspeisung_kWh": "Einspeisung_kWh",
         "netzbezug_kWh": "Bezug_kWh"
     })
-
     # Jahreskennzahlen
     gesamtlast = df["gesamtlast_kWh"].sum()
     pv_produktion = df["pv_kWh"].sum()
@@ -477,10 +451,9 @@ def create_energy_summary(df):
     }
 
     return df, monatsbilanz, jahreskennzahlen
-#hier lernen
+# Aufbereitung der Simulationsergebnisse für unterschiedliche Anzeigezeiträume
 def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
     df = df.copy()
-
     energie_spalten = [
         "gesamtlast_kWh",
         "pv_kWh",
@@ -491,12 +464,10 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         "abregelung_kWh",
         "unterdeckung_kWh"
     ]
-
     for col in energie_spalten:
         if col in df.columns:
             neue_spalte = col.replace("_kWh", "_kW")
             df[neue_spalte] = df[col] / 0.25
-
     spalten = [
         "gesamtlast_kWh",
         "pv_kWh",
@@ -519,9 +490,8 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         "temp",
         "poa_global",
     ]
-
     spalten = [s for s in spalten if s in df.columns]
-
+    # zu stündlichen Mittelwerten
     if zeitraum == "Tag":
         if start_datum is None:
             start_datum = df.index.min().date()
@@ -535,7 +505,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
         # Durchschnitt pro Stunde
         df_anzeige = df_anzeige.resample("h").mean()
-
+    # zu täglichen Mittelwerten
     elif zeitraum == "Woche":
         if start_datum is None:
             start_datum = df.index.min().date()
@@ -559,6 +529,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         # Durchschnitt pro Tag
         df_anzeige = df_anzeige.resample("D").mean()
 
+    # der Energieflüsse zu Monatswerten
     elif zeitraum == "Jahr":
         energie_cols = [
             "gesamtlast_kWh",
@@ -573,11 +544,9 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
         energie_cols = [c for c in energie_cols if c in df.columns]
 
-        df_anzeige = df[energie_cols].resample("MS").sum()
-
         # Monatsenergie in durchschnittliche Monatsleistung umrechnen
         stunden_pro_monat = df_anzeige.index.days_in_month * 24
-
+        # Ergänzung der Leistungswerte für die zeitabhängige Darstellung
         for col in energie_cols:
             neue_spalte = col.replace("_kWh", "_kW")
             df_anzeige[neue_spalte] = df_anzeige[col] / stunden_pro_monat
@@ -595,12 +564,13 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
         df_anzeige = df[spalten]
 
     return df_anzeige
+# Ermittlung einer geeigneten Achsenskalierung für Diagramme
 def schoene_achse_mit_ticks(max_wert, anzahl_intervalle=5):
     if pd.isna(max_wert) or max_wert <= 0:
         max_wert = 1
 
     zielwert = max_wert * 1.10
-
+    # Vordefinierte Tickabstände für eine gut lesbare Skalierung
     moegliche_tickschritte = [
         0.1, 0.2, 0.5,
         1, 2, 2.5, 5,
@@ -621,23 +591,24 @@ def schoene_achse_mit_ticks(max_wert, anzahl_intervalle=5):
     ticks = np.linspace(0, achse_max, anzahl_intervalle + 1)
 
     return achse_max, ticks
+# Berechnung einer geeigneten Achsenobergrenze für Wetterdiagramme
 def schoene_achsenobergrenze_wetter(max_wert, schrittweite):
     if pd.isna(max_wert) or max_wert <= 0:
         return schrittweite
 
     return np.ceil(max_wert / schrittweite) * schrittweite
+# Ermittlung einer geeigneten Skalierung für die Leistungsachse
 def schoene_leistungsachse(max_wert, anzahl_intervalle=5):
     if pd.isna(max_wert) or max_wert <= 0:
         max_wert = 1
 
     zielwert = max_wert * 1.1
-
+    # Vordefinierte Achsenobergrenzen für eine gut lesbare Darstellung
     moegliche_maxima = [
         0.5, 1, 1.5, 2, 2.5, 3, 4, 5,
         7.5, 10, 12.5, 15, 20, 25, 30,
         40, 50, 75, 100, 150, 200
     ]
-
     for achse_max in moegliche_maxima:
         if achse_max >= zielwert:
             ticks = np.linspace(0, achse_max, anzahl_intervalle + 1)
@@ -647,6 +618,7 @@ def schoene_leistungsachse(max_wert, anzahl_intervalle=5):
     ticks = np.linspace(0, achse_max, anzahl_intervalle + 1)
 
     return achse_max, ticks
+# Erstellung des Hauptdiagramms für die simulierten Energieflüsse
 def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
     fig = go.Figure()
 
@@ -717,24 +689,6 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
             yaxis="y2"
         ))
 
-    # Einspeisegrenze
-    # fig.add_trace(go.Scatter(
-    #     x=df_plot.index,
-    #     y=[einspeisegrenze_kw] * len(df_plot),
-    #     mode="lines",
-    #     name="Einspeisegrenze",
-    #     line=dict(color="red", width=1.5, dash="dash")
-    # ))
-
-    # Bezugsgrenze
-    # fig.add_trace(go.Scatter(
-    #     x=df_plot.index,
-    #     y=[bezugsgrenze_kw] * len(df_plot),
-    #     mode="lines",
-    #     name="Bezugsgrenze",
-    #     line=dict(color="red", width=1.5, dash="dot")
-    # ))
-
     # Abregelung rot markieren
     df_abregelung = df_plot[df_plot["abregelung_kW"] > 0]
 
@@ -797,7 +751,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
 
         if not pd.isna(marker_max):
             max_y_roh = max(max_y_roh, marker_max)
-
+    # Festlegung der Achsenskalierung
     max_y, linke_tickwerte = schoene_leistungsachse(max_y_roh)
 
     rechte_tickwerte = [0, 20, 40, 60, 80, 100]
@@ -830,6 +784,7 @@ def create_main_plot(df_plot, einspeisegrenze_kw, bezugsgrenze_kw, zeitraum):
         margin=dict(l=40, r=40, t=60, b=100)
     )
     return fig
+# Erstellung des Diagramms für Temperatur und Sonneneinstrahlung
 def create_weather_plot(df_plot):
     fig = go.Figure()
 
@@ -918,10 +873,11 @@ def create_weather_plot(df_plot):
     )
 
     return fig
-#Pv ertragsrechnung:
+# Stationskürzel aus dem Dateinamen auslesen
 def get_station_abbr(standort_name):
     dateiname = standort_dateien[standort_name]
     return dateiname.split("_")[0]
+# Wetterdaten des ausgewählten Standorts laden
 def load_weather_data(standort_name):
     dateiname = standort_dateien[standort_name]
     dateipfad = f"{basis_pfad_weather}/{dateiname}"
@@ -942,6 +898,7 @@ def load_weather_data(standort_name):
     df_weather = df_weather.set_index("timestamp")
 
     return df_weather
+# Wetterdaten auf das ausgewählte Simulationsjahr übertragen
 def prepare_weather_for_simulation(df_weather, target_year):
     df = df_weather.copy().reset_index(drop=True) #copy vom original wetterindex und ignoriert dass die Wetterdaten aus verschiedenen Jahren sind
     new_index = pd.date_range(
@@ -952,12 +909,15 @@ def prepare_weather_for_simulation(df_weather, target_year):
     )
     df.index = new_index
     return df
+# Metadaten der Wetterstationen laden
 def load_station_metadata(metadata_path="SIA4028_metadata_2023.csv"):
     df_meta = pd.read_csv(metadata_path, sep=";") #neue Spalte in der Tabelle bei ; 
     df_meta.columns = df_meta.columns.str.strip() # alle Leerzeichen in Spaltennamen sind weggelöscht 
     return df_meta
+# Stationsdaten aus der Metadatentabelle abrufen
 def get_station_info(meta_df, standort_name, standort_dateien):
     abbr = get_station_abbr(standort_name)
+    # Passende Wetterstation anhand des Stationskürzels suchen
     row = meta_df.loc[meta_df["Abbr."].astype(str).str.strip() == abbr]#man sucht nach dem Stationskürzel, ob es überhaupt des gibt was eingegeben ist
     if row.empty:
         raise ValueError(f"Keine Metadaten für {standort_name} / {abbr} gefunden.")
@@ -968,6 +928,7 @@ def get_station_info(meta_df, standort_name, standort_dateien):
         "longitude": float(row["Longitude"]),
         "altitude": float(row["Station Height"])
     }
+# PV-Erzeugungsprofil anhand der Wetter- und Standortdaten erstellen
 def add_pv_profile_weather_based(
     df_base,
     df_weather,
@@ -978,11 +939,11 @@ def add_pv_profile_weather_based(
     dachausrichtung,
     pv_peakleistung_kwp,
     wirkungsgrad_prozent,
-    performance_ratio=0.85, # vlt sind diese Werte im Datenblatt von einer Pv anlage --> umändern input möglichkeit
-    gamma_pdc=-0.004, #default falls es keine andere eingabe gibt
-    noct=45
+    performance_ratio=0.85, #default
+    gamma_pdc=-0.004, #default
+    noct=45 #default
 ):
-    #schon vorhin auf 15min bestimmt
+
     df = df_base.copy() 
 
     cols = ["temp", "windmean", "rad.global", "rad.direct", "rad.diffus", "albedo"]
@@ -995,19 +956,20 @@ def add_pv_profile_weather_based(
 
     # Wetterdaten stündlich auf 15 min interpolieren
     weather_15min = weather.resample("15min").interpolate("time") 
-    # wenn 12uhr 400 ist und 13 uhr 600 dann erstellt er 12:15, 12:30 und 12:45 zu 450, 500 und 550
-    # falls ich hier obendran auf 30 min will dann müsste ich hier 30 min schreiben und oben wo die databasis frame gebautr wird auch 30 min bei freq machen & energieumrechnung anpassen
     df = df.join(weather_15min, how="left")
 
     df["temp"] = df["temp"].interpolate("time")
     df["windmean"] = df["windmean"].interpolate("time")
 
+    # Negative und fehlende Strahlungswerte bereinigen
     df["rad.global"] = df["rad.global"].clip(lower=0).fillna(0) #negativ werte auf null und fehlende werte zu 0
     df["rad.direct"] = df["rad.direct"].clip(lower=0).fillna(0)
     df["rad.diffus"] = df["rad.diffus"].clip(lower=0).fillna(0)
 
+    # Albedo von Prozent in eine Dezimalzahl umrechnen
     df["albedo_use"] = df["albedo"] / 100.0
 
+    # Standort für die Berechnung des Sonnenstands definieren
     location = pvlib.location.Location(
         latitude=latitude,
         longitude=longitude,
@@ -1019,8 +981,10 @@ def add_pv_profile_weather_based(
 
     surface_azimuth = dachausrichtung
 
+    # Extraterrestrische Strahlung für die Einstrahlungsberechnung bestimmen
     dni_extra = pvlib.irradiance.get_extra_radiation(df.index) #Das ist kein Messdatensatz deiner Station, sondern ein berechneter astronomischer Wert für die extraterrestrische Strahlung, also die Sonnenstrahlung außerhalb der Atmosphäre. pvlib berechnet ihn aus Datum bzw. Tageszahl mit hinterlegten Formeln/Methoden wie standardmäßig spencer.
 
+    # Einstrahlung auf die geneigte und ausgerichtete Modulfläche berechnen
     poa = pvlib.irradiance.get_total_irradiance(
         surface_tilt=dachneigung,
         surface_azimuth=surface_azimuth, #modulausrichtung
@@ -1032,15 +996,15 @@ def add_pv_profile_weather_based(
         dni_extra=dni_extra, #extraterestrische Einstrahlung
         albedo=df["albedo_use"], #bodenreflexion
         model="haydavies" #anisotropes Diffusmodell von pvlib
-    )# hier genau verstehen
-    # mit get_total_irradiance() wird aus den horizontal gemessenen Wetterdaten die wirksame Einstrahlung auf die geneigte und ausgerichtete PV-Fläche berechnet
+    )
     
+    # Gesamte Einstrahlung auf der Modulebene übernehmen
     df["poa_global"] = poa["poa_global"].clip(lower=0) #plane of array irradiance, Negative Werte werden auf 0 gesetzt
 
     # Zelltemperatur
-    df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)# quelle formel 20°C = Referenzbedingungen/Umgebungstemp
+    df["temp_cell"] = df["temp"] + (df["poa_global"] / 800.0) * (noct - 20)# 20°C = Referenzbedingungen/Umgebungstemp
 
-    temp_factor = 1 + gamma_pdc * (df["temp_cell"] - 25) #formel quelle , hier kommt ein wert in dez raus und in % sagt es quasi wie "nur noch 90% Leistung" wenn es so heiss ist
+    temp_factor = 1 + gamma_pdc * (df["temp_cell"] - 25)
     df["temp_factor"] = temp_factor.clip(lower=0) #nicht unter null
 
     # Wirkungsgrad von % auf Dezimalzahl
@@ -1060,186 +1024,13 @@ def add_pv_profile_weather_based(
         * df["temp_factor"]
         * performance_ratio
     ).clip(lower=0)#keine below 0 werte
-    # mit SIA 2056 nohcmal genau vergleichen Seite 82
+
 
     # Energie pro 15 min
     df["pv_kWh"] = df["pv_power_kW"] * 0.25 #E[kWh] = P [kW] * t[h]
 
     return df
-
-#Warmwasser:
-# def add_hotwater_profile(df, ww_aktiv, ww_bedarf_kWh_tag, ww_ladeleistung_kw, ww_strategie):
-    df = df.copy()
-    df["ww_kWh"] = 0.0
-
-    if not ww_aktiv or ww_bedarf_kWh_tag <= 0 or ww_ladeleistung_kw <= 0:
-        return df
-
-    delta_t = 0.25
-    max_ww_kWh_pro_schritt = ww_ladeleistung_kw * delta_t
-    tage = pd.to_datetime(df.index.date).unique()
-
-    for tag in tage:
-        verbleibend = ww_bedarf_kWh_tag
-
-        def verteile_gleichmaessig(mask, ziel_kWh):
-            nonlocal verbleibend
-            idx = df.index[mask]
-            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
-                return
-
-            ziel_kWh = min(ziel_kWh, verbleibend)
-            energie_pro_schritt = min(ziel_kWh / len(idx), max_ww_kWh_pro_schritt)
-            noch_offen = ziel_kWh
-
-            for ts in idx:
-                ladung = min(energie_pro_schritt, noch_offen, max_ww_kWh_pro_schritt)
-                df.at[ts, "ww_kWh"] += ladung
-                noch_offen -= ladung
-                verbleibend -= ladung
-
-                if noch_offen <= 0 or verbleibend <= 0:
-                    break
-
-        def verteile_pv_optimiert(mask, ziel_kWh):
-            nonlocal verbleibend
-            idx = df.index[mask]
-            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
-                return
-
-            ziel_kWh = min(ziel_kWh, verbleibend)
-
-            # nach höchster PV sortieren
-            pv_sortiert = df.loc[idx, "pv_kWh"].sort_values(ascending=False)
-
-            noch_offen = ziel_kWh
-            for ts in pv_sortiert.index:
-                ladung = min(max_ww_kWh_pro_schritt, noch_offen)
-                df.at[ts, "ww_kWh"] += ladung
-                noch_offen -= ladung
-                verbleibend -= ladung
-
-                if noch_offen <= 0 or verbleibend <= 0:
-                    break
-
-        mask_morgen = (
-            (df.index.date == tag.date()) &
-            (df.index.hour >= 5) &
-            (df.index.hour < 7)
-        )
-        mask_mittag = (
-            (df.index.date == tag.date()) &
-            (df.index.hour >= 11) &
-            (df.index.hour < 15)
-        )
-        mask_abend = (
-            (df.index.date == tag.date()) &
-            (df.index.hour >= 17) &
-            (df.index.hour < 20)
-        )
-
-        if ww_strategie == "Morgens":
-            verteile_gleichmaessig(mask_morgen, ww_bedarf_kWh_tag)
-
-        elif ww_strategie == "Mittag / PV-optimiert":
-            verteile_pv_optimiert(mask_mittag, ww_bedarf_kWh_tag)
-
-        elif ww_strategie == "Abends":
-            verteile_gleichmaessig(mask_abend, ww_bedarf_kWh_tag)
-
-        elif ww_strategie == "Kombiniert (morgens + mittags)":
-            verteile_gleichmaessig(mask_morgen, ww_bedarf_kWh_tag * 0.4)
-            verteile_pv_optimiert(mask_mittag, ww_bedarf_kWh_tag * 0.6)
-
-            if verbleibend > 0:
-                verteile_pv_optimiert(mask_mittag, verbleibend)
-
-    return df
-# def add_ev_profile(df, ev_aktiv, ev_bedarf_kWh_tag, ev_ladeleistung_kw, ev_strategie):
-    df = df.copy()
-    df["ev_kWh"] = 0.0
-
-    if not ev_aktiv or ev_bedarf_kWh_tag <= 0 or ev_ladeleistung_kw <= 0:
-        return df
-
-    delta_t = 0.25
-    max_ev_kWh_pro_schritt = ev_ladeleistung_kw * delta_t
-    tage = pd.to_datetime(df.index.date).unique()
-
-    for tag in tage:
-        verbleibend = ev_bedarf_kWh_tag
-
-        def verteile_gleichmaessig(mask, ziel_kWh):
-            nonlocal verbleibend
-            idx = df.index[mask]
-            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
-                return
-
-            ziel_kWh = min(ziel_kWh, verbleibend)
-            energie_pro_schritt = min(ziel_kWh / len(idx), max_ev_kWh_pro_schritt)
-            noch_offen = ziel_kWh
-
-            for ts in idx:
-                ladung = min(energie_pro_schritt, noch_offen, max_ev_kWh_pro_schritt)
-                df.at[ts, "ev_kWh"] += ladung
-                noch_offen -= ladung
-                verbleibend -= ladung
-
-                if noch_offen <= 0 or verbleibend <= 0:
-                    break
-
-        def verteile_pv_optimiert(mask, ziel_kWh):
-            nonlocal verbleibend
-            idx = df.index[mask]
-            if len(idx) == 0 or ziel_kWh <= 0 or verbleibend <= 0:
-                return
-
-            ziel_kWh = min(ziel_kWh, verbleibend)
-            pv_sortiert = df.loc[idx, "pv_kWh"].sort_values(ascending=False)
-
-            noch_offen = ziel_kWh
-            for ts in pv_sortiert.index:
-                ladung = min(max_ev_kWh_pro_schritt, noch_offen)
-                df.at[ts, "ev_kWh"] += ladung
-                noch_offen -= ladung
-                verbleibend -= ladung
-
-                if noch_offen <= 0 or verbleibend <= 0:
-                    break
-
-        mask_morgen = (
-            (df.index.date == tag.date()) &
-            (df.index.hour >= 5) &
-            (df.index.hour < 8)
-        )
-        mask_mittag = (
-            (df.index.date == tag.date()) &
-            (df.index.hour >= 11) &
-            (df.index.hour < 15)
-        )
-        mask_abend = (
-            (df.index.date == tag.date()) &
-            (df.index.hour >= 17) &
-            (df.index.hour < 22)
-        )
-
-        if ev_strategie == "Morgens":
-            verteile_gleichmaessig(mask_morgen, ev_bedarf_kWh_tag)
-
-        elif ev_strategie == "Mittag / PV-optimiert":
-            verteile_pv_optimiert(mask_mittag, ev_bedarf_kWh_tag)
-
-        elif ev_strategie == "Abends":
-            verteile_gleichmaessig(mask_abend, ev_bedarf_kWh_tag)
-
-        elif ev_strategie == "Kombiniert (mittags + abends)":
-            verteile_pv_optimiert(mask_mittag, ev_bedarf_kWh_tag * 0.6)
-            verteile_gleichmaessig(mask_abend, ev_bedarf_kWh_tag * 0.4)
-
-            if verbleibend > 0:
-                verteile_gleichmaessig(mask_abend, verbleibend)
-
-    return df
+# Prüfen, ob der Zeitpunkt zur gewählten Verbrauchsstrategie passt
 def ist_im_zeitfenster(timestamp, strategie, verbraucher):
     h = timestamp.hour
 
@@ -1270,6 +1061,7 @@ def ist_im_zeitfenster(timestamp, strategie, verbraucher):
             return (5 <= h < 8) or (17 <= h < 22)
 
     return False
+# Fahrenergiebedarf des E-Autos für den jeweiligen Tag berechnen
 def get_ev_fahrbedarf(timestamp, ev_config):
     if not ev_config["aktiv"]:
         return 0.0
@@ -1278,6 +1070,7 @@ def get_ev_fahrbedarf(timestamp, ev_config):
         return ev_config["km_pro_fahrtag"] * ev_config["verbrauch_pro_100km"] / 100
 
     return 0.0
+# Prüfen, ob der tägliche Fahrbedarf im gewählten Ladefenster gedeckt werden kann
 def pruefe_ev_plausibilitaet(ev_config):
     if not ev_config["aktiv"]:
         return None
@@ -1288,13 +1081,13 @@ def pruefe_ev_plausibilitaet(ev_config):
         EV_ABEND: 5,    # 17:00–22:00
         EV_KOMBI: 8     # 05:00–08:00 + 17:00–22:00
     }
-
+    # Energiebedarf pro Fahrtag berechnen
     fahrbedarf_kWh = (
         ev_config["km_pro_fahrtag"]
         * ev_config["verbrauch_pro_100km"]
         / 100
     )
-
+    # Maximal mögliche Ladung im gewählten Zeitfenster berechnen
     max_ladung_kWh = (
         ev_config["leistung_kw"]
         * ladefenster_stunden[ev_config["strategie"]]
@@ -1305,6 +1098,7 @@ def pruefe_ev_plausibilitaet(ev_config):
         "max_ladung_kWh": max_ladung_kWh,
         "ok": fahrbedarf_kWh <= max_ladung_kWh
     }
+# Energieflüsse gemäss der gewählten EMS-Priorisierung simulieren
 def simulate_ems(
     df,
     prioritaeten,
@@ -1322,6 +1116,7 @@ def simulate_ems(
     df = df.copy()
     delta_t = 0.25
 
+    #spalten vorbereiten
     df["ww_kWh"] = 0.0
     df["ev_kWh"] = 0.0
     df["direktverbrauch_pv_kWh"] = 0.0
@@ -1333,14 +1128,17 @@ def simulate_ems(
     df["abregelung_kWh"] = 0.0
     df["unterdeckung_kWh"] = 0.0
 
+    
     soc_min = batteriekapazitaet * min_soc_prozent / 100
     soc_max = batteriekapazitaet * max_soc_prozent / 100
     soc = (soc_min + soc_max) / 2
 
+    # Verbleibenden Tagesbedarf der steuerbaren Verbraucher vorbereiten
     current_day = None
     ww_rest = 0.0
     ev_rest = 0.0
 
+    # Energieflüsse für jeden 15-Minuten-Schritt berechnen
     for i in df.index:
         if current_day != i.date():
             current_day = i.date()
@@ -1350,14 +1148,15 @@ def simulate_ems(
                 * ev_config["verbrauch_pro_100km"]
                 / 100
             )
-        # morgens entsteht einfach ein zusätzlicher Energiebedarf
+        # Fahrenergiebedarf des jeweiligen Fahrtags ergänzen
         if i.hour == 17 and i.minute == 0:
             ev_rest += get_ev_fahrbedarf(i, ev_config)
 
-
+        # Verfügbare PV-Energie und bestehende Gebäudelast auslesen
         pv = df.at[i, "pv_kWh"]
         basislast = df.at[i, "gesamtlast_kWh"]
 
+        # Gebäudelast zuerst direkt durch PV decken
         direkt = min(pv, basislast)
         pv_rest = pv - direkt
         restlast = basislast - direkt
@@ -1365,7 +1164,7 @@ def simulate_ems(
         for element in prioritaeten:
 
             if element == "Warmwasser" and ww_rest > 0 and ww_config["steuerbar"]:
-
+                # Steuerbaren Warmwasserbedarf im erlaubten Zeitfenster laden
                 laden_erlaubt = ist_im_zeitfenster(
                     i,
                     ww_config["strategie"],
@@ -1393,6 +1192,7 @@ def simulate_ems(
                     restlast += ladung - pv_anteil
 
             elif element == "E-Auto" and ev_rest > 0:
+                # E-Auto im erlaubten Zeitfenster laden
                 if ist_im_zeitfenster(i, ev_config["strategie"], "E-Auto"):
                     max_step = ev_config["leistung_kw"] * delta_t
 
@@ -1410,6 +1210,7 @@ def simulate_ems(
                         restlast += ladung - pv_anteil
 
             elif element == "Batterie" and batteriekapazitaet > 0:
+                # Verbleibenden PV-Überschuss in die Batterie laden
                 freie_kapazitaet = soc_max - soc
                 max_ladung = max_ladeleistung * delta_t
 
@@ -1421,6 +1222,7 @@ def simulate_ems(
                 df.at[i, "batterie_ladung_kWh"] += ladung
 
             elif element == "Einspeisung":
+                # Verbleibenden PV-Überschuss bis zur Einspeisegrenze einspeisen
                 einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
                 einspeisung = min(pv_rest, einspeisegrenze_kWh)
 
@@ -1467,19 +1269,20 @@ def simulate_ems(
         df.at[i, "soc_prozent"] = soc / batteriekapazitaet * 100 if batteriekapazitaet > 0 else 0
         df.at[i, "netzbezug_kWh"] = netzbezug
         df.at[i, "unterdeckung_kWh"] = unterdeckung
-
+    # Warmwasser- und E-Auto-Verbrauch zur Gesamtlast addieren
     df["gesamtlast_kWh"] = df["gesamtlast_kWh"] + df["ww_kWh"] + df["ev_kWh"]
 
     return df
+# Hochgeladenes Lastprofil für die Simulation aufbereiten
 def add_uploaded_load_profile(df_base, uploaded_file, lastprofil_einheit):
     df = df_base.copy()
-
+    # Hochgeladene Datei abhängig vom Dateiformat einlesen
     if uploaded_file.name.endswith(".csv"):
         df_upload = pd.read_csv(uploaded_file)
-
+    # Hochgeladene CSV- oder Excel-Datei einlesen
     elif uploaded_file.name.endswith(".xlsx"):
         excel_file = pd.ExcelFile(uploaded_file)
-
+        # Excel-Datei nur bei genau einem Tabellenblatt verwenden
         if len(excel_file.sheet_names) != 1:
             st.error("Bitte lade eine Excel-Datei mit genau einem Tabellenblatt hoch.")
             st.stop()
@@ -1487,7 +1290,7 @@ def add_uploaded_load_profile(df_base, uploaded_file, lastprofil_einheit):
         df_upload = pd.read_excel(uploaded_file, sheet_name=excel_file.sheet_names[0])
 
     df_upload.columns = df_upload.columns.str.strip()
-
+    # Erste Spalte als Zeitspalte und letzte Spalte als Verbrauchsspalte verwenden
     zeitspalte = df_upload.columns[0]
     verbrauchsspalte = df_upload.columns[-1]
 
@@ -1499,7 +1302,7 @@ def add_uploaded_load_profile(df_base, uploaded_file, lastprofil_einheit):
 
     df_upload = df_upload.dropna(subset=["timestamp", "verbrauch_roh"])
     df_upload = df_upload.set_index("timestamp").sort_index()
-
+    # Verbrauchswerte je nach Eingabeeinheit in kWh pro 15 Minuten umrechnen
     if lastprofil_einheit == "Energie pro 15-Minuten-Intervall in kWh":
         df_upload["verbrauch_kWh"] = df_upload["verbrauch_roh"]
     else:
@@ -1512,15 +1315,18 @@ def add_uploaded_load_profile(df_base, uploaded_file, lastprofil_einheit):
         lambda x: x.replace(year=df.index[0].year)
     )
     df_upload = df_upload.set_index("timestamp")
+
+    # Zeitzone an den Simulationszeitraum anpassen    
     if df_upload.index.tz is None and df.index.tz is not None:
         df_upload.index = df_upload.index.tz_localize(df.index.tz)
-
+    # Hochgeladenes Lastprofil mit dem Simulationszeitraum verbinden
     df_upload = df_upload.resample("15min").sum()
 
     df = df.join(df_upload, how="left")
     df["hauslast_kWh"] = df["verbrauch_kWh"].fillna(0)
 
     return df
+# Rohdaten für den ausgewählten Anzeigezeitraum auswählen
 def get_raw_period_dataframe(df, zeitraum, start_datum=None, start_monat=None):
     tz = df.index.tz
 
@@ -1548,6 +1354,7 @@ def get_raw_period_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
     else:
         return df.copy()
+# Passenden Umweltfaktor anhand der Wechselrichterleistung auswählen
 def faktor_wechselrichter(wechselrichter_kw, daten):
     if wechselrichter_kw <= 2.5:
         return daten["Wechselrichter 2.5 kW, Max. Leistung kWp"]
@@ -1557,11 +1364,13 @@ def faktor_wechselrichter(wechselrichter_kw, daten):
         return daten["Wechselrichter 10 kW, Max. Leistung kWp"]
     else:
         return daten["Wechselrichter 20 kW, Max. Leistung kWp"]
+# Passenden Umweltfaktor anhand der Batteriekapazität auswählen
 def faktor_batterie(batteriekapazitaet, daten):
     if batteriekapazitaet <= 5:
         return daten["Batterie Li-Ionen 5 kWh, Speicherkap. kWh"]
     else:
         return daten["Batterie Li-Ionen 20 kWh, Speicherkap. kWh"]
+# Passenden Umweltfaktor anhand der Dachart auswählen
 def faktor_pv_dachart(dachart, daten):
     if dachart == "Schrägdach":
         return daten["Solarstromanlage Schrägdach Marktmix, Max. Leistung kWp"]
@@ -1571,6 +1380,7 @@ def faktor_pv_dachart(dachart, daten):
         return daten["Solarstromanlage Fassade Marktmix, Max. Leistung kWp"]
     else:
         return daten["Solarstromanlage Marktmix, Max. Leistung kWp"]
+# Jährliche Umweltwirkungen der berücksichtigten Systemkomponenten berechnen
 def berechne_umweltwirkung(
     df_ts,
     pv_anlagen_daten,
@@ -1595,7 +1405,7 @@ def berechne_umweltwirkung(
     ev_km_jahr=0.0
 ):
     ergebnisse = []
-
+    # Ergebniszeile zur Auswertung hinzufügen
     def add(name, ubp_total, co2_total):
         ergebnisse.append({
             "Kategorie": name,
@@ -1603,7 +1413,7 @@ def berechne_umweltwirkung(
             "kg CO2-eq/a": co2_total
         })
 
-    # PV-Module nach Dachart
+    # Herstellung der PV-Anlagen nach Dachart
     for anlage in pv_anlagen_daten:
         pv_ubp = faktor_pv_dachart(anlage["Dachart"], UBP) * anlage["pv_Peakleistung"]
         pv_co2 = faktor_pv_dachart(anlage["Dachart"], kgCO2eq) * anlage["pv_Peakleistung"]
@@ -1614,7 +1424,7 @@ def berechne_umweltwirkung(
             pv_co2 / lebensdauer_pv
         )
 
-    # Wechselrichter separat
+    # Herstellung des Wechselrichters
     wr_ubp = faktor_wechselrichter(wechselrichter_kw, UBP) * wechselrichter_kw
     wr_co2 = faktor_wechselrichter(wechselrichter_kw, kgCO2eq) * wechselrichter_kw
 
@@ -1624,7 +1434,7 @@ def berechne_umweltwirkung(
         wr_co2 / lebensdauer_wechselrichter
     )
 
-    # Elektroinstallation separat, aber mit PV-Lebensdauer
+    # Elektroinstallation mit der Lebensdauer der PV-Anlage
     pv_kwp_total = sum(a["pv_Peakleistung"] for a in pv_anlagen_daten)
 
     elektro_ubp = UBP["Elektroinstallation Photovoltaikanlage"] * pv_kwp_total
@@ -1635,18 +1445,18 @@ def berechne_umweltwirkung(
         elektro_ubp / lebensdauer_pv,
         elektro_co2 / lebensdauer_pv
     )
-    # Batterie
+    # HErstellung der Batterie
     if batterie_aktiv and batteriekapazitaet > 0:
         batterie_ubp = faktor_batterie(batteriekapazitaet, UBP) * batteriekapazitaet
         batterie_co2 = faktor_batterie(batteriekapazitaet, kgCO2eq) * batteriekapazitaet
         add("Batterie Herstellung", batterie_ubp / lebensdauer_batterie, batterie_co2 / lebensdauer_batterie)
 
-    # Strombezug Betrieb
+    # Umweltwirkung des Netzstrombezugs im Betrieb
     netzbezug_kWh = df_ts["netzbezug_kWh"].sum()
     strom_co2 = netzbezug_kWh * CO2Emmisionen_input / 1000
     add("Netzstrom Betrieb", 0, strom_co2)
 
-    # Heizung Betrieb fossil / Holz
+    # Umweltwirkung der fossilen oder holzbasierten Wärmeerzeugung
     heizwaerme_kWh = df_ts["heizwaerme_kWh"].sum()
 
     if heizsystem == "Fossil & Holz":
@@ -1669,7 +1479,7 @@ def berechne_umweltwirkung(
                 heizwaerme_kWh * kgCO2eq["Pellets pro kWh"]
             )
 
-        # Wärmeerzeuger pauschal nach EBF
+        # Herstellung Wärmeerzeuger nach EBF
         add(
             "Wärmeerzeuger Herstellung",
             UBP["Wärmeerzeuger spez. Leistungsbedarf 30 W/m², EBF in m²"] * ebf_m2 / lebensdauer_waermeerzeuger,
@@ -1686,7 +1496,7 @@ def berechne_umweltwirkung(
         elif wp_typ == "Sole/Wasser WP":
             wp_ubp = UBP["Sole Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
             wp_co2 = kgCO2eq["Sole Wasser WP 7 kW, Gerät stk"] * (wp_kw / 7)
-
+            #herstellung der Erdsonde für Sole-Wasser-Wärmepumpe
             erdsonde_ubp = UBP["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
             erdsonde_co2 = kgCO2eq["Erdsonden für Sole-Wasser-Wärmepumpe, Sondenlänge m"] * erdsondenlaenge
 
@@ -1729,15 +1539,17 @@ def berechne_umweltwirkung(
         )
 
     return pd.DataFrame(ergebnisse)   
-#Profile
+# Benutzerprofil als JSON-Datei speichern
 def speichere_profil(profilname, profil):
     pfad = os.path.join(PROFILE_DIR, f"{profilname}.json")
     with open(pfad, "w", encoding="utf-8") as f:
         json.dump(profil, f, indent=4, ensure_ascii=False)
+# Gespeichertes Benutzerprofil laden
 def lade_profil(profilname):
     pfad = os.path.join(PROFILE_DIR, f"{profilname}.json")
     with open(pfad, "r", encoding="utf-8") as f:
         return json.load(f)
+# Namen aller gespeicherten Benutzerprofile auflisten
 def liste_profile():
     return [
         f.replace(".json", "")
@@ -1766,6 +1578,7 @@ def autarkie_farbe(wert):
         return "#63a827"
     else:
         return "#3f8f1f"
+# Gewerbelastprofil G25 auf den Simulationszeitraum übertragen
 def add_g25_profile(df, g25_df, jahresstromverbrauch):
     df = df.copy()
 
@@ -1814,6 +1627,7 @@ def add_g25_profile(df, g25_df, jahresstromverbrauch):
     )
 
     return df
+# PDF mit den wichtigsten Simulationsergebnissen erstellen
 def create_values_pdf(jahreskennzahlen, df_umwelt, df_ts):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -1874,21 +1688,23 @@ def create_values_pdf(jahreskennzahlen, df_umwelt, df_ts):
     c.save()
     buffer.seek(0)
     return buffer
+# Jährlichen Strombedarf des E-Autos berechnen
 def berechne_ev_jahresbedarf(ev_config):
     if not ev_config["aktiv"]:
         return 0.0
 
     anzahl_fahrtage_pro_woche = len(ev_config["fahrtage"])
     anzahl_nicht_fahrtage_pro_woche = 7 - anzahl_fahrtage_pro_woche
-
+    # Jährliche Fahrleistung berechnen
     km_jahr = (
         anzahl_fahrtage_pro_woche * ev_config["km_pro_fahrtag"] * 52
         + anzahl_nicht_fahrtage_pro_woche * ev_config["km_nicht_fahrtag"] * 52
     )
-
+    # Jährliche Fahrleistung in Strombedarf umrechnen
     ev_strom_jahr = km_jahr * ev_config["verbrauch_pro_100km"] / 100
 
     return ev_strom_jahr
+# Jährliche Fahrleistung des E-Autos berechnen
 def berechne_ev_jahreskilometer(ev_config):
     if not ev_config["aktiv"]:
         return 0.0
@@ -1902,6 +1718,7 @@ def berechne_ev_jahreskilometer(ev_config):
     )
 
     return km_jahr
+# Wirtschaftliche Kennzahlen der Anlage berechnen
 def berechne_kostenkennzahlen(
     df_ts,
     jahreskennzahlen,
@@ -1923,6 +1740,7 @@ def berechne_kostenkennzahlen(
     netzbezug_kWh = jahreskennzahlen["Netzbezug_kWh"]
     netzeinspeisung_kWh = jahreskennzahlen["Netzeinspeisung_kWh"]
 
+    # Batteriekosten nur bei aktivem Speicher berücksichtigen
     if batterie_aktiv and batteriekapazitaet > 0:
         batterie_investition = batteriekosten_chf
     else:
@@ -1997,18 +1815,7 @@ def berechne_kostenkennzahlen(
         "Stromgestehungskosten Rp/kWh": stromgestehungskosten_chf_kWh * 100,
         "Wallbox / Heimladestation CHF": wallboxkosten_chf,
     }
-def pv_kosten_richtwert_chf_kwp(pv_kwp_total):
-    """
-    Vereinfachter PV-Kostenrichtwert gemäss Preisübersicht.
-    Es werden nur PV-Kosten ohne Batteriespeicher berücksichtigt.
-    """
-
-    if pv_kwp_total <= 10:
-        return 3141.0
-    elif pv_kwp_total <= 30:
-        return 2384.0
-    else:
-        return 2384.0
+# PV-Kostenrichtwert anhand einer logarithmischen Kostenfunktion berechnen
 def pv_kosten_richtwert_chf_kwp(pv_kwp):
     if pv_kwp <= 0:
         return 0.0
@@ -2019,13 +1826,7 @@ def pv_kosten_richtwert_chf_kwp(pv_kwp):
     kosten = 4727.6 - 689.1 * np.log(pv_kwp)
 
     return max(kosten, 0.0)
-def pv_kosten_richtwert_chf_kwp(pv_kwp):
-    if pv_kwp <= 0:
-        return 0.0
-
-    kosten = 4727.6 - 689.1 * np.log(pv_kwp)
-
-    return max(kosten, 0.0)
+# Gesamtkosten des Batteriespeichers berechnen
 def batteriekosten_total_chf(batteriekapazitaet):
     """
     Vereinfachte stückweise Batteriekostenfunktion.
@@ -2044,6 +1845,7 @@ def batteriekosten_total_chf(batteriekapazitaet):
         return batteriekapazitaet * 900.0
 
     return 10 * 900.0 + (batteriekapazitaet - 10) * 600.0
+# Durchschnittliche Batteriekosten pro kWh berechnen
 def batteriekosten_richtwert_chf_kwh(batteriekapazitaet):
     """
     Durchschnittlicher Richtwert in CHF/kWh, abgeleitet aus den Gesamtkosten.
@@ -2061,6 +1863,7 @@ st.subheader("Profile")
 profil_name = st.text_input("Profilname", value="Profil 1")
 vorhandene_profile = liste_profile()
 vergleichsmodus = st.checkbox("Profile vergleichen pro Jahr", value=False)
+# Vergleich mehrerer gespeicherter Profile
 if vergleichsmodus:
     if len(vorhandene_profile) < 2:
         st.info("Speichere zuerst mindestens zwei Profile.")
@@ -2211,7 +2014,7 @@ anzahl_stromjahre = st.number_input(
     value=1,
     step=1
 )
-
+# Eingabefelder für die einzelnen Verbrauchsjahre erzeugen
 stromjahre_daten = []
 
 for i in range(anzahl_stromjahre):
@@ -2299,7 +2102,7 @@ fossil_typ = "Gas"      # default
 wp_typ = "Luft/Wasser WP"  # default
 Erdsondentiefe = 0      # default
 jaz = 2.5               # default
-Heizwaermebedarf = 0
+Heizwaermebedarf = 0    # default
 col1, col2 =st.columns(2)
 with col1:
     st.subheader("Heizwärmebedarf-Ermittlung")
@@ -2350,9 +2153,8 @@ with col1:
                 # Standardmässig wird der typische Baujahrwert verwendet.
                 sanierungs_basis_hwb = Heizwaermebedarf_basis
                 basis_text = "typischer Heizwärmebedarf nach Baujahr"
-
                 # Wenn eine Haushaltsbasislast für Parameterstudien fixiert wurde,
-                # wird der aktuell verwendete/manuell angepasste Heizwärmebedarf als Referenz genommen.
+                # wird der aktuell manuell angepasste Heizwärmebedarf als Referenz genommen.
                 if "fixe_basislast_kWh" in st.session_state:
                     if "referenz_heizwaermebedarf_kWh" in st.session_state:
                         sanierungs_basis_hwb = st.session_state["referenz_heizwaermebedarf_kWh"]
@@ -2519,8 +2321,7 @@ with col2:
                 value=int(pellets)
             )
             ergebnis = Pelletsverbrauch_input
-        # .1f = 1 Nachkommastelle zb st.write(f"Gasverbrauch: {gas:.1f} m³/a")
-        # variablen direkt in text als f-String (formatted string).
+
     elif heizsystem == "Wärmepumpe":
         wp_typ = st.radio(
             "Wärmepumpenart WP",
@@ -2551,7 +2352,7 @@ with col2:
             max_value=70,
             value=40
         )
-        #Wärmequellentemperatur = st.number_input("Wärmequellentemperatur (°)", 0, 60, 35)#oder aus wetterdaten
+
         if wp_typ == "Luft/Wasser WP":
             jaz = st.number_input("JAZ", min_value=0.1, max_value=10.0, value=2.5, step=0.1, format="%.1f")
         elif wp_typ == "Sole/Wasser WP":
@@ -2911,6 +2712,7 @@ if strombedarf_rueckrechnung:
         ww_strom_ist = ww_strom_vorschlag
         ev_strom_ist = ev_strom_vorschlag
 
+    # Haushaltsbasislast durch Abzug der zusätzlichen Verbraucher berechnen
     basislast_berechnet = max(
     0.0,
     jahresstromverbrauch - wp_strom_ist - ww_strom_ist - ev_strom_ist
@@ -2922,10 +2724,12 @@ if strombedarf_rueckrechnung:
         f"Zurückgerechneter Haushaltsstrom: {basislast_vorschau:,.0f} kWh/a".replace(",", "'")
     )
 
+    # Berechnete Basislast für weitere Parameterstudien speichern
     if st.button("Haushaltsbasislast neu aus aktueller Stromrechnung berechnen"):
         st.session_state["fixe_basislast_kWh"] = basislast_berechnet
         st.session_state["referenz_heizwaermebedarf_kWh"] = Heizwaermebedarf_input
         st.rerun()
+    # Bereits gespeicherte Basislast anzeigen und bei Bedarf zurücksetzen
     if "fixe_basislast_kWh" in st.session_state:
         st.success(
             f"Fixierte Haushaltsbasislast für Parameterstudien: "
@@ -2936,6 +2740,7 @@ if strombedarf_rueckrechnung:
             st.session_state.pop("fixe_basislast_kWh", None)
             st.session_state.pop("referenz_heizwaermebedarf_kWh", None)
             st.rerun()
+    # Prüfen, ob die abgezogenen Anteile plausibel sind
     abgezogene_anteile = wp_strom_ist + ww_strom_ist + ev_strom_ist
 
     if abgezogene_anteile > jahresstromverbrauch:
@@ -3493,11 +3298,13 @@ with col3:
         "und Einspeiseerlöse berücksichtigt."
     )
 
+# Simulation starten und Ergebnisse zurücksetzen
 st.write("------------------------------")
 st.subheader("Test Zeitreihe")
 run_simulation = st.button("Simulation starten")
 
 if run_simulation:
+    # Ergebnisse der vorherigen Simulation aus dem Session State entfernen
     for key in [
         "df_ts",
         "monatsbilanz",
@@ -3507,6 +3314,7 @@ if run_simulation:
         "simulation_inputs"
     ]:
         st.session_state.pop(key, None)
+    # Eingaben der aktuellen Simulation speichern
     simulation_inputs = {
         "jahresstromverbrauch": float(jahresstromverbrauch),
         "heizwaermebedarf": float(Heizwaermebedarf_input),
@@ -3535,27 +3343,19 @@ if run_simulation:
     }
 
     st.session_state["simulation_inputs"] = simulation_inputs
+    # Zeitreihensimulation durchführen
     with st.spinner("Simulation läuft... bitte warten"):
-
+        # Zeitliches Grundgerüst der Simulation erstellen
         simulationsjahr = 2025
         df_ts = create_base_dataframe(simulationsjahr)
-
+        # Wetterdaten laden und auf das Simulationsjahr übertragen
         df_weather_raw = load_weather_data(standort_auswahl)
         df_weather = prepare_weather_for_simulation(df_weather_raw, simulationsjahr)
 
-        # Stromprofil
-        # Standardmässig wird der eingegebene Stromverbrauch als Basislast verwendet
+        # Haushaltsbasislast für die Simulation bestimmen
         jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
 
-        # Für Parameterstudien wird eine einmal berechnete Haushaltsbasislast fixiert.
-        # Dadurch bleibt die Haushaltslast konstant, wenn z. B. von Wärmepumpe auf Gas/Öl/Pellets gewechselt wird.
-        # Stromprofil
-        # Standardmässig wird der eingegebene Stromverbrauch als Haushaltsbasislast verwendet
-        jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
-
-        # Im Rückrechnungsmodus wird der Haushaltsstrom aus der Stromrechnung abgeleitet.
-        # Für Parameterstudien kann diese Haushaltsbasislast fixiert werden, damit sie
-        # beim Wechsel des Heizsystems konstant bleibt.
+        # Bei einer Rückrechnung die berechnete oder fixierte Basislast verwenden
         if strombedarf_rueckrechnung:
             if "fixe_basislast_kWh" in st.session_state:
                 jahresstromverbrauch_fuer_basislast = st.session_state["fixe_basislast_kWh"]
@@ -3568,17 +3368,6 @@ if run_simulation:
         elif strombedarf_szenario_basis:
             jahresstromverbrauch_fuer_basislast = jahresstromverbrauch
 
-            #st.write("Rückrechnung aus Stromrechnung:")
-            #st.write(f"Gemessener Gesamtstrom: {jahresstromverbrauch:,.0f} kWh/a".replace(",", "'"))
-            #st.write(f"Abzug WP-Strom Ist-Zustand: {wp_strom_ist:,.0f} kWh/a".replace(",", "'"))
-            #st.write(f"Abzug Warmwasserstrom Ist-Zustand: {ww_strom_ist:,.0f} kWh/a".replace(",", "'"))
-            #st.write(f"Abzug E-Auto-Strom Ist-Zustand: {ev_strom_ist:,.0f} kWh/a".replace(",", "'"))
-
-            #st.metric(
-                #"Berechneter Haushaltsstrom als Basislast",
-                #f"{jahresstromverbrauch_fuer_basislast:,.0f} kWh/a".replace(",", "'")
-            #)
-
         # Stromprofil mit Basislast erzeugen
         if Stromnutzung == "Standardprofil EFH":
             df_ts = add_slp_profile(df_ts, slp_df, jahresstromverbrauch_fuer_basislast)
@@ -3590,7 +3379,8 @@ if run_simulation:
             if uploaded_file is not None:
                 df_ts = add_uploaded_load_profile(df_ts, uploaded_file, lastprofil_einheit)
                 st.write("Hochgeladener Jahresverbrauch in kWh:", round(df_ts["hauslast_kWh"].sum(), 1))
-
+                
+                # Hochgeladenes Profil bei Bedarf auf die zurückgerechnete Basislast skalieren
                 if strombedarf_rueckrechnung:
                     faktor = jahresstromverbrauch_fuer_basislast / df_ts["hauslast_kWh"].sum()
                     df_ts["hauslast_kWh"] = df_ts["hauslast_kWh"] * faktor
@@ -3603,18 +3393,10 @@ if run_simulation:
                 st.info("Bitte eine gültige CSV-/Excel-Datei hochladen.")
                 st.stop()
 
-        # Raumheizung übernehmen (ohne Warmwasser)
-        
+        # Raumheizung übernehmen
         heizwaerme_jahr = float(Heizwaermebedarf_input)
        
-        #st.write("DEBUG strombedarf_ist_gesamt:", strombedarf_ist_gesamt)
-
-        #st.write("DEBUG Heizwärmebedarf für Simulation:", heizwaerme_jahr)
-
-        #st.write("DEBUG JAZ:", jaz if heizsystem == "Wärmepumpe" else "keine WP")
-
-        #st.write("DEBUG WP-Strom berechnet:", StromverbrauchWP_input if heizsystem == "Wärmepumpe" else 0)
-
+       # Standortdaten für die wetterabhängige Heizungsberechnung laden
         meta_df = load_station_metadata("SIA4028_metadata_2023.csv")
         station_info = get_station_info(meta_df, standort_auswahl, standort_dateien)
 
@@ -3630,7 +3412,7 @@ if run_simulation:
             vorlauf_auslegung=Vorlauftemperatur_Auslegung if heizsystem == "Wärmepumpe" else 40
         )
 
-
+        # Wetterabhängiges Raumheizungsprofil erstellen
         if strombedarf_ist_gesamt:
             df_ts["wp_strom_kWh"] = 0.0
             df_ts["gesamtlast_kWh"] = df_ts["hauslast_kWh"]
@@ -3644,21 +3426,14 @@ if run_simulation:
                 wp_strom_jahr=StromverbrauchWP_input if heizsystem == "Wärmepumpe" else None
             )
 
-
-        
-        # st.write("Original Wetterdaten Start:", df_weather_raw.index.min())
-        # st.write("Original Wetterdaten Ende:", df_weather_raw.index.max())
-        # st.write("Anzahl Wetter-Zeilen:", len(df_weather_raw))
-
-        # st.write("Simulations-Wetterdaten Start:", df_weather.index.min())
-        # st.write("Simulations-Wetterdaten Ende:", df_weather.index.max())
-
+        # Ergebnisgrössen der PV-Berechnung vorbereiten
         df_ts["pv_kWh"] = 0.0
         df_ts["pv_power_kW"] = 0.0
         df_ts["poa_global"] = 0.0
         df_ts["temp_cell"] = 0.0
         df_ts["temp_factor"] = 0.0
 
+        # Erzeugungsprofile aller eingegebenen PV-Anlagen berechnen und zusammenführen
         for anlage in pv_anlagen_daten:
             df_tmp = add_pv_profile_weather_based(
                 df_base=pd.DataFrame(index=df_ts.index),
@@ -3712,7 +3487,7 @@ if run_simulation:
                     f"Abweichung / zusätzlicher Verlust: {pv_verlust_prozent:.1f} %"
                 )
 
-        # Wechselrichterbegrenzung AC-seitig
+        # PV-Leistung auf die maximale Wechselrichterleistung begrenzen
         df_ts["pv_power_kW_vor_wr"] = df_ts["pv_power_kW"]
 
         df_ts["pv_power_kW"] = df_ts["pv_power_kW"].clip(upper=WechselrichterkW)
@@ -3723,13 +3498,15 @@ if run_simulation:
             df_ts["pv_power_kW_vor_wr"] - df_ts["pv_power_kW"]
         ).clip(lower=0) * 0.25
 
+        # Zusätzliche Verbraucher bei einem bereits vollständigen Lastprofil deaktivieren
         if strombedarf_ist_gesamt:
             ww_aktiv_sim = False
             ev_aktiv_sim = False
         else:
             ww_aktiv_sim = ww_aktiv
             ev_aktiv_sim = ev_aktiv
-
+        
+        # Konfiguration für Warmwasser und E-Auto zusammenstellen
         ww_config = {
             "aktiv": ww_aktiv_sim,
             "steuerbar": ww_steuerbar,
@@ -3748,6 +3525,7 @@ if run_simulation:
             "fahrtage": ev_fahrtage
         }
 
+        # Prüfen, ob der Fahrbedarf im gewählten Ladefenster gedeckt werden kann
         ev_check = pruefe_ev_plausibilitaet(ev_config)
 
         if ev_check is not None:
@@ -3759,6 +3537,7 @@ if run_simulation:
                     "Tage weitergeladen."
                 )
 
+        # Energieflüsse mit der gewählten EMS-Priorisierung simulieren
         df_ts = simulate_ems(
             df_ts,
             prioritaeten,
@@ -3774,14 +3553,17 @@ if run_simulation:
             batterieWirkungsgrad
         )
 
+        # Monats- und Jahreskennzahlen aus der Zeitreihe berechnen
         df_ts, monatsbilanz, jahreskennzahlen = create_energy_summary(df_ts)
 
+        # Stromkosten und vermiedene Bezugskosten berechnen
         stromkosten_chf = df_ts["netzbezug_kWh"].sum() * strompreis_chf_kWh
         jahreskennzahlen["Stromkosten_CHF"] = stromkosten_chf
         eingesparte_stromkosten = (
             jahreskennzahlen["Eigenverbrauch_kWh"] * strompreis_chf_kWh
         )
 
+        # Wirtschaftliche Kennzahlen der Anlage berechnen
         jahreskennzahlen["Eingesparte_Stromkosten_CHF"] = eingesparte_stromkosten
         kostenkennzahlen = berechne_kostenkennzahlen(
             df_ts=df_ts,
@@ -3802,6 +3584,7 @@ if run_simulation:
 
         st.session_state["kostenkennzahlen"] = kostenkennzahlen
         
+        # Wärmepumpendaten für die Umweltberechnung vorbereiten
         if heizsystem != "Wärmepumpe":
             wp_typ_use = None
             WPkW_use = 0
@@ -3810,6 +3593,7 @@ if run_simulation:
             wp_typ_use = wp_typ
             WPkW_use = WPkW
             Erdsondentiefe_use = Erdsondentiefe if wp_typ == "Sole/Wasser WP" else 0
+        # Jährliche Fahrleistung des E-Autos für die Umweltberechnung bestimmen
         ev_umwelt_config = {
             "aktiv": ev_aktiv,
             "verbrauch_pro_100km": ev_verbrauch_kWh_pro_100km,
@@ -3820,6 +3604,7 @@ if run_simulation:
 
         ev_km_jahr = berechne_ev_jahreskilometer(ev_umwelt_config)
 
+        # Jährliche Umweltwirkungen der Anlage und der Verbraucher berechnen
         df_umwelt = berechne_umweltwirkung(
             df_ts=df_ts,
             pv_anlagen_daten=pv_anlagen_daten,
@@ -3857,6 +3642,7 @@ if run_simulation:
 
         monatswerte.index = monatswerte.index.strftime("%Y-%m")
 
+        # Eingaben und Ergebnisse als Profil zusammenstellen
         profil = {
             "name": profil_name,
             "personen": int(personen),
@@ -3894,6 +3680,7 @@ if run_simulation:
             "betrachtungsdauer_jahre": int(betrachtungsdauer_jahre),
             "wallboxkosten_chf": float(wallboxkosten_chf)
         }
+        # Profil dauerhaft speichern und im Session State ablegen
         speichere_profil(profil_name, profil)
         st.success(f"Profil '{profil_name}' wurde gespeichert.")
         if "profile" not in st.session_state:
@@ -3901,6 +3688,7 @@ if run_simulation:
 
         st.session_state["profile"][profil_name] = profil
 
+# Ergebnisse der zuletzt durchgeführten Simulation anzeigen
 if "df_ts" in st.session_state:
         df_ts = st.session_state["df_ts"]
         monatsbilanz = st.session_state["monatsbilanz"]
@@ -3941,7 +3729,7 @@ if "df_ts" in st.session_state:
 
         st.write("Ausgewählter Zeitraum:")
         st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
-
+        # Energie- und Wetterverlauf darstellen
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze, zeitraum)
         st.plotly_chart(fig, use_container_width=True)
         
@@ -3961,6 +3749,7 @@ if "df_ts" in st.session_state:
         # Maximale Einspeiseleistung im ausgewählten Zeitraum
         max_einspeiseleistung_kw = df_sum["netzeinspeisung_kWh"].max() / 0.25
 
+        # Passenden Titel für den ausgewählten Zeitraum festlegen
         if zeitraum == "Tag":
             titel = "Zusammenfassung des ausgewählten Tages"
         elif zeitraum == "Woche":
@@ -4062,7 +3851,7 @@ if "df_ts" in st.session_state:
                 "PV-Jahresproduktion",
                 f"{jahreskennzahlen['PV_Produktion_kWh']:,.0f} kWh/a".replace(",", "'")
             )
-
+        # Wirtschaftliche Ergebnisse anzeigen
         if "kostenkennzahlen" in st.session_state:
             kostenkennzahlen = st.session_state["kostenkennzahlen"]
 
@@ -4143,7 +3932,7 @@ if "df_ts" in st.session_state:
 
 
         st.write("---------------------")
-
+        # Monatliche Gesamtlast und PV-Produktion darstellen
         col1, col2 =st.columns(2)
 
         with col1:
@@ -4217,6 +4006,7 @@ if "df_ts" in st.session_state:
             "Lebensdauer der Komponenten dargestellt. Betriebsemissionen, z. B. Netzstrom Betrieb, "
             "werden dagegen aus dem effektiv simulierten jährlichen Energiebezug berechnet."
         )
+        # Herstellungsbedingte Emissionen des gesamten PV-Systems bestimmen
         pv_herstellung_mask = df_umwelt["Kategorie"].str.contains(
             "PV-Anlage|Wechselrichter|Elektroinstallation PV",
             regex=True
@@ -4228,7 +4018,7 @@ if "df_ts" in st.session_state:
         ].sum()
 
         pv_produktion_kWh_a = jahreskennzahlen["PV_Produktion_kWh"]
-
+        # Spezifische Emissionen des erzeugten PV-Stroms berechnen
         if pv_produktion_kWh_a > 0:
             pv_co2_kg_kWh = pv_system_co2_a / pv_produktion_kWh_a
         else:
@@ -4293,6 +4083,7 @@ if "df_ts" in st.session_state:
                     "des gewählten Energieversorgers."
                 )
         with col2:
+            # Treibhausgasemissionen nach Kategorie darstellen
             fig_umwelt = go.Figure()
 
             fig_umwelt.add_trace(go.Bar(
@@ -4309,7 +4100,7 @@ if "df_ts" in st.session_state:
             )
 
             st.plotly_chart(fig_umwelt, use_container_width=True)
-
+        # Simulationsergebnisse als CSV und PDF zum Download bereitstellen
         csv = df_ts.to_csv().encode("utf-8")
         st.download_button(
             label="Zeitreihe als CSV herunterladen",
@@ -4332,360 +4123,4 @@ if "df_ts" in st.session_state:
             file_name=f"{profil_name}_kennzahlen.pdf",
             mime="application/pdf"
         )
-        st.write("------------------------------")
-        st.subheader("Grafische Darstellung der Parameterstudien")
-
-        # ------------------------------------------------------------
-        # Grafik: Parameterstudie Abregelungsverluste EFH
-        # Layout: 3 oben, 3 Mitte, 2 unten
-        # Ohne Zahlenbeschriftung auf den Balken
-        # ------------------------------------------------------------
-
-        import matplotlib.pyplot as plt
-        import matplotlib.gridspec as gridspec
-
-        df_batt = pd.DataFrame({
-            "Batteriekapazität": [1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
-            "Netzbezug": [9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
-            "Autarkiegrad": [33.7, 37.9, 43.3, 48.2, 52.1, 54.9, 57.0, 58.2, 59.0, 59.5, 59.7, 60.0, 60.7],
-            "Eigenverbrauchsquote": [34.0, 38.4, 44.2, 49.3, 53.4, 56.4, 58.6, 59.8, 60.7, 61.2, 61.5, 61.7, 62.4]
-        })
-
-        x = df_batt["Batteriekapazität"]
-
-        fig, ax1 = plt.subplots(figsize=(10, 5.8))
-
-        # Linke Achse: Netzbezug
-        line1 = ax1.plot(
-            x,
-            df_batt["Netzbezug"],
-            marker="o",
-            color="#1f77b4",
-            label="Netzbezug"
-        )
-
-        ax1.set_xlabel("Batteriekapazität in kWh")
-        ax1.set_ylabel("Netzbezug in kWh/a")
-        ax1.set_ylim(0, df_batt["Netzbezug"].max() * 1.10)
-        ax1.grid(True, alpha=0.3)
-
-        # Rechte Achse: Autarkie und Eigenverbrauch
-        ax2 = ax1.twinx()
-
-        line2 = ax2.plot(
-            x,
-            df_batt["Autarkiegrad"],
-            marker="s",
-            linestyle="--",
-            color="#2ca02c",
-            label="Autarkiegrad"
-        )
-
-        line3 = ax2.plot(
-            x,
-            df_batt["Eigenverbrauchsquote"],
-            marker="^",
-            linestyle="--",
-            color="#ff7f0e",
-            label="Eigenverbrauch"
-        )
-
-        ax2.set_ylabel("Autarkiegrad / Eigenverbrauch in %")
-        ax2.set_ylim(0, 100)
-        # Gemeinsame Legende
-        lines = line1 + line2 + line3
-        labels = [line.get_label() for line in lines]
-        ax1.legend(lines, labels, loc="upper right")
-
-        fig.suptitle(
-            "Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
-            fontsize=13,
-            fontweight="bold"
-        )
-
-        plt.tight_layout()
-
-        st.pyplot(fig)
-
-        fig.savefig("batteriekapazitaet_netzbezug_autarkie_eigenverbrauch.pdf", bbox_inches="tight")
-        fig.savefig("batteriekapazitaet_netzbezug_autarkie_eigenverbrauch.svg", bbox_inches="tight")
-        fig.savefig("batteriekapazitaet_netzbezug_autarkie_eigenverbrauch.png", dpi=600, bbox_inches="tight")
-
-        # ------------------------------------------------------------
-        # Grafik: Batteriekapazität, Netzbezug und Bruttokosten
-        # Achsen beginnen bei 0
-        # ------------------------------------------------------------
-        df_batt_kosten = pd.DataFrame({
-            "Batteriekapazität": [0, 1, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 50],
-            "Netzbezug": [10115, 9705, 9092, 8296, 7579, 7019, 6600, 6300, 6124, 6006, 5932, 5893, 5858, 5750],
-            "Kosten brutto": [46282, 47182, 48982, 51682, 54382, 56482, 58282, 60082, 61882, 63682, 65482, 67282, 69082, 79282]
-        })
-        x = df_batt_kosten["Batteriekapazität"]
-        fig, ax1 = plt.subplots(figsize=(10, 5.8))
-        line1 = ax1.plot(
-            x,
-            df_batt_kosten["Netzbezug"],
-            marker="o",
-            color="#1f77b4",
-            label="Netzbezug"
-        )
-
-        ax1.set_xlabel("Batteriekapazität in kWh")
-        ax1.set_ylabel("Netzbezug in kWh/a")
-        ax1.set_ylim(0, df_batt_kosten["Netzbezug"].max() * 1.10)
-        ax1.grid(True, alpha=0.3)
-
-        ax2 = ax1.twinx()
-
-        line2 = ax2.plot(
-            x,
-            df_batt_kosten["Kosten brutto"],
-            marker="s",
-            linestyle="--",
-            color="#d62728",
-            label="Kosten brutto"
-        )
-
-        ax2.set_ylabel("Kosten brutto in CHF")
-        ax2.set_ylim(0, df_batt_kosten["Kosten brutto"].max() * 1.10)
-
-        lines = line1 + line2
-        labels = [line.get_label() for line in lines]
-        ax1.legend(lines, labels, loc="lower right")
-
-        fig.suptitle(
-            "Batteriekapazität, Netzbezug und Bruttokosten",
-            fontsize=13,
-            fontweight="bold"
-        )
-
-        plt.tight_layout()
-
-        st.pyplot(fig)
-
-        fig.savefig("batteriekapazitaet_netzbezug_kosten.pdf", bbox_inches="tight")
-        fig.savefig("batteriekapazitaet_netzbezug_kosten.svg", bbox_inches="tight")
-        fig.savefig("batteriekapazitaet_netzbezug_kosten.png", dpi=600, bbox_inches="tight")      
-
-        # ------------------------------------------------------------
-        # Grafik: Einfluss der EMS-Strategie
-        # Layout: 2 oben, 2 unten
-        # Achsen beginnen bei 0, Prozentachsen bis 100 %
-        # ------------------------------------------------------------
-
-
-        df_ems = pd.DataFrame({
-            "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6"],
-            "Strombedarf": [14639, 14639, 14639, 14639, 14639, 14639, 14639],
-            "Eigenverbrauchsquote": [49.3, 49.2, 48.3, 52.4, 49.3, 49.2, 49.3],
-            "Autarkiegrad": [48.2, 48.1, 47.2, 51.3, 48.2, 48.1, 48.2],
-            "Netzbezug": [7579, 7601, 7730, 7127, 7582, 7605, 7579],
-            "Netzeinspeisung": [7377, 7394, 7531, 6934, 7378, 7397, 7377],
-            "Max. Netzeinspeisung": [9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 9.2]
-        })
-
-        faelle = df_ems["Fall"]
-        x = np.arange(len(faelle))
-
-        # Eine feste Farbe pro Fall
-        farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
-
-        kennzahlen = [
-            ("Netzbezug", "kWh/a"),
-            ("Netzeinspeisung", "kWh/a"),
-            ("Eigenverbrauchsquote", "%"),
-            ("Autarkiegrad", "%")
-        ]
-
-        fig, axes = plt.subplots(2, 2, figsize=(13, 9))
-        axes = axes.flatten()
-
-        for ax, (spalte, einheit) in zip(axes, kennzahlen):
-            werte = df_ems[spalte].values
-
-            ax.bar(x, werte, color=farben)
-
-            ax.set_title(spalte, fontsize=13, fontweight="bold")
-            ax.set_ylabel(einheit, fontsize=11)
-            ax.set_xticks(x)
-            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=10)
-
-            # Achsen immer bei 0 starten
-            if einheit == "%":
-                ax.set_ylim(0, 100)
-            else:
-                ymax = max(werte) if max(werte) > 0 else 1
-                ax.set_ylim(0, ymax * 1.12)
-
-            ax.grid(axis="y", alpha=0.25)
-            ax.set_axisbelow(True)
-
-        fig.suptitle(
-            "Einfluss der EMS-Strategie auf Netzbezug, Netzeinspeisung, Eigenverbrauch und Autarkie",
-            fontsize=15,
-            fontweight="bold",
-            y=0.98
-        )
-
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-        st.pyplot(fig)
-
-        fig.savefig("parameterstudie_ems_strategien.pdf", bbox_inches="tight")
-        fig.savefig("parameterstudie_ems_strategien.svg", bbox_inches="tight")
-        fig.savefig("parameterstudie_ems_strategien.png", dpi=600, bbox_inches="tight")
-
-        # ------------------------------------------------------------
-        # Grafik: Batteriekapazität, Netzbezug und CO2-Bilanz
-        # ------------------------------------------------------------
-
-        import matplotlib.pyplot as plt
-        import pandas as pd
-
-        df_batt_co2 = pd.DataFrame({
-            "Batteriekapazität": [0, 1, 9, 15, 33],
-            "Netzbezug": [10115, 9706, 7579, 6600, 5858],
-            "CO2_total_IWB": [1893, 1913, 1963, 2017, 2207],
-            "CO2_total_CH": [2757, 2742, 2609, 2581, 2708],
-            "CO2_Batterie_Herstellung": [0, 24, 100, 166, 365]
-        })
-
-        x = df_batt_co2["Batteriekapazität"]
-
-        fig, ax1 = plt.subplots(figsize=(10, 5.8))
-
-        line1 = ax1.plot(
-            x,
-            df_batt_co2["CO2_total_IWB"],
-            marker="o",
-            color="#1f77b4",
-            label="CO₂ total mit IWB-Strom"
-        )
-
-        line2 = ax1.plot(
-            x,
-            df_batt_co2["CO2_total_CH"],
-            marker="s",
-            color="#2ca02c",
-            label="CO₂ total mit CH-Strommix"
-        )
-
-        line3 = ax1.plot(
-            x,
-            df_batt_co2["CO2_Batterie_Herstellung"],
-            marker="^",
-            linestyle="--",
-            color="#ff7f0e",
-            label="CO₂ Batterieherstellung"
-        )
-
-        ax1.set_xlabel("Batteriekapazität in kWh")
-        ax1.set_ylabel("CO₂-Emissionen in kg CO₂-eq/a")
-        ax1.set_ylim(0, df_batt_co2["CO2_total_CH"].max() * 1.15)
-        ax1.grid(True, alpha=0.3)
-
-        ax2 = ax1.twinx()
-
-        line4 = ax2.plot(
-            x,
-            df_batt_co2["Netzbezug"],
-            marker="d",
-            linestyle=":",
-            color="#d62728",
-            label="Netzbezug"
-        )
-
-        ax2.set_ylabel("Netzbezug in kWh/a")
-        ax2.set_ylim(0, df_batt_co2["Netzbezug"].max() * 1.10)
-
-        lines = line1 + line2 + line3 + line4
-        labels = [line.get_label() for line in lines]
-
-        ax1.legend(
-            lines,
-            labels,
-            loc="upper center",
-            bbox_to_anchor=(0.5, -0.14),
-            ncol=2,
-            frameon=True
-        )
-
-        fig.suptitle(
-            "Einfluss der Batteriekapazität auf Netzbezug und CO₂-Bilanz",
-            fontsize=13,
-            fontweight="bold"
-        )
-
-        plt.tight_layout(rect=[0, 0.10, 1, 1])
-
-        st.pyplot(fig)
-
-        fig.savefig("batteriekapazitaet_co2_bilanz.pdf", bbox_inches="tight")
-        fig.savefig("batteriekapazitaet_co2_bilanz.svg", bbox_inches="tight")
-        fig.savefig("batteriekapazitaet_co2_bilanz.png", dpi=600, bbox_inches="tight")
-
-        # ------------------------------------------------------------
-        # Grafik: Einfluss zusätzlicher PV-Flächen auf Stromkennzahlen
-        # Layout: 2 Reihen mit je 3 Diagrammen
-        # Ohne Abregelung, da in allen Fällen 0 kWh/a
-        # ------------------------------------------------------------
-
-        df_pv_flaechen = pd.DataFrame({
-            "Fall": ["Fall 0", "Fall 1", "Fall 2", "Fall 3", "Fall 4", "Fall 5", "Fall 6"],
-            "PV-Produktion": [26457, 36078, 49297, 56159, 64567, 40336, 43475],
-            "Eigenverbrauchsquote": [86.8, 73.7, 61.8, 57.5, 53.2, 67.4, 65.0],
-            "Autarkiegrad": [45.0, 51.7, 58.7, 61.9, 65.7, 52.9, 55.0],
-            "Netzbezug": [27913, 24645, 21205, 19638, 17728, 23966, 22905],
-            "Netzeinspeisung": [3480, 9491, 18808, 23872, 30235, 13166, 15215],
-            "Max. Einspeiseleistung": [15.8, 22.1, 23.7, 23.75, 23.75, 23.6, 23.6]
-        })
-
-        faelle = df_pv_flaechen["Fall"]
-        x = np.arange(len(faelle))
-        farben = plt.cm.tab10(np.linspace(0, 1, len(faelle)))
-
-        kennzahlen = [
-            ("PV-Produktion", "kWh/a"),
-            ("Eigenverbrauchsquote", "%"),
-            ("Autarkiegrad", "%"),
-            ("Netzbezug", "kWh/a"),
-            ("Netzeinspeisung", "kWh/a"),
-            ("Max. Einspeiseleistung", "kW")
-        ]
-
-        fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-        axes = axes.flatten()
-
-        for ax, (spalte, einheit) in zip(axes, kennzahlen):
-            werte = df_pv_flaechen[spalte].values
-
-            ax.bar(x, werte, color=farben)
-
-            ax.set_title(spalte, fontsize=13, fontweight="bold")
-            ax.set_ylabel(einheit, fontsize=11)
-            ax.set_xticks(x)
-            ax.set_xticklabels(faelle, rotation=45, ha="right", fontsize=10)
-
-            if einheit == "%":
-                ax.set_ylim(0, 100)
-            else:
-                ymax = max(werte) if max(werte) > 0 else 1
-                ax.set_ylim(0, ymax * 1.12)
-
-            ax.grid(axis="y", alpha=0.25)
-            ax.set_axisbelow(True)
-
-        fig.suptitle(
-            "Einfluss zusätzlicher PV-Flächen auf die Stromkennzahlen des Gemeindehauses",
-            fontsize=17,
-            fontweight="bold",
-            y=0.98
-        )
-
-        plt.tight_layout(rect=[0, 0, 1, 0.94])
-
-        st.pyplot(fig)
-
-        fig.savefig("gemeindehaus_zusaetzliche_pv_flaechen.pdf", bbox_inches="tight")
-        fig.savefig("gemeindehaus_zusaetzliche_pv_flaechen.svg", bbox_inches="tight")
-        fig.savefig("gemeindehaus_zusaetzliche_pv_flaechen.png", dpi=600, bbox_inches="tight")
+        
