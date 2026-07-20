@@ -205,12 +205,12 @@ WW_KOMBI = "Morgens + Abends (05:00–07:00 Uhr und 17:00–20:00 Uhr)"
 WW_NACHMITTAG_LWWP = "Nachmittags für Luft/Wasser-WP (14:00–17:00 Uhr)"
 
 # Einlesen der Standardlastprofile für Haushalte und Gewerbe
-slp_df = pd.read_excel("Standardprofil H25.xlsx")
+slp_df = pd.read_excel("Standartprofil H25.xlsx")
 slp_df.columns = slp_df.columns.str.strip()
 slp_df["Monat"] = slp_df["Monat"].astype(int)
 slp_df["Zeit"] = pd.to_datetime(slp_df["Zeit"], format="%H:%M:%S").dt.strftime("%H:%M")
 
-g25_df = pd.read_excel("Standardprofil G25.xlsx")
+g25_df = pd.read_excel("Standartprofil G25.xlsx")
 g25_df.columns = g25_df.columns.str.strip()
 g25_df["Monat"] = g25_df["Monat"].astype(int)
 g25_df["Zeit"] = pd.to_datetime(
