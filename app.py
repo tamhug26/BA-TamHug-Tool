@@ -3724,6 +3724,7 @@ if "df_ts" in st.session_state:
                 9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
             }
 
+
             start_monat = st.selectbox(
                 "Monat wählen",
                 list(monat_namen.keys()),
