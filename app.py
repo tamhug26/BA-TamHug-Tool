@@ -532,7 +532,7 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
     # der Energieflüsse zu Monatswerten
     elif zeitraum == "Jahr":
 
-        energie_cols = [
+        energie_cols_basis = [
             "gesamtlast_kWh",
             "pv_kWh",
             "ww_kWh",
@@ -543,7 +543,13 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
             "unterdeckung_kWh"
         ]
 
-        energie_cols = [c for c in energie_cols if c in df.columns]
+        energie_cols = [
+
+            c for c in energie_cols_basis
+
+            if c in df.columns
+
+        ]
         df_anzeige = df[energie_cols].resample("MS").sum()
         # Monatsenergie in durchschnittliche Monatsleistung umrechnen
         stunden_pro_monat = df_anzeige.index.days_in_month * 24
