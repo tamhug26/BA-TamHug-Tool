@@ -503,8 +503,8 @@ def get_display_dataframe(df, zeitraum, start_datum=None, start_monat=None):
 
         df_anzeige = df[(df.index >= start) & (df.index < ende)][spalten]
 
-        # Durchschnitt pro Stunde
-        #df_anzeige = df_anzeige.resample("15min").mean()
+        # Durchschnitt pro 15 minuten
+        df_anzeige = df_anzeige.resample("15min").mean()
     # zu täglichen Mittelwerten
     elif zeitraum == "Woche":
         if start_datum is None:
