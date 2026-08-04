@@ -71,7 +71,7 @@ kgCO2eq = {
 # Angenommene Lebensdauer der betrachteten Systemkomponenten in Jahren
 LebenszeitJahre = {
     "WP": 20,
-    "Batterie": 30, 
+    "Batterie": 15, 
     "Fossil/Holzheizung": 20,
     "Erdsonde": 50,
     "Wechselrichter": 15,
@@ -87,9 +87,9 @@ Auto_Faktoren = {
 
 # Vordefinierte Strompreise
 strompreis_mapping = {
+    "32,29": 32.29,
     "9,64": 9.64,
     "20,96": 20.96,
-    "32,29": 32.29,
     "43,61": 43.61
 }
 
@@ -1864,7 +1864,8 @@ def batteriekosten_richtwert_chf_kwh(batteriekapazitaet):
     return batteriekosten_total_chf(batteriekapazitaet) / batteriekapazitaet
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
-
+st.caption("Bachelorarbeit 2026, Fachhochschule Nordwestschweiz für Life Science Muttenz, Studiengang Umwelttechnologie")
+st.caption("Zuletzt aktualisiert: 04.08.2026")
 #profile
 st.subheader("Profile")
 profil_name = st.text_input("Profilname", value="Profil 1")
