@@ -3974,6 +3974,14 @@ if run_simulation:
                         ev_config=ev_config,
                         kapazitaeten_kwh=kapazitaeten_fuer_kurve,
                         aktuelle_kapazitaet_kwh=batteriekapazität,
+                        aktuelle_batteriekosten_chf=batteriekosten_chf,
+                        pv_investition_brutto_chf=pv_investition_brutto,
+                        optimierungskosten_chf=optimierungskosten_chf,
+                        wallboxkosten_chf=wallboxkosten_chf,
+                        foerderanteil_pv_prozent=foerderanteil_pv_prozent,
+                        betriebskosten_prozent=betriebskosten_prozent,
+                        betrachtungsdauer_jahre=betrachtungsdauer_jahre,
+                        batterielebensdauer_jahre=LebenszeitJahre["Batterie"],
                         max_ladeleistung_kw=maxLadeleistungBatterie,
                         max_entladeleistung_kw=maxEntladeleistungBatterie,
                         min_soc_prozent=minSoC,
@@ -3982,11 +3990,7 @@ if run_simulation:
                         bezugsgrenze_kw=Bezugsgrenze,
                         batterie_wirkungsgrad=batterieWirkungsgrad,
                         strompreise_rp_kwh=strompreise_fuer_kurve,
-                        ruecklieferverguetung_chf_kwh=
-                            ruecklieferverguetung_chf_kWh,
-                        betriebskosten_prozent=betriebskosten_prozent,
-                        aktuelle_batteriekosten_chf=batteriekosten_chf,
-                        batterielebensdauer_jahre=LebenszeitJahre["Batterie"]
+                        ruecklieferverguetung_chf_kwh=ruecklieferverguetung_chf_kWh
                     )
                 )
 
