@@ -4444,6 +4444,8 @@ if "df_ts" in st.session_state:
                             "Batteriekapazität_kWh",
                             "Netzbezug_kWh_a",
                             "Autarkiegrad_%",
+                            "Eigenverbrauchsquote_%",
+                            "Autarkiegrad_%",
                             "Eigenverbrauchsquote_%"
                         ]
                     ]
