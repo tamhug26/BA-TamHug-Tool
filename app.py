@@ -4355,10 +4355,12 @@ if "df_ts" in st.session_state:
                         )
                     ].sort_values("Batteriekapazität_kWh")
 
-                    ist_aktueller_preis = np.isclose(
-                        preis_rp,
-                        aktueller_preis_rp,
-                        atol=0.01
+                    ist_aktueller_preis = bool(
+                        np.isclose(
+                            preis_rp,
+                            aktueller_preis_rp,
+                            atol=0.01
+                        )
                     )
 
                     if ist_aktueller_preis:
@@ -4526,7 +4528,7 @@ if "df_ts" in st.session_state:
                         use_container_width=True,
                         config={"displayModeBar": False}
                     )
-                    
+
 
                 st.caption(
                     "Die hervorgehobene Kurve verwendet den aktuell eingegebenen "
