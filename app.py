@@ -1867,9 +1867,7 @@ def berechne_batterie_wirtschaftlichkeitskurve(
     einspeisegrenze_kw,
     bezugsgrenze_kw,
     batterie_wirkungsgrad,
-    strompreise_rp_kwh,
-    ruecklieferverguetung_chf_kwh,
-    betriebskosten_prozent
+    strompreise_rp_kwh
 ):
     """
     Berechnet den jährlichen finanziellen Vorteil verschiedener
@@ -1944,49 +1942,36 @@ def berechne_batterie_wirtschaftlichkeitskurve(
         # Geschätzte Investitionskosten der jeweiligen Batteriegrösse
         batterie_investition = batteriekosten_total_chf(kapazitaet)
 
+        # Vereinfachte jährliche Batteriekosten wie in der Präsentationsgrafik:
+        # Investitionskosten werden auf 30 Jahre verteilt.
         if kapazitaet > 0:
-            batteriekosten_pro_jahr = (
-                batterie_investition
-                / LebenszeitJahre["Batterie"]
-            )
-
-            batterie_betriebskosten_pro_jahr = (
-                batterie_investition
-                * betriebskosten_prozent
-                / 100
-            )
+            batteriekosten_pro_jahr = batterie_investition / 30.0
         else:
             batteriekosten_pro_jahr = 0.0
-            batterie_betriebskosten_pro_jahr = 0.0
 
         # Gleiche Simulation kann für alle Strompreise verwendet werden
         for strompreis_rp in strompreise_rp_kwh:
 
             strompreis_chf = strompreis_rp / 100
 
-            # Stromrechnung des Referenzfalls ohne Batterie
-            stromrechnung_ohne_batterie = (
-                netzbezug_ohne * strompreis_chf
-                - einspeisung_ohne * ruecklieferverguetung_chf_kwh
+            # Vermiedener Netzbezug gegenüber dem gleichen System ohne Batterie
+            eingesparter_netzbezug_kwh = max(
+                0.0,
+                netzbezug_ohne - netzbezug_variante
             )
 
-            # Stromrechnung mit der jeweiligen Batteriekapazität
-            stromrechnung_mit_batterie = (
-                netzbezug_variante * strompreis_chf
-                - einspeisung_variante * ruecklieferverguetung_chf_kwh
-            )
-
-            # Vorteil bei den laufenden Stromkosten
+            # Vereinfachter finanzieller Nutzen:
+            # vermiedener Netzbezug × Strompreis
             energiekostenvorteil = (
-                stromrechnung_ohne_batterie
-                - stromrechnung_mit_batterie
+                eingesparter_netzbezug_kwh
+                * strompreis_chf
             )
 
-            # Netto-Vorteil inklusive jährlicher Batteriekosten
+            # Jährlicher Vorteil nach Abzug der auf 30 Jahre
+            # verteilten Batterieinvestition
             netto_vorteil = (
                 energiekostenvorteil
                 - batteriekosten_pro_jahr
-                - batterie_betriebskosten_pro_jahr
             )
 
             ergebnisse.append({
@@ -1995,8 +1980,6 @@ def berechne_batterie_wirtschaftlichkeitskurve(
                 "Netto_Kostenvorteil_CHF_a": netto_vorteil,
                 "Energiekostenvorteil_CHF_a": energiekostenvorteil,
                 "Batteriekosten_CHF_a": batteriekosten_pro_jahr,
-                "Batteriebetriebskosten_CHF_a":
-                    batterie_betriebskosten_pro_jahr,
                 "Netzbezug_kWh_a": netzbezug_variante,
                 "Netzeinspeisung_kWh_a": einspeisung_variante
             })
@@ -4486,7 +4469,7 @@ if "df_ts" in st.session_state:
                         "Batteriespeicher"
                     ),
                     xaxis_title="Batteriekapazität in kWh",
-                    yaxis_title="Netto-Kostenvorteil in CHF/a",
+                    yaxis_title="Vereinfachter finanzieller Vorteil in CHF/a",
                     height=570,
                     hovermode="closest",
                     legend=dict(
@@ -4529,15 +4512,16 @@ if "df_ts" in st.session_state:
                         config={"displayModeBar": False}
                     )
 
-
                 st.caption(
                     "Die hervorgehobene Kurve verwendet den aktuell eingegebenen "
-                    "Strompreis. Die grauen Kurven zeigen, wie sich die "
-                    "Wirtschaftlichkeit bei anderen Strompreisen verändern würde. "
+                    "Strompreis. Die grauen Kurven zeigen Vergleichspreise. "
                     "Der markierte Punkt entspricht der aktuell gewählten "
-                    "Batteriekapazität. Verglichen wird jeweils mit demselben "
-                    "Gebäude- und PV-System ohne Batterie. Lade- und "
-                    "Entladeleistung sowie EMS bleiben unverändert."
+                    "Batteriekapazität. Der dargestellte Vorteil ergibt sich aus "
+                    "den vermiedenen Netzbezugskosten gegenüber demselben System "
+                    "ohne Batterie, abzüglich der auf 30 Jahre verteilten "
+                    "Batterieinvestitionskosten. Einspeisevergütung, laufende "
+                    "Betriebskosten, Finanzierung und Ersatzkosten werden in dieser "
+                    "vereinfachten Vergleichsgrafik nicht berücksichtigt."
                 )
 
 
