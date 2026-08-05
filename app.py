@@ -4638,23 +4638,11 @@ if "df_ts" in st.session_state:
         st.write("------------------------------")
         st.subheader("Umweltwirkungen")
 
+        # Gesamtumweltwirkungen berechnen
         total_ubp = df_umwelt["UBP/a"].sum()
         total_co2 = df_umwelt["kg CO2-eq/a"].sum()
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric("Total UBP pro Jahr", f"{total_ubp:,.0f} UBP/a".replace(",", "'"))
-
-        with col2:
-            st.metric("Total Treibhausgasemissionen", f"{total_co2:,.0f} kg CO₂-eq/a".replace(",", "'"))
-
-        st.caption(
-            "Die Umweltwirkungen der Herstellung werden als jährlicher Anteil über die angenommene "
-            "Lebensdauer der Komponenten dargestellt. Betriebsemissionen, z. B. Netzstrom Betrieb, "
-            "werden dagegen aus dem effektiv simulierten jährlichen Energiebezug berechnet."
-        )
-        # Herstellungsbedingte Emissionen des gesamten PV-Systems bestimmen
+        # Herstellungsbedingte Emissionen des PV-Systems bestimmen
         pv_herstellung_mask = df_umwelt["Kategorie"].str.contains(
             "PV-Anlage|Wechselrichter|Elektroinstallation PV",
             regex=True
@@ -4666,7 +4654,7 @@ if "df_ts" in st.session_state:
         ].sum()
 
         pv_produktion_kWh_a = jahreskennzahlen["PV_Produktion_kWh"]
-        # Spezifische Emissionen des erzeugten PV-Stroms berechnen
+
         if pv_produktion_kWh_a > 0:
             pv_co2_kg_kWh = pv_system_co2_a / pv_produktion_kWh_a
         else:
@@ -4674,28 +4662,40 @@ if "df_ts" in st.session_state:
 
         netz_co2_kg_kWh = CO2Emmisionen_input / 1000
 
-        st.write("**CO₂-Referenzwerte pro kWh elektrische Energie**")
+        # Kennzahlen kompakt darstellen
+        col1, col2, col3, col4 = st.columns(4)
 
-        col_ref1, col_ref2 = st.columns(2)
-
-        with col_ref1:
+        with col1:
             st.metric(
-                "PV-Strom, Herstellung anteilig",
+                "UBP",
+                f"{total_ubp:,.0f} UBP/a".replace(",", "'")
+            )
+
+        with col2:
+            st.metric(
+                "CO₂ gesamt",
+                f"{total_co2:,.0f} kg CO₂-eq/a".replace(",", "'")
+            )
+
+        with col3:
+            st.metric(
+                "PV-Strom",
                 f"{pv_co2_kg_kWh:.3f} kg CO₂-eq/kWh"
             )
 
-        with col_ref2:
+        with col4:
             st.metric(
-                "Netzstrom Betrieb",
+                "Netzstrom",
                 f"{netz_co2_kg_kWh:.3f} kg CO₂-eq/kWh"
             )
 
         st.caption(
-            "Der PV-Referenzwert berücksichtigt die auf die Lebensdauer verteilte Herstellung "
-            "der PV-Anlage inklusive Wechselrichter und Elektroinstallation, bezogen auf die "
-            "jährliche PV-Produktion. Der Netzstromwert entspricht dem eingegebenen CO₂-Faktor "
-            "des gewählten Energieversorgers."
+            "Die Herstellungsumweltwirkungen werden anteilig über die Lebensdauer der Komponenten verteilt. "
+            "Der PV-Referenzwert berücksichtigt die Herstellung der PV-Anlage inklusive Wechselrichter und Elektroinstallation. "
+            "Der Netzstromwert entspricht dem eingegebenen CO₂-Faktor des gewählten Energieversorgers."
         )
+
+
         col1, col2 = st.columns(2)
 
         with col1:
