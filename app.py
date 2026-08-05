@@ -4526,6 +4526,7 @@ if "df_ts" in st.session_state:
                         use_container_width=True,
                         config={"displayModeBar": False}
                     )
+                    
 
                 st.caption(
                     "Die hervorgehobene Kurve verwendet den aktuell eingegebenen "
