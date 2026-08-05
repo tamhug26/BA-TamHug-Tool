@@ -4446,14 +4446,35 @@ if "df_ts" in st.session_state:
                             "Batteriekapazität_kWh",
                             "Netzbezug_kWh_a",
                             "Autarkiegrad_%",
-                            "Eigenverbrauchsquote_%",
-                            "Autarkiegrad_%",
                             "Eigenverbrauchsquote_%"
                         ]
                     ]
                     .drop_duplicates(subset="Batteriekapazität_kWh")
                     .sort_values("Batteriekapazität_kWh")
                     .reset_index(drop=True)
+                    .copy()
+                )
+
+                # Sicherstellen, dass die Werte als Prozentwerte 0–100 vorliegen
+                for spalte in ["Autarkiegrad_%", "Eigenverbrauchsquote_%"]:
+                    df_energie[spalte] = pd.to_numeric(
+                        df_energie[spalte],
+                        errors="coerce"
+                    )
+
+                    if df_energie[spalte].dropna().max() <= 1.0:
+                        df_energie[spalte] = df_energie[spalte] * 100
+
+                # Nur vorübergehend zur Kontrolle
+                st.write(
+                    df_energie[
+                        [
+                            "Batteriekapazität_kWh",
+                            "Netzbezug_kWh_a",
+                            "Autarkiegrad_%",
+                            "Eigenverbrauchsquote_%"
+                        ]
+                    ]
                 )
 
                 saettigungspunkt_kwh = finde_energetischen_saettigungspunkt(
