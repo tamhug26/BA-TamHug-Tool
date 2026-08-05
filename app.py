@@ -3414,6 +3414,8 @@ with col2:
     if batterie_aktiv and batteriekapazität > 0:
         ems_optionen.append("Batterie")
 
+    st.session_state.pop("df_batterie_wirtschaftlichkeit", None)
+
     prioritaeten = st.multiselect(
         "EMS-Priorität auswählen (1 links = höchste Priorität))",
         ems_optionen,
