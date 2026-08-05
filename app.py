@@ -3899,7 +3899,7 @@ if run_simulation:
         jahreskennzahlen["Eingesparte_Stromkosten_CHF"] = eingesparte_stromkosten
         kostenkennzahlen = berechne_kostenkennzahlen(
             df_ts=df_ts,
-            
+
             jahreskennzahlen=jahreskennzahlen,
             pv_kwp_total=gesamt_pv_peakleistung,
             batterie_aktiv=batterie_aktiv,
@@ -3912,9 +3912,7 @@ if run_simulation:
             strompreis_chf_kWh=strompreis_chf_kWh,
             ruecklieferverguetung_chf_kWh=ruecklieferverguetung_chf_kWh,
             betrachtungsdauer_jahre=betrachtungsdauer_jahre,
-            wallboxkosten_chf=wallboxkosten_chf,
-            aktuelle_batteriekosten_chf=batteriekosten_chf,
-            batterielebensdauer_jahre=LebenszeitJahre["Batterie"]
+            wallboxkosten_chf=wallboxkosten_chf
         )
 
         st.session_state["kostenkennzahlen"] = kostenkennzahlen
@@ -3979,7 +3977,9 @@ if run_simulation:
                         strompreise_rp_kwh=strompreise_fuer_kurve,
                         ruecklieferverguetung_chf_kwh=
                             ruecklieferverguetung_chf_kWh,
-                        betriebskosten_prozent=betriebskosten_prozent
+                        betriebskosten_prozent=betriebskosten_prozent,
+                        aktuelle_batteriekosten_chf=batteriekosten_chf,
+                        batterielebensdauer_jahre=LebenszeitJahre["Batterie"]
                     )
                 )
 
