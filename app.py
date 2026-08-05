@@ -4662,15 +4662,23 @@ if "df_ts" in st.session_state:
 
                 fig_batterie_energie = go.Figure()
 
+                # Kapazitäten als Text behandeln, damit alle Punkte
+                # auf der x-Achse gleichmässig verteilt werden
+                kapazitaeten_text = (
+                    df_energie["Batteriekapazität_kWh"]
+                    .map(lambda x: f"{x:g}")
+                )
+
                 # Netzbezug auf der linken y-Achse
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=df_energie["Batteriekapazität_kWh"],
+                        x=kapazitaeten_text,
                         y=df_energie["Netzbezug_kWh_a"],
                         mode="lines+markers",
                         name="Netzbezug",
+                        yaxis="y",
                         line=dict(
-                            color="rgba(95, 95, 95, 0.85)",
+                            color="#6F6F6F",
                             width=3,
                             dash="solid"
                         ),
@@ -4678,10 +4686,9 @@ if "df_ts" in st.session_state:
                             size=7,
                             symbol="circle"
                         ),
-                        yaxis="y",
                         hovertemplate=(
                             "<b>Netzbezug</b><br>"
-                            "Batteriekapazität: %{x:.1f} kWh<br>"
+                            "Batteriekapazität: %{x} kWh<br>"
                             "Netzbezug: %{y:,.0f} kWh/a"
                             "<extra></extra>"
                         )
@@ -4691,12 +4698,13 @@ if "df_ts" in st.session_state:
                 # Autarkiegrad auf der rechten y-Achse
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=df_energie["Batteriekapazität_kWh"],
+                        x=kapazitaeten_text,
                         y=df_energie["Autarkiegrad_%"],
                         mode="lines+markers",
                         name="Autarkiegrad",
+                        yaxis="y2",
                         line=dict(
-                            color="rgba(125, 125, 125, 0.75)",
+                            color="#969696",
                             width=3,
                             dash="dash"
                         ),
@@ -4704,10 +4712,9 @@ if "df_ts" in st.session_state:
                             size=7,
                             symbol="square"
                         ),
-                        yaxis="y2",
                         hovertemplate=(
                             "<b>Autarkiegrad</b><br>"
-                            "Batteriekapazität: %{x:.1f} kWh<br>"
+                            "Batteriekapazität: %{x} kWh<br>"
                             "Autarkiegrad: %{y:.1f} %"
                             "<extra></extra>"
                         )
@@ -4717,12 +4724,13 @@ if "df_ts" in st.session_state:
                 # Eigenverbrauchsquote auf der rechten y-Achse
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=df_energie["Batteriekapazität_kWh"],
+                        x=kapazitaeten_text,
                         y=df_energie["Eigenverbrauchsquote_%"],
                         mode="lines+markers",
                         name="Eigenverbrauchsquote",
+                        yaxis="y2",
                         line=dict(
-                            color="rgba(160, 160, 160, 0.75)",
+                            color="#B8B8B8",
                             width=3,
                             dash="dot"
                         ),
@@ -4730,45 +4738,52 @@ if "df_ts" in st.session_state:
                             size=8,
                             symbol="triangle-up"
                         ),
-                        yaxis="y2",
                         hovertemplate=(
                             "<b>Eigenverbrauchsquote</b><br>"
-                            "Batteriekapazität: %{x:.1f} kWh<br>"
+                            "Batteriekapazität: %{x} kWh<br>"
                             "Eigenverbrauchsquote: %{y:.1f} %"
                             "<extra></extra>"
                         )
                     )
                 )
 
-                # Aktuelle Batteriekapazität bestimmen
-                aktuelle_zeile_energie = df_energie.iloc[
+                # Index beziehungsweise x-Position der aktuellen Batterie bestimmen
+                aktuelle_index_position = int(
                     (
                         df_energie["Batteriekapazität_kWh"]
                         - batteriekapazität
-                    ).abs().argsort()[:1]
+                    ).abs().idxmin()
+                )
+
+                aktuelle_zeile_energie = df_energie.loc[
+                    [[aktuelle_index_position]]
                 ]
+
+                aktuelle_kapazitaet_text = (
+                    aktuelle_zeile_energie["Batteriekapazität_kWh"]
+                    .map(lambda x: f"{x:g}")
+                )
 
                 # Aktuellen Netzbezug markieren
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
+                        x=aktuelle_kapazitaet_text,
                         y=aktuelle_zeile_energie["Netzbezug_kWh_a"],
                         mode="markers",
+                        yaxis="y",
+                        showlegend=False,
                         marker=dict(
                             color="#0068C9",
-                            size=14,
+                            size=15,
                             symbol="circle",
                             line=dict(
                                 color="white",
                                 width=2
                             )
                         ),
-                        yaxis="y",
-                        name="Aktuelle Batterie",
-                        showlegend=False,
                         hovertemplate=(
                             "<b>Aktuelle Batterie</b><br>"
-                            "Kapazität: %{x:.1f} kWh<br>"
+                            "Batteriekapazität: %{x} kWh<br>"
                             "Netzbezug: %{y:,.0f} kWh/a"
                             "<extra></extra>"
                         )
@@ -4778,9 +4793,11 @@ if "df_ts" in st.session_state:
                 # Aktuellen Autarkiegrad markieren
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
+                        x=aktuelle_kapazitaet_text,
                         y=aktuelle_zeile_energie["Autarkiegrad_%"],
                         mode="markers",
+                        yaxis="y2",
+                        showlegend=False,
                         marker=dict(
                             color="#0068C9",
                             size=13,
@@ -4790,11 +4807,9 @@ if "df_ts" in st.session_state:
                                 width=2
                             )
                         ),
-                        yaxis="y2",
-                        showlegend=False,
                         hovertemplate=(
                             "<b>Aktuelle Batterie</b><br>"
-                            "Kapazität: %{x:.1f} kWh<br>"
+                            "Batteriekapazität: %{x} kWh<br>"
                             "Autarkiegrad: %{y:.1f} %"
                             "<extra></extra>"
                         )
@@ -4804,9 +4819,11 @@ if "df_ts" in st.session_state:
                 # Aktuelle Eigenverbrauchsquote markieren
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
+                        x=aktuelle_kapazitaet_text,
                         y=aktuelle_zeile_energie["Eigenverbrauchsquote_%"],
                         mode="markers",
+                        yaxis="y2",
+                        showlegend=False,
                         marker=dict(
                             color="#0068C9",
                             size=14,
@@ -4816,45 +4833,24 @@ if "df_ts" in st.session_state:
                                 width=2
                             )
                         ),
-                        yaxis="y2",
-                        showlegend=False,
                         hovertemplate=(
                             "<b>Aktuelle Batterie</b><br>"
-                            "Kapazität: %{x:.1f} kWh<br>"
+                            "Batteriekapazität: %{x} kWh<br>"
                             "Eigenverbrauchsquote: %{y:.1f} %"
                             "<extra></extra>"
                         )
                     )
                 )
 
-                # Aktuell gewählte Batterie markieren
-                fig_batterie_energie.add_vline(
-                    x=batteriekapazität,
-                    line_width=1.5,
-                    line_dash="dot",
-                    line_color="rgba(0, 104, 201, 0.70)"
-                )
-
-                # Sättigungspunkt nur markieren – die Kurven laufen vollständig weiter
-                if saettigungspunkt_kwh is not None:
-                    fig_batterie_energie.add_vline(
-                        x=saettigungspunkt_kwh,
-                        line_width=2,
-                        line_dash="dash",
-                        line_color="rgba(40, 130, 90, 0.80)",
-                        annotation_text=(
-                            f"Sättigung ab ca. {saettigungspunkt_kwh:.0f} kWh"
-                        ),
-                        annotation_position="top right"
-                    )
-
                 fig_batterie_energie.update_layout(
                     title="Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
 
                     xaxis=dict(
                         title="Batteriekapazität in kWh",
-                        tickmode="array",
-                        tickvals=df_energie["Batteriekapazität_kWh"].tolist(),
+                        type="category",
+                        categoryorder="array",
+                        categoryarray=kapazitaeten_text.tolist(),
+                        tickangle=0,
                         showgrid=True,
                         gridcolor="rgba(200, 200, 200, 0.20)"
                     ),
@@ -4862,10 +4858,13 @@ if "df_ts" in st.session_state:
                     yaxis=dict(
                         title="Netzbezug in kWh/a",
                         side="left",
+                        range=[
+                            0,
+                            df_energie["Netzbezug_kWh_a"].max() * 1.10
+                        ],
                         showgrid=True,
                         gridcolor="rgba(200, 200, 200, 0.30)",
-                        zeroline=False,
-                        rangemode="tozero"
+                        zeroline=False
                     ),
 
                     yaxis2=dict(
@@ -4876,10 +4875,10 @@ if "df_ts" in st.session_state:
                         range=[0, 100],
                         tickmode="array",
                         tickvals=[0, 20, 40, 60, 80, 100],
+                        ticksuffix=" %",
                         showgrid=False,
                         zeroline=False
                     ),
-
 
                     height=570,
 
@@ -4893,7 +4892,7 @@ if "df_ts" in st.session_state:
 
                     margin=dict(
                         l=70,
-                        r=80,
+                        r=85,
                         t=110,
                         b=80
                     )
@@ -4948,32 +4947,7 @@ if "df_ts" in st.session_state:
 
                 # ---------------------------------------------------------
                 # Ergebnistext anzeigen
-                # ---------------------------------------------------------
-
-                if saettigungspunkt_kwh is not None:
-                    st.info(
-                        f"Die aktuell gewählte Batterie besitzt eine Kapazität von "
-                        f"{batteriekapazität:.1f} kWh. "
-                        f"Das wirtschaftliche Optimum liegt bei den aktuellen "
-                        f"Kosten- und Strompreisannahmen bei ungefähr "
-                        f"{wirtschaftliches_optimum_kwh:.0f} kWh. "
-                        f"Der energetische Sättigungspunkt liegt bei ungefähr "
-                        f"{saettigungspunkt_kwh:.0f} kWh. Oberhalb dieses Bereichs "
-                        f"verbessern zusätzliche Speicherkapazitäten den Netzbezug, "
-                        f"den Autarkiegrad und die Eigenverbrauchsquote nur noch "
-                        f"vergleichsweise wenig."
-                    )
-                else:
-                    st.info(
-                        f"Die aktuell gewählte Batterie besitzt eine Kapazität von "
-                        f"{batteriekapazität:.1f} kWh. "
-                        f"Das wirtschaftliche Optimum liegt bei den aktuellen "
-                        f"Kosten- und Strompreisannahmen bei ungefähr "
-                        f"{wirtschaftliches_optimum_kwh:.0f} kWh. "
-                        f"Für die energetischen Kennzahlen konnte innerhalb des "
-                        f"untersuchten Kapazitätsbereichs kein eindeutiger "
-                        f"Sättigungspunkt bestimmt werden."
-                    )
+                # --------------------------------------------------------
 
                 st.caption(
                     "Verglichen wird das vollständige PV-Batteriesystem mit einem "
