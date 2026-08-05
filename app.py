@@ -1860,6 +1860,14 @@ def berechne_batterie_wirtschaftlichkeitskurve(
     ev_config,
     kapazitaeten_kwh,
     aktuelle_kapazitaet_kwh,
+    aktuelle_batteriekosten_chf,
+    pv_investition_brutto_chf,
+    optimierungskosten_chf,
+    wallboxkosten_chf,
+    foerderanteil_pv_prozent,
+    betriebskosten_prozent,
+    betrachtungsdauer_jahre,
+    batterielebensdauer_jahre,
     max_ladeleistung_kw,
     max_entladeleistung_kw,
     min_soc_prozent,
@@ -1867,121 +1875,158 @@ def berechne_batterie_wirtschaftlichkeitskurve(
     einspeisegrenze_kw,
     bezugsgrenze_kw,
     batterie_wirkungsgrad,
-    strompreise_rp_kwh
+    strompreise_rp_kwh,
+    ruecklieferverguetung_chf_kwh
 ):
     """
-    Berechnet den jährlichen finanziellen Vorteil verschiedener
-    Batteriekapazitäten gegenüber demselben System ohne Batterie.
-
-    Nur die Batteriekapazität wird verändert.
-    Ladeleistung, EMS und alle übrigen Eingaben bleiben konstant.
+    Jährlicher finanzieller Vorteil des gesamten PV-Batteriesystems
+    gegenüber einem vollständigen Netzbezug ohne PV und Batterie.
     """
 
-    # Aktuelle Kapazität zusätzlich aufnehmen, falls sie nicht
-    # bereits in der Standardreihe enthalten ist
     kapazitaeten = sorted(set(
         [float(k) for k in kapazitaeten_kwh]
         + [float(aktuelle_kapazitaet_kwh)]
     ))
 
-    # ---------------------------------------------------------
-    # Referenzfall ohne Batterie
-    df_ohne_batterie = simulate_ems(
-        df_basis.copy(),
-        prioritaeten,
-        ww_config,
-        ev_config,
-        0.0,                        # keine Batterie
-        max_ladeleistung_kw,
-        max_entladeleistung_kw,
-        min_soc_prozent,
-        max_soc_prozent,
-        einspeisegrenze_kw,
-        bezugsgrenze_kw,
-        batterie_wirkungsgrad
+    # Individuell eingegebene Batteriekosten auf die ganze Kurve übertragen
+    richtwert_aktuell = batteriekosten_total_chf(
+        aktuelle_kapazitaet_kwh
     )
 
-    df_ohne_batterie, _, kennzahlen_ohne = create_energy_summary(
-        df_ohne_batterie
+    if richtwert_aktuell > 0:
+        batteriekosten_faktor = (
+            aktuelle_batteriekosten_chf / richtwert_aktuell
+        )
+    else:
+        batteriekosten_faktor = 1.0
+
+    # Förderung gilt gemäss aktueller Beschriftung nur für die PV-Investition
+    foerderung_chf = (
+        pv_investition_brutto_chf
+        * foerderanteil_pv_prozent
+        / 100
     )
 
-    netzbezug_ohne = kennzahlen_ohne["Netzbezug_kWh"]
-    einspeisung_ohne = kennzahlen_ohne["Netzeinspeisung_kWh"]
+    pv_investition_netto_chf = max(
+        0.0,
+        pv_investition_brutto_chf - foerderung_chf
+    )
+
+    pv_jahreskosten_chf = (
+        pv_investition_netto_chf / betrachtungsdauer_jahre
+    )
+
+    zusatzkosten_jahr_chf = (
+        optimierungskosten_chf + wallboxkosten_chf
+    ) / betrachtungsdauer_jahre
 
     ergebnisse = []
 
-    # ---------------------------------------------------------
-    # Batterievarianten simulieren
     for kapazitaet in kapazitaeten:
 
-        if kapazitaet == 0:
-            kennzahlen_variante = kennzahlen_ohne
-        else:
-            df_variante = simulate_ems(
-                df_basis.copy(),
-                prioritaeten,
-                ww_config,
-                ev_config,
-                kapazitaet,
-                max_ladeleistung_kw,
-                max_entladeleistung_kw,
-                min_soc_prozent,
-                max_soc_prozent,
-                einspeisegrenze_kw,
-                bezugsgrenze_kw,
-                batterie_wirkungsgrad
-            )
+        df_variante = simulate_ems(
+            df_basis.copy(),
+            prioritaeten,
+            ww_config,
+            ev_config,
+            kapazitaet,
+            max_ladeleistung_kw,
+            max_entladeleistung_kw,
+            min_soc_prozent,
+            max_soc_prozent,
+            einspeisegrenze_kw,
+            bezugsgrenze_kw,
+            batterie_wirkungsgrad
+        )
 
-            df_variante, _, kennzahlen_variante = create_energy_summary(
-                df_variante
-            )
+        df_variante, _, kennzahlen = create_energy_summary(
+            df_variante
+        )
 
-        netzbezug_variante = kennzahlen_variante["Netzbezug_kWh"]
-        einspeisung_variante = kennzahlen_variante["Netzeinspeisung_kWh"]
+        gesamtlast_kwh = df_variante["gesamtlast_kWh"].sum()
+        netzbezug_kwh = kennzahlen["Netzbezug_kWh"]
+        einspeisung_kwh = kennzahlen["Netzeinspeisung_kWh"]
 
-        # Geschätzte Investitionskosten der jeweiligen Batteriegrösse
-        batterie_investition = batteriekosten_total_chf(kapazitaet)
+        batterie_investition_chf = (
+            batteriekosten_total_chf(kapazitaet)
+            * batteriekosten_faktor
+        )
 
-        # Vereinfachte jährliche Batteriekosten wie in der Präsentationsgrafik:
-        # Investitionskosten werden auf 30 Jahre verteilt.
-        if kapazitaet > 0:
-            batteriekosten_pro_jahr = batterie_investition / 30.0
-        else:
-            batteriekosten_pro_jahr = 0.0
+        batterie_jahreskosten_chf = (
+            batterie_investition_chf
+            / batterielebensdauer_jahre
+            if kapazitaet > 0
+            else 0.0
+        )
 
-        # Gleiche Simulation kann für alle Strompreise verwendet werden
+        investition_brutto_chf = (
+            pv_investition_brutto_chf
+            + batterie_investition_chf
+            + optimierungskosten_chf
+            + wallboxkosten_chf
+        )
+
+        betriebskosten_jahr_chf = (
+            investition_brutto_chf
+            * betriebskosten_prozent
+            / 100
+        )
+
         for strompreis_rp in strompreise_rp_kwh:
 
             strompreis_chf = strompreis_rp / 100
 
-            # Vermiedener Netzbezug gegenüber dem gleichen System ohne Batterie
-            eingesparter_netzbezug_kwh = max(
-                0.0,
-                netzbezug_ohne - netzbezug_variante
+            # Referenz: gesamter Verbrauch vollständig aus dem Netz
+            stromkosten_ohne_anlage_chf = (
+                gesamtlast_kwh * strompreis_chf
             )
 
-            # Vereinfachter finanzieller Nutzen:
-            # vermiedener Netzbezug × Strompreis
-            energiekostenvorteil = (
-                eingesparter_netzbezug_kwh
-                * strompreis_chf
+            netzbezugskosten_chf = (
+                netzbezug_kwh * strompreis_chf
             )
 
-            # Jährlicher Vorteil nach Abzug der auf 30 Jahre
-            # verteilten Batterieinvestition
-            netto_vorteil = (
-                energiekostenvorteil
-                - batteriekosten_pro_jahr
+            einspeiseerloes_chf = (
+                einspeisung_kwh
+                * ruecklieferverguetung_chf_kwh
+            )
+
+            jahreskosten_system_chf = (
+                netzbezugskosten_chf
+                - einspeiseerloes_chf
+                + pv_jahreskosten_chf
+                + batterie_jahreskosten_chf
+                + zusatzkosten_jahr_chf
+                + betriebskosten_jahr_chf
+            )
+
+            finanzieller_vorteil_chf = (
+                stromkosten_ohne_anlage_chf
+                - jahreskosten_system_chf
             )
 
             ergebnisse.append({
                 "Batteriekapazität_kWh": kapazitaet,
                 "Strompreis_Rp_kWh": float(strompreis_rp),
-                "Netto_Kostenvorteil_CHF_a": netto_vorteil,
-                "Energiekostenvorteil_CHF_a": energiekostenvorteil,
-                "Batteriekosten_CHF_a": batteriekosten_pro_jahr,
-                "Netzbezug_kWh_a": netzbezug_variante,
-                "Netzeinspeisung_kWh_a": einspeisung_variante
+                "Finanzieller_Vorteil_CHF_a":
+                    finanzieller_vorteil_chf,
+                "Stromkosten_ohne_Anlage_CHF_a":
+                    stromkosten_ohne_anlage_chf,
+                "Netzbezugskosten_CHF_a":
+                    netzbezugskosten_chf,
+                "Einspeiseerloes_CHF_a":
+                    einspeiseerloes_chf,
+                "PV_Jahreskosten_CHF_a":
+                    pv_jahreskosten_chf,
+                "Batteriekosten_CHF_a":
+                    batterie_jahreskosten_chf,
+                "Zusatzkosten_CHF_a":
+                    zusatzkosten_jahr_chf,
+                "Betriebskosten_CHF_a":
+                    betriebskosten_jahr_chf,
+                "Netzbezug_kWh_a":
+                    netzbezug_kwh,
+                "Netzeinspeisung_kWh_a":
+                    einspeisung_kwh
             })
 
     return pd.DataFrame(ergebnisse)
@@ -3866,7 +3911,9 @@ if run_simulation:
             strompreis_chf_kWh=strompreis_chf_kWh,
             ruecklieferverguetung_chf_kWh=ruecklieferverguetung_chf_kWh,
             betrachtungsdauer_jahre=betrachtungsdauer_jahre,
-            wallboxkosten_chf=wallboxkosten_chf
+            wallboxkosten_chf=wallboxkosten_chf,
+            aktuelle_batteriekosten_chf=batteriekosten_chf,
+            batterielebensdauer_jahre=LebenszeitJahre["Batterie"]
         )
 
         st.session_state["kostenkennzahlen"] = kostenkennzahlen
@@ -4365,7 +4412,7 @@ if "df_ts" in st.session_state:
                     fig_batterie_kosten.add_trace(
                         go.Scatter(
                             x=df_preis["Batteriekapazität_kWh"],
-                            y=df_preis["Netto_Kostenvorteil_CHF_a"],
+                            y=df_preis["Finanzieller_Vorteil_CHF_a"],
                             mode="lines",
                             name=name,
                             opacity=deckkraft,
@@ -4422,7 +4469,7 @@ if "df_ts" in st.session_state:
                     fig_batterie_kosten.add_trace(
                         go.Scatter(
                             x=aktuelle_zeile["Batteriekapazität_kWh"],
-                            y=aktuelle_zeile["Netto_Kostenvorteil_CHF_a"],
+                            y=aktuelle_zeile["Finanzieller_Vorteil_CHF_a"],
                             mode="markers",
                             name=punkt_name,
                             showlegend=ist_aktueller_preis,
@@ -4512,16 +4559,14 @@ if "df_ts" in st.session_state:
                         config={"displayModeBar": False}
                     )
 
+
                 st.caption(
-                    "Die hervorgehobene Kurve verwendet den aktuell eingegebenen "
-                    "Strompreis. Die grauen Kurven zeigen Vergleichspreise. "
-                    "Der markierte Punkt entspricht der aktuell gewählten "
-                    "Batteriekapazität. Der dargestellte Vorteil ergibt sich aus "
-                    "den vermiedenen Netzbezugskosten gegenüber demselben System "
-                    "ohne Batterie, abzüglich der auf 30 Jahre verteilten "
-                    "Batterieinvestitionskosten. Einspeisevergütung, laufende "
-                    "Betriebskosten, Finanzierung und Ersatzkosten werden in dieser "
-                    "vereinfachten Vergleichsgrafik nicht berücksichtigt."
+                    "Verglichen wird das vollständige PV-Batteriesystem mit einem "
+                    "vollständigen Netzbezug ohne PV-Anlage und Batterie. "
+                    "Berücksichtigt werden Netzbezug, Einspeiseerlös, PV- und "
+                    "Batterieinvestition, Förderung, EMS- beziehungsweise "
+                    "Wallboxkosten und laufende Kosten. Finanzierung, Diskontierung "
+                    "und spätere Ersatzinvestitionen werden nicht berücksichtigt."
                 )
 
 
