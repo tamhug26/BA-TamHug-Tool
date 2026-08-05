@@ -3899,6 +3899,7 @@ if run_simulation:
         jahreskennzahlen["Eingesparte_Stromkosten_CHF"] = eingesparte_stromkosten
         kostenkennzahlen = berechne_kostenkennzahlen(
             df_ts=df_ts,
+            
             jahreskennzahlen=jahreskennzahlen,
             pv_kwp_total=gesamt_pv_peakleistung,
             batterie_aktiv=batterie_aktiv,
