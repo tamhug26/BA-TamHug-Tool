@@ -4748,15 +4748,13 @@ if "df_ts" in st.session_state:
                 )
 
                 # Index beziehungsweise x-Position der aktuellen Batterie bestimmen
-                aktuelle_index_position = int(
-                    (
-                        df_energie["Batteriekapazität_kWh"]
-                        - batteriekapazität
-                    ).abs().idxmin()
-                )
+                aktuelle_position = (
+                    df_energie["Batteriekapazität_kWh"]
+                    - batteriekapazität
+                ).abs().to_numpy().argmin()
 
-                aktuelle_zeile_energie = df_energie.loc[
-                    [[aktuelle_index_position]]
+                aktuelle_zeile_energie = df_energie.iloc[
+                    [aktuelle_position]
                 ]
 
                 aktuelle_kapazitaet_text = (
