@@ -4434,19 +4434,23 @@ if "df_ts" in st.session_state:
                                 dash=linienmuster
                             ),
                             customdata=np.column_stack([
-                                df_preis["Energiekostenvorteil_CHF_a"],
+                                df_preis["Stromkosten_ohne_Anlage_CHF_a"],
+                                df_preis["Netzbezugskosten_CHF_a"],
+                                df_preis["Einspeiseerloes_CHF_a"],
+                                df_preis["PV_Jahreskosten_CHF_a"],
                                 df_preis["Batteriekosten_CHF_a"],
-                                df_preis["Netzbezug_kWh_a"]
+                                df_preis["Betriebskosten_CHF_a"]
                             ]),
                             hovertemplate=(
                                 "<b>%{fullData.name}</b><br>"
                                 "Batteriekapazität: %{x:.1f} kWh<br>"
-                                "Netto-Kostenvorteil: %{y:,.0f} CHF/a<br>"
-                                "Vorteil Stromrechnung: "
-                                "%{customdata[0]:,.0f} CHF/a<br>"
-                                "Jährliche Batteriekosten: "
-                                "%{customdata[1]:,.0f} CHF/a<br>"
-                                "Netzbezug: %{customdata[2]:,.0f} kWh/a"
+                                "Finanzieller Vorteil: %{y:,.0f} CHF/a<br>"
+                                "Stromkosten ohne Anlage: %{customdata[0]:,.0f} CHF/a<br>"
+                                "Netzbezugskosten: %{customdata[1]:,.0f} CHF/a<br>"
+                                "Einspeiseerlös: %{customdata[2]:,.0f} CHF/a<br>"
+                                "PV-Jahreskosten: %{customdata[3]:,.0f} CHF/a<br>"
+                                "Batterie-Jahreskosten: %{customdata[4]:,.0f} CHF/a<br>"
+                                "Betriebskosten: %{customdata[5]:,.0f} CHF/a"
                                 "<extra></extra>"
                             )
                         )
