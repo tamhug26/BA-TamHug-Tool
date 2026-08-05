@@ -1990,9 +1990,14 @@ if vergleichsmodus:
         tickangle=-20
     )
 
+    fig_abregelung_vergleich.update_layout(
+        width=700,
+        height=450,
+    )
+
     st.plotly_chart(
         fig_abregelung_vergleich,
-        use_container_width=True
+        use_container_width=False
     )
 
     st.caption(
