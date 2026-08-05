@@ -3897,30 +3897,23 @@ if run_simulation:
 
         # Wirtschaftliche Kennzahlen der Anlage berechnen
         jahreskennzahlen["Eingesparte_Stromkosten_CHF"] = eingesparte_stromkosten
-        #hier
 
-        try:
-            kostenkennzahlen = berechne_kostenkennzahlen(
-                df_ts=df_ts,
-                jahreskennzahlen=jahreskennzahlen,
-                pv_kwp_total=gesamt_pv_peakleistung,
-                batterie_aktiv=batterie_aktiv,
-                batteriekapazitaet=batteriekapazität,
-                pv_investition_brutto=pv_investition_brutto,
-                batteriekosten_chf=batteriekosten_chf,
-                optimierungskosten_chf=optimierungskosten_chf,
-                foerderanteil_pv_prozent=foerderanteil_pv_prozent,
-                betriebskosten_prozent=betriebskosten_prozent,
-                strompreis_chf_kWh=strompreis_chf_kWh,
-                ruecklieferverguetung_chf_kWh=ruecklieferverguetung_chf_kWh,
-                betrachtungsdauer_jahre=betrachtungsdauer_jahre,
-                wallboxkosten_chf=wallboxkosten_chf
-            )
-
-        except Exception as e:
-            st.error(f"{type(e).__name__}: {str(e)}")
-            st.code(repr(e))
-            st.stop()
+        kostenkennzahlen = berechne_kostenkennzahlen(
+            df_ts=df_ts,
+            jahreskennzahlen=jahreskennzahlen,
+            pv_kwp_total=gesamt_pv_peakleistung,
+            batterie_aktiv=batterie_aktiv,
+            batteriekapazitaet=batteriekapazität,
+            pv_investition_brutto=pv_investition_brutto,
+            batteriekosten_chf=batteriekosten_chf,
+            optimierungskosten_chf=optimierungskosten_chf,
+            foerderanteil_pv_prozent=foerderanteil_pv_prozent,
+            betriebskosten_prozent=betriebskosten_prozent,
+            strompreis_chf_kWh=strompreis_chf_kWh,
+            ruecklieferverguetung_chf_kWh=ruecklieferverguetung_chf_kWh,
+            betrachtungsdauer_jahre=betrachtungsdauer_jahre,
+            wallboxkosten_chf=wallboxkosten_chf
+        )
 
         st.session_state["kostenkennzahlen"] = kostenkennzahlen
 
