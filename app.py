@@ -4685,7 +4685,9 @@ if "df_ts" in st.session_state:
                         line=dict(
                             color="#6F6F6F",
                             width=3,
-                            dash="solid"
+                            dash="solid",
+                            shape="spline",
+                            smoothing=0.7
                         ),
                         marker=dict(
                             size=7,
@@ -4703,7 +4705,7 @@ if "df_ts" in st.session_state:
                 # Autarkiegrad auf der rechten y-Achse
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=kapazitaeten_text,
+                        x=df_energie["Batteriekapazität_kWh"],
                         y=df_energie["Autarkiegrad_%"],
                         mode="lines+markers",
                         name="Autarkiegrad",
@@ -4711,7 +4713,9 @@ if "df_ts" in st.session_state:
                         line=dict(
                             color="#969696",
                             width=3,
-                            dash="dash"
+                            dash="dash",
+                            shape="spline",
+                            smoothing=0.7
                         ),
                         marker=dict(
                             size=7,
@@ -4729,7 +4733,7 @@ if "df_ts" in st.session_state:
                 # Eigenverbrauchsquote auf der rechten y-Achse
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=kapazitaeten_text,
+                        x=df_energie["Batteriekapazität_kWh"],
                         y=df_energie["Eigenverbrauchsquote_%"],
                         mode="lines+markers",
                         name="Eigenverbrauchsquote",
@@ -4737,7 +4741,9 @@ if "df_ts" in st.session_state:
                         line=dict(
                             color="#B8B8B8",
                             width=3,
-                            dash="dot"
+                            dash="dot",
+                            shape="spline",
+                            smoothing=0.7
                         ),
                         marker=dict(
                             size=8,
@@ -4791,7 +4797,7 @@ if "df_ts" in st.session_state:
                 # Aktuellen Autarkiegrad markieren
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=aktuelle_kapazitaet_text,
+                        x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
                         y=aktuelle_zeile_energie["Autarkiegrad_%"],
                         mode="markers",
                         yaxis="y2",
@@ -4817,7 +4823,7 @@ if "df_ts" in st.session_state:
                 # Aktuelle Eigenverbrauchsquote markieren
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=aktuelle_kapazitaet_text,
+                        x=x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
                         y=aktuelle_zeile_energie["Eigenverbrauchsquote_%"],
                         mode="markers",
                         yaxis="y2",
