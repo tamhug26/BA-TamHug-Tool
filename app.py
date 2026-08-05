@@ -4885,6 +4885,7 @@ if "df_ts" in st.session_state:
                         showgrid=False,
                         zeroline=False
                     ),
+                    
 
                     height=570,
 
