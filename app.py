@@ -4662,12 +4662,6 @@ if "df_ts" in st.session_state:
 
                 fig_batterie_energie = go.Figure()
 
-                # ---------------------------------------------------------
-                # Zweite Grafik: energetische Wirkung der Batteriekapazität
-                # ---------------------------------------------------------
-
-                fig_batterie_energie = go.Figure()
-
                 # Netzbezug auf der linken y-Achse
                 fig_batterie_energie.add_trace(
                     go.Scatter(
@@ -4885,7 +4879,7 @@ if "df_ts" in st.session_state:
                         showgrid=False,
                         zeroline=False
                     ),
-                    
+
 
                     height=570,
 
