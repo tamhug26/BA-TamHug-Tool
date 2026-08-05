@@ -1943,11 +1943,6 @@ if vergleichsmodus:
             x=namen_abregelung,
             y=werte_abregelung,
             name="Abregelung",
-            text=[
-                f"{wert:,.1f} kWh".replace(",", "'")
-                for wert in werte_abregelung
-            ],
-            textposition="outside",
             hovertemplate=(
                 "<b>%{x}</b><br>"
                 "Abregelung: %{y:,.1f} kWh/a"
@@ -1966,7 +1961,7 @@ if vergleichsmodus:
         y_achse_max = 1
 
     fig_abregelung_vergleich.update_layout(
-        title="Jährlich abgeregelte PV-Energie",
+        title=None,
         xaxis_title="Profil",
         yaxis_title="Abregelung in kWh/a",
         height=450,
