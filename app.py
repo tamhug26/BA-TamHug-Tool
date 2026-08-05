@@ -1918,6 +1918,88 @@ if vergleichsmodus:
             st.metric("Total UBP", f"{p['total_ubp']:,.0f} UBP/a".replace(",", "'"))
             st.metric("Total CO₂", f"{p['total_co2']:,.0f} kg CO₂-eq/a".replace(",", "'"))
 
+    # ---------------------------------------------------------
+    # Abregelungsverluste der ausgewählten Profile vergleichen
+    # ---------------------------------------------------------
+
+    st.write("------------------------------")
+    st.subheader("Abregelungsverluste im Profilvergleich")
+
+    namen_abregelung = []
+    werte_abregelung = []
+
+    for p in profile_daten:
+        profil = p["profil"]
+
+        namen_abregelung.append(p["name"])
+        werte_abregelung.append(
+            profil["jahreskennzahlen"]["Abgeregelte_Energie_kWh"]
+        )
+
+    fig_abregelung_vergleich = go.Figure()
+
+    fig_abregelung_vergleich.add_trace(
+        go.Bar(
+            x=namen_abregelung,
+            y=werte_abregelung,
+            name="Abregelung",
+            text=[
+                f"{wert:,.1f} kWh".replace(",", "'")
+                for wert in werte_abregelung
+            ],
+            textposition="outside",
+            hovertemplate=(
+                "<b>%{x}</b><br>"
+                "Abregelung: %{y:,.1f} kWh/a"
+                "<extra></extra>"
+            )
+        )
+    )
+
+    # Damit auch bei sehr kleinen oder vollständig fehlenden Verlusten
+    # ein sinnvoller Diagrammbereich angezeigt wird
+    max_abregelung = max(werte_abregelung) if werte_abregelung else 0
+
+    if max_abregelung > 0:
+        y_achse_max = max_abregelung * 1.20
+    else:
+        y_achse_max = 1
+
+    fig_abregelung_vergleich.update_layout(
+        title="Jährlich abgeregelte PV-Energie",
+        xaxis_title="Profil",
+        yaxis_title="Abregelung in kWh/a",
+        height=450,
+        showlegend=False,
+        margin=dict(
+            l=50,
+            r=30,
+            t=70,
+            b=80
+        )
+    )
+
+    fig_abregelung_vergleich.update_yaxes(
+        range=[0, y_achse_max],
+        rangemode="tozero",
+        showgrid=True,
+        gridcolor="rgba(200, 200, 200, 0.35)"
+    )
+
+    fig_abregelung_vergleich.update_xaxes(
+        tickangle=-20
+    )
+
+    st.plotly_chart(
+        fig_abregelung_vergleich,
+        use_container_width=True
+    )
+
+    st.caption(
+        "Dargestellt ist die jährlich abgeregelte PV-Energie der ausgewählten Profile."
+    )
+
+
     st.write("------------------------------")
     st.subheader("Jahresverlauf im Vergleich")
 
@@ -1928,14 +2010,12 @@ if vergleichsmodus:
             "gesamtlast_kWh",
             "netzbezug_kWh",
             "netzeinspeisung_kWh",
-            "abregelung_kWh"
         ],
         format_func=lambda x: {
             "pv_kWh": "PV-Produktion",
             "gesamtlast_kWh": "Gesamtlast",
             "netzbezug_kWh": "Netzbezug",
             "netzeinspeisung_kWh": "Netzeinspeisung",
-            "abregelung_kWh": "Abregelung"
         }[x]
     )
 
