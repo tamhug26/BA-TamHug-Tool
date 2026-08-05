@@ -3918,7 +3918,8 @@ if run_simulation:
             )
 
         except Exception as e:
-            st.exception(e)
+            st.error(f"{type(e).__name__}: {str(e)}")
+            st.code(repr(e))
             st.stop()
 
         st.session_state["kostenkennzahlen"] = kostenkennzahlen
