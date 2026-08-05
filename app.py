@@ -4465,18 +4465,6 @@ if "df_ts" in st.session_state:
                     if df_energie[spalte].dropna().max() <= 1.0:
                         df_energie[spalte] = df_energie[spalte] * 100
 
-                # Nur vorübergehend zur Kontrolle
-                st.write(
-                    df_energie[
-                        [
-                            "Batteriekapazität_kWh",
-                            "Netzbezug_kWh_a",
-                            "Autarkiegrad_%",
-                            "Eigenverbrauchsquote_%"
-                        ]
-                    ]
-                )
-
                 saettigungspunkt_kwh = finde_energetischen_saettigungspunkt(
                     df_energie,
                     schwelle_prozent=1.0
@@ -4555,7 +4543,7 @@ if "df_ts" in st.session_state:
                             ]),
                             hovertemplate=(
                                 "<b>%{fullData.name}</b><br>"
-                                "Batteriekapazität: %{x:.1f} kWh<br>"
+                                "Batteriekapazität: %{x} kWh<br>"
                                 "Finanzieller Vorteil: %{y:,.0f} CHF/a<br>"
                                 "Stromkosten ohne Anlage: %{customdata[0]:,.0f} CHF/a<br>"
                                 "Netzbezugskosten: %{customdata[1]:,.0f} CHF/a<br>"
@@ -4613,7 +4601,7 @@ if "df_ts" in st.session_state:
                             hovertemplate=(
                                 "<b>Aktuelle Batteriekapazität</b><br>"
                                 f"Strompreis: {preis_rp:.2f} Rp./kWh<br>"
-                                "Batteriekapazität: %{x:.1f} kWh<br>"
+                                "Batteriekapazität: %{x} kWh<br>"
                                 "Netto-Kostenvorteil: %{y:,.0f} CHF/a"
                                 "<extra></extra>"
                             )
@@ -4685,15 +4673,11 @@ if "df_ts" in st.session_state:
 
                 # Kapazitäten als Text behandeln, damit alle Punkte
                 # auf der x-Achse gleichmässig verteilt werden
-                kapazitaeten_text = (
-                    df_energie["Batteriekapazität_kWh"]
-                    .map(lambda x: f"{x:g}")
-                )
 
                 # Netzbezug auf der linken y-Achse
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=kapazitaeten_text,
+                        x=df_energie["Batteriekapazität_kWh"],
                         y=df_energie["Netzbezug_kWh_a"],
                         mode="lines+markers",
                         name="Netzbezug",
@@ -4778,15 +4762,10 @@ if "df_ts" in st.session_state:
                     [aktuelle_position]
                 ]
 
-                aktuelle_kapazitaet_text = (
-                    aktuelle_zeile_energie["Batteriekapazität_kWh"]
-                    .map(lambda x: f"{x:g}")
-                )
-
                 # Aktuellen Netzbezug markieren
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=aktuelle_kapazitaet_text,
+                        x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
                         y=aktuelle_zeile_energie["Netzbezug_kWh_a"],
                         mode="markers",
                         yaxis="y",
@@ -4865,14 +4844,18 @@ if "df_ts" in st.session_state:
                     title="Batteriekapazität vs. Netzbezug, Autarkie und Eigenverbrauch",
 
                     xaxis=dict(
-                        title="Batteriekapazität in kWh",
-                        type="category",
-                        categoryorder="array",
-                        categoryarray=kapazitaeten_text.tolist(),
-                        tickangle=0,
-                        showgrid=True,
-                        gridcolor="rgba(200, 200, 200, 0.20)"
-                    ),
+                    title="Batteriekapazität in kWh",
+                    type="linear",
+                    range=[0, 50],
+                    tickmode="array",
+                    tickvals=[
+                        0, 1, 3, 6, 9, 12, 15,
+                        18, 21, 24, 27, 30, 33, 50
+                    ],
+                    tickangle=0,
+                    showgrid=True,
+                    gridcolor="rgba(200, 200, 200, 0.20)"
+                ),
 
                     yaxis=dict(
                         title="Netzbezug in kWh/a",
@@ -4939,6 +4922,58 @@ if "df_ts" in st.session_state:
                         config={
                             "displayModeBar": False
                         }
+                    )
+
+                with st.expander(
+                    "Berechnete Batterievarianten anzeigen",
+                    expanded=False
+                ):
+                    df_batterievarianten_anzeige = df_energie[
+                        [
+                            "Batteriekapazität_kWh",
+                            "Netzbezug_kWh_a",
+                            "Autarkiegrad_%",
+                            "Eigenverbrauchsquote_%"
+                        ]
+                    ].copy()
+
+                    df_batterievarianten_anzeige = (
+                        df_batterievarianten_anzeige.rename(
+                            columns={
+                                "Batteriekapazität_kWh":
+                                    "Batteriekapazität in kWh",
+                                "Netzbezug_kWh_a":
+                                    "Netzbezug in kWh/a",
+                                "Autarkiegrad_%":
+                                    "Autarkiegrad in %",
+                                "Eigenverbrauchsquote_%":
+                                    "Eigenverbrauchsquote in %"
+                            }
+                        )
+                    )
+
+                    df_batterievarianten_anzeige[
+                        "Netzbezug in kWh/a"
+                    ] = df_batterievarianten_anzeige[
+                        "Netzbezug in kWh/a"
+                    ].round(0)
+
+                    df_batterievarianten_anzeige[
+                        "Autarkiegrad in %"
+                    ] = df_batterievarianten_anzeige[
+                        "Autarkiegrad in %"
+                    ].round(1)
+
+                    df_batterievarianten_anzeige[
+                        "Eigenverbrauchsquote in %"
+                    ] = df_batterievarianten_anzeige[
+                        "Eigenverbrauchsquote in %"
+                    ].round(1)
+
+                    st.dataframe(
+                        df_batterievarianten_anzeige,
+                        use_container_width=True,
+                        hide_index=True
                     )
 
                 # ---------------------------------------------------------
