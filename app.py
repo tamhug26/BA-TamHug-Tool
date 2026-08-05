@@ -1852,6 +1852,156 @@ def batteriekosten_total_chf(batteriekapazitaet):
         return batteriekapazitaet * 900.0
 
     return 10 * 900.0 + (batteriekapazitaet - 10) * 600.0
+
+def berechne_batterie_wirtschaftlichkeitskurve(
+    df_basis,
+    prioritaeten,
+    ww_config,
+    ev_config,
+    kapazitaeten_kwh,
+    aktuelle_kapazitaet_kwh,
+    max_ladeleistung_kw,
+    max_entladeleistung_kw,
+    min_soc_prozent,
+    max_soc_prozent,
+    einspeisegrenze_kw,
+    bezugsgrenze_kw,
+    batterie_wirkungsgrad,
+    strompreise_rp_kwh,
+    ruecklieferverguetung_chf_kwh,
+    betriebskosten_prozent
+):
+    """
+    Berechnet den jährlichen finanziellen Vorteil verschiedener
+    Batteriekapazitäten gegenüber demselben System ohne Batterie.
+
+    Nur die Batteriekapazität wird verändert.
+    Ladeleistung, EMS und alle übrigen Eingaben bleiben konstant.
+    """
+
+    # Aktuelle Kapazität zusätzlich aufnehmen, falls sie nicht
+    # bereits in der Standardreihe enthalten ist
+    kapazitaeten = sorted(set(
+        [float(k) for k in kapazitaeten_kwh]
+        + [float(aktuelle_kapazitaet_kwh)]
+    ))
+
+    # ---------------------------------------------------------
+    # Referenzfall ohne Batterie
+    df_ohne_batterie = simulate_ems(
+        df_basis.copy(),
+        prioritaeten,
+        ww_config,
+        ev_config,
+        0.0,                        # keine Batterie
+        max_ladeleistung_kw,
+        max_entladeleistung_kw,
+        min_soc_prozent,
+        max_soc_prozent,
+        einspeisegrenze_kw,
+        bezugsgrenze_kw,
+        batterie_wirkungsgrad
+    )
+
+    df_ohne_batterie, _, kennzahlen_ohne = create_energy_summary(
+        df_ohne_batterie
+    )
+
+    netzbezug_ohne = kennzahlen_ohne["Netzbezug_kWh"]
+    einspeisung_ohne = kennzahlen_ohne["Netzeinspeisung_kWh"]
+
+    ergebnisse = []
+
+    # ---------------------------------------------------------
+    # Batterievarianten simulieren
+    for kapazitaet in kapazitaeten:
+
+        if kapazitaet == 0:
+            kennzahlen_variante = kennzahlen_ohne
+        else:
+            df_variante = simulate_ems(
+                df_basis.copy(),
+                prioritaeten,
+                ww_config,
+                ev_config,
+                kapazitaet,
+                max_ladeleistung_kw,
+                max_entladeleistung_kw,
+                min_soc_prozent,
+                max_soc_prozent,
+                einspeisegrenze_kw,
+                bezugsgrenze_kw,
+                batterie_wirkungsgrad
+            )
+
+            df_variante, _, kennzahlen_variante = create_energy_summary(
+                df_variante
+            )
+
+        netzbezug_variante = kennzahlen_variante["Netzbezug_kWh"]
+        einspeisung_variante = kennzahlen_variante["Netzeinspeisung_kWh"]
+
+        # Geschätzte Investitionskosten der jeweiligen Batteriegrösse
+        batterie_investition = batteriekosten_total_chf(kapazitaet)
+
+        if kapazitaet > 0:
+            batteriekosten_pro_jahr = (
+                batterie_investition
+                / LebenszeitJahre["Batterie"]
+            )
+
+            batterie_betriebskosten_pro_jahr = (
+                batterie_investition
+                * betriebskosten_prozent
+                / 100
+            )
+        else:
+            batteriekosten_pro_jahr = 0.0
+            batterie_betriebskosten_pro_jahr = 0.0
+
+        # Gleiche Simulation kann für alle Strompreise verwendet werden
+        for strompreis_rp in strompreise_rp_kwh:
+
+            strompreis_chf = strompreis_rp / 100
+
+            # Stromrechnung des Referenzfalls ohne Batterie
+            stromrechnung_ohne_batterie = (
+                netzbezug_ohne * strompreis_chf
+                - einspeisung_ohne * ruecklieferverguetung_chf_kwh
+            )
+
+            # Stromrechnung mit der jeweiligen Batteriekapazität
+            stromrechnung_mit_batterie = (
+                netzbezug_variante * strompreis_chf
+                - einspeisung_variante * ruecklieferverguetung_chf_kwh
+            )
+
+            # Vorteil bei den laufenden Stromkosten
+            energiekostenvorteil = (
+                stromrechnung_ohne_batterie
+                - stromrechnung_mit_batterie
+            )
+
+            # Netto-Vorteil inklusive jährlicher Batteriekosten
+            netto_vorteil = (
+                energiekostenvorteil
+                - batteriekosten_pro_jahr
+                - batterie_betriebskosten_pro_jahr
+            )
+
+            ergebnisse.append({
+                "Batteriekapazität_kWh": kapazitaet,
+                "Strompreis_Rp_kWh": float(strompreis_rp),
+                "Netto_Kostenvorteil_CHF_a": netto_vorteil,
+                "Energiekostenvorteil_CHF_a": energiekostenvorteil,
+                "Batteriekosten_CHF_a": batteriekosten_pro_jahr,
+                "Batteriebetriebskosten_CHF_a":
+                    batterie_betriebskosten_pro_jahr,
+                "Netzbezug_kWh_a": netzbezug_variante,
+                "Netzeinspeisung_kWh_a": einspeisung_variante
+            })
+
+    return pd.DataFrame(ergebnisse)
 # Durchschnittliche Batteriekosten pro kWh berechnen
 def batteriekosten_richtwert_chf_kwh(batteriekapazitaet):
     """
@@ -3687,6 +3837,10 @@ if run_simulation:
                     "Tage weitergeladen."
                 )
 
+        # Zustand vor der EMS- und Batteriesimulation sichern.
+        # Dieser DataFrame wird später für die Batterievarianten benötigt.
+        df_ts_basis_fuer_batterieanalyse = df_ts.copy()
+
         # Energieflüsse mit der gewählten EMS-Priorisierung simulieren
         df_ts = simulate_ems(
             df_ts,
@@ -3733,6 +3887,78 @@ if run_simulation:
         )
 
         st.session_state["kostenkennzahlen"] = kostenkennzahlen
+
+        # ---------------------------------------------------------
+        # Wirtschaftlichkeitskurve für verschiedene Batteriegrössen
+        # ---------------------------------------------------------
+
+        if batterie_aktiv and batteriekapazität > 0:
+
+            standard_strompreise_rp = [
+                9.64,
+                20.96,
+                32.29,
+                43.61
+            ]
+
+            aktueller_strompreis_rp = strompreis_chf_kWh * 100
+
+            # Aktuellen Strompreis ergänzen, falls der Nutzer einen
+            # individuellen Wert eingegeben hat
+            strompreise_fuer_kurve = sorted(set(
+                standard_strompreise_rp
+                + [round(aktueller_strompreis_rp, 2)]
+            ))
+
+            kapazitaeten_fuer_kurve = [
+                0,
+                1,
+                3,
+                6,
+                9,
+                12,
+                15,
+                18,
+                21,
+                24,
+                27,
+                30,
+                33,
+                50
+            ]
+
+            with st.spinner(
+                "Wirtschaftlichkeit verschiedener Batteriegrössen wird berechnet …"
+            ):
+                df_batterie_wirtschaftlichkeit = (
+                    berechne_batterie_wirtschaftlichkeitskurve(
+                        df_basis=df_ts_basis_fuer_batterieanalyse,
+                        prioritaeten=prioritaeten,
+                        ww_config=ww_config,
+                        ev_config=ev_config,
+                        kapazitaeten_kwh=kapazitaeten_fuer_kurve,
+                        aktuelle_kapazitaet_kwh=batteriekapazität,
+                        max_ladeleistung_kw=maxLadeleistungBatterie,
+                        max_entladeleistung_kw=maxEntladeleistungBatterie,
+                        min_soc_prozent=minSoC,
+                        max_soc_prozent=maxSoC,
+                        einspeisegrenze_kw=EinspeisegrenzekW,
+                        bezugsgrenze_kw=Bezugsgrenze,
+                        batterie_wirkungsgrad=batterieWirkungsgrad,
+                        strompreise_rp_kwh=strompreise_fuer_kurve,
+                        ruecklieferverguetung_chf_kwh=
+                            ruecklieferverguetung_chf_kWh,
+                        betriebskosten_prozent=betriebskosten_prozent
+                    )
+                )
+
+            st.session_state[
+                "df_batterie_wirtschaftlichkeit"
+            ] = df_batterie_wirtschaftlichkeit
+
+            st.session_state[
+                "aktueller_strompreis_rp"
+            ] = aktueller_strompreis_rp
         
         # Wärmepumpendaten für die Umweltberechnung vorbereiten
         if heizsystem != "Wärmepumpe":
@@ -4080,6 +4306,236 @@ if "df_ts" in st.session_state:
                 "Investitionskosten, Förderung und laufende Betriebskosten. Die Berechnung stellt eine "
                 "vereinfachte Abschätzung dar und ersetzt keine detaillierte Wirtschaftlichkeitsanalyse."
             )
+            # ---------------------------------------------------------
+            # Wirtschaftlichkeitskurve der Batterie anzeigen
+            # ---------------------------------------------------------
+
+            if (
+                batterie_aktiv
+                and "df_batterie_wirtschaftlichkeit" in st.session_state
+            ):
+
+                st.write("------------------------------")
+                st.subheader(
+                    "Wirtschaftlichkeit der gewählten Batteriekapazität"
+                )
+
+                df_wirtschaft = st.session_state[
+                    "df_batterie_wirtschaftlichkeit"
+                ]
+
+                aktueller_preis_rp = st.session_state[
+                    "aktueller_strompreis_rp"
+                ]
+
+                fig_batterie_kosten = go.Figure()
+
+                # Linienmuster für die grauen Vergleichskurven
+                graue_linienmuster = [
+                    "dot",
+                    "dash",
+                    "dashdot",
+                    "longdash",
+                    "longdashdot"
+                ]
+
+                alle_preise = sorted(
+                    df_wirtschaft["Strompreis_Rp_kWh"].unique()
+                )
+
+                grauer_index = 0
+
+                for preis_rp in alle_preise:
+
+                    df_preis = df_wirtschaft[
+                        np.isclose(
+                            df_wirtschaft["Strompreis_Rp_kWh"],
+                            preis_rp,
+                            atol=0.01
+                        )
+                    ].sort_values("Batteriekapazität_kWh")
+
+                    ist_aktueller_preis = np.isclose(
+                        preis_rp,
+                        aktueller_preis_rp,
+                        atol=0.01
+                    )
+
+                    if ist_aktueller_preis:
+                        linienfarbe = "#0068C9"
+                        linienbreite = 4
+                        linienmuster = "solid"
+                        deckkraft = 1.0
+                        name = f"Aktueller Strompreis: {preis_rp:.2f} Rp./kWh"
+                    else:
+                        linienfarbe = "rgba(110, 110, 110, 0.48)"
+                        linienbreite = 2
+                        linienmuster = graue_linienmuster[
+                            grauer_index % len(graue_linienmuster)
+                        ]
+                        deckkraft = 0.85
+                        name = f"Vergleich: {preis_rp:.2f} Rp./kWh"
+                        grauer_index += 1
+
+                    fig_batterie_kosten.add_trace(
+                        go.Scatter(
+                            x=df_preis["Batteriekapazität_kWh"],
+                            y=df_preis["Netto_Kostenvorteil_CHF_a"],
+                            mode="lines",
+                            name=name,
+                            opacity=deckkraft,
+                            line=dict(
+                                color=linienfarbe,
+                                width=linienbreite,
+                                dash=linienmuster
+                            ),
+                            customdata=np.column_stack([
+                                df_preis["Energiekostenvorteil_CHF_a"],
+                                df_preis["Batteriekosten_CHF_a"],
+                                df_preis["Netzbezug_kWh_a"]
+                            ]),
+                            hovertemplate=(
+                                "<b>%{fullData.name}</b><br>"
+                                "Batteriekapazität: %{x:.1f} kWh<br>"
+                                "Netto-Kostenvorteil: %{y:,.0f} CHF/a<br>"
+                                "Vorteil Stromrechnung: "
+                                "%{customdata[0]:,.0f} CHF/a<br>"
+                                "Jährliche Batteriekosten: "
+                                "%{customdata[1]:,.0f} CHF/a<br>"
+                                "Netzbezug: %{customdata[2]:,.0f} kWh/a"
+                                "<extra></extra>"
+                            )
+                        )
+                    )
+
+                    # Punkt der aktuell gewählten Batterie auf jeder Kurve
+                    aktuelle_zeile = df_preis.iloc[
+                        (
+                            df_preis["Batteriekapazität_kWh"]
+                            - batteriekapazität
+                        ).abs().argsort()[:1]
+                    ]
+
+                    if ist_aktueller_preis:
+                        marker_farbe = "#0068C9"
+                        marker_groesse = 15
+                        marker_symbol = "circle"
+                        marker_rand = "white"
+                        punkt_name = (
+                            f"Aktuelle Batterie: {batteriekapazität:.1f} kWh"
+                        )
+                    else:
+                        marker_farbe = "rgba(90, 90, 90, 0.70)"
+                        marker_groesse = 9
+                        marker_symbol = "circle-open"
+                        marker_rand = "rgba(90, 90, 90, 0.90)"
+                        punkt_name = (
+                            f"{batteriekapazität:.1f} kWh bei "
+                            f"{preis_rp:.2f} Rp./kWh"
+                        )
+
+                    fig_batterie_kosten.add_trace(
+                        go.Scatter(
+                            x=aktuelle_zeile["Batteriekapazität_kWh"],
+                            y=aktuelle_zeile["Netto_Kostenvorteil_CHF_a"],
+                            mode="markers",
+                            name=punkt_name,
+                            showlegend=ist_aktueller_preis,
+                            marker=dict(
+                                color=marker_farbe,
+                                size=marker_groesse,
+                                symbol=marker_symbol,
+                                line=dict(
+                                    color=marker_rand,
+                                    width=2
+                                )
+                            ),
+                            hovertemplate=(
+                                "<b>Aktuelle Batteriekapazität</b><br>"
+                                f"Strompreis: {preis_rp:.2f} Rp./kWh<br>"
+                                "Batteriekapazität: %{x:.1f} kWh<br>"
+                                "Netto-Kostenvorteil: %{y:,.0f} CHF/a"
+                                "<extra></extra>"
+                            )
+                        )
+                    )
+
+                # Kostendeckungsgrenze
+                fig_batterie_kosten.add_hline(
+                    y=0,
+                    line_width=2,
+                    line_dash="dash",
+                    line_color="rgba(60, 60, 60, 0.75)",
+                    annotation_text="Kostendeckungsgrenze",
+                    annotation_position="top left"
+                )
+
+                # Senkrechte Linie bei der aktuell eingestellten Batterie
+                fig_batterie_kosten.add_vline(
+                    x=batteriekapazität,
+                    line_width=1.5,
+                    line_dash="dot",
+                    line_color="rgba(0, 104, 201, 0.65)"
+                )
+
+                fig_batterie_kosten.update_layout(
+                    title=(
+                        "Jährlicher finanzieller Vorteil durch den "
+                        "Batteriespeicher"
+                    ),
+                    xaxis_title="Batteriekapazität in kWh",
+                    yaxis_title="Netto-Kostenvorteil in CHF/a",
+                    height=570,
+                    hovermode="closest",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="left",
+                        x=0
+                    ),
+                    margin=dict(
+                        l=70,
+                        r=30,
+                        t=110,
+                        b=80
+                    )
+                )
+
+                fig_batterie_kosten.update_xaxes(
+                    tickmode="array",
+                    tickvals=sorted(
+                        df_wirtschaft["Batteriekapazität_kWh"].unique()
+                    ),
+                    showgrid=True,
+                    gridcolor="rgba(200, 200, 200, 0.25)"
+                )
+
+                fig_batterie_kosten.update_yaxes(
+                    zeroline=False,
+                    showgrid=True,
+                    gridcolor="rgba(200, 200, 200, 0.35)"
+                )
+
+                # Diagramm etwas schmaler und zentriert darstellen
+                links, mitte, rechts = st.columns([0.5, 4, 0.5])
+
+                with mitte:
+                    st.plotly_chart(
+                        fig_batterie_kosten,
+                        use_container_width=True,
+                        config={"displayModeBar": False}
+                    )
+
+                st.caption(
+                    "Die hervorgehobene Kurve verwendet den aktuell eingegebenen "
+                    "Strompreis. Die grauen Kurven zeigen, wie sich die "
+                    "Wirtschaftlichkeit bei anderen Strompreisen verändern würde. "
+                    "Der markierte Punkt entspricht der aktuell gewählten "
+                    "Batteriekapazität. Verglichen wird jeweils mit demselben "
+                    "Gebäude- und PV-System ohne Batterie. Lade- und "
+                    "Entladeleistung sowie EMS bleiben unverändert."
+                )
 
 
         st.write("---------------------")
