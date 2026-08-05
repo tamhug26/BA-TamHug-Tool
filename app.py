@@ -2019,24 +2019,86 @@ if vergleichsmodus:
         }[x]
     )
 
+    profil_stile = [
+        {
+            "farbe": "#0068C9",
+            "linie": "solid",
+            "marker": "circle"
+        },
+        {
+            "farbe": "#E69F00",
+            "linie": "dash",
+            "marker": "square"
+        },
+        {
+            "farbe": "#009E73",
+            "linie": "dot",
+            "marker": "diamond"
+        },
+        {
+            "farbe": "#CC79A7",
+            "linie": "dashdot",
+            "marker": "triangle-up"
+        },
+        {
+            "farbe": "#000000",
+            "linie": "longdash",
+            "marker": "x"
+        }
+    ]
+
     fig_vergleich = go.Figure()
 
-    for p in profile_daten:
+    for index, p in enumerate(profile_daten):
         profil = p["profil"]
 
         if "monatswerte" not in profil:
-            st.warning(f"Profil '{p['name']}' enthält noch keine Monatswerte. Bitte dieses Profil neu simulieren und speichern.")
+            st.warning(
+                f"Profil '{p['name']}' enthält noch keine Monatswerte. "
+                "Bitte dieses Profil neu simulieren und speichern."
+            )
             continue
 
-        df_monat = pd.DataFrame.from_dict(profil["monatswerte"], orient="index")
+        df_monat = pd.DataFrame.from_dict(
+            profil["monatswerte"],
+            orient="index"
+        )
+
         df_monat.index = pd.to_datetime(df_monat.index)
 
-        fig_vergleich.add_trace(go.Scatter(
-            x=df_monat.index,
-            y=df_monat[vergleichswert],
-            mode="lines+markers",
-            name=p["name"]
-        ))
+        stil = profil_stile[index % len(profil_stile)]
+
+        fig_vergleich.add_trace(
+            go.Scatter(
+                x=df_monat.index,
+                y=df_monat[vergleichswert],
+                mode="lines+markers",
+                name=p["name"],
+
+                line=dict(
+                    color=stil["farbe"],
+                    width=3,
+                    dash=stil["linie"]
+                ),
+
+                marker=dict(
+                    color=stil["farbe"],
+                    size=8,
+                    symbol=stil["marker"],
+                    line=dict(
+                        width=1,
+                        color="white"
+                    )
+                ),
+
+                hovertemplate=(
+                    "<b>%{fullData.name}</b><br>"
+                    "Monat: %{x|%B}<br>"
+                    "Wert: %{y:,.1f} kWh"
+                    "<extra></extra>"
+                )
+            )
+        )
 
     fig_vergleich.update_layout(
         title="Monatlicher Jahresverlauf im Profilvergleich",
