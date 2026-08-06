@@ -4263,6 +4263,15 @@ if run_simulation:
         # Dieser DataFrame wird später für die Batterievarianten benötigt.
         df_ts_basis_fuer_batterieanalyse = df_ts.copy()
 
+        st.session_state[
+            "df_ts_basis_fuer_batterieanalyse"
+        ] = df_ts_basis_fuer_batterieanalyse.copy()
+
+        st.session_state.pop(
+            "df_ladeleistungsanalyse",
+            None
+        )
+
         # Energieflüsse mit der gewählten EMS-Priorisierung simulieren
         df_ts = simulate_ems(
             df_ts,
