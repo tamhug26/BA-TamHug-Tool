@@ -1839,7 +1839,7 @@ def batteriekosten_total_chf(batteriekapazitaet):
     Vereinfachte stückweise Batteriekostenfunktion.
 
     Annahme:
-    - bis 10 kWh: 900 CHF/kWh
+    - bis 10 kWh: 700 CHF/kWh
     - jede zusätzliche kWh über 10 kWh: 600 CHF/kWh
 
     Dadurch fallen die zusätzlichen Kosten pro weiterer kWh nie unter 600 CHF/kWh.
@@ -1849,9 +1849,10 @@ def batteriekosten_total_chf(batteriekapazitaet):
         return 0.0
 
     if batteriekapazitaet <= 10:
-        return batteriekapazitaet * 900.0
+        return batteriekapazitaet * 700.0
 
-    return 10 * 900.0 + (batteriekapazitaet - 10) * 600.0
+    return 10 * 700.0 + (batteriekapazitaet - 10) * 600.0
+    #neue werte aus: https://www.swissolar.ch/de/news/detail/batteriemonitor-schweiz-2026-batteriespeicher-gewinnen-stark-an-bedeutung-fuer-das-energiesystem-82334?
 
 def berechne_batterie_wirtschaftlichkeitskurve(
     df_basis,
@@ -2115,19 +2116,23 @@ def finde_energetischen_saettigungspunkt(
 
 def finde_energetische_empfehlung(
     df_energie,
-    zielanteil=0.95
+    max_netzbezug_reduktion_prozent=2.0,
+    max_autarkie_zunahme_pp=1.0,
+    max_eigenverbrauch_zunahme_pp=1.0,
+    erforderliche_folgeschritte=2
 ):
     """
-    Bestimmt die kleinste Batteriekapazität, bei der mindestens
-    der gewählte Anteil der insgesamt im untersuchten Bereich
-    erreichbaren Verbesserung erzielt wird.
+    Bestimmt den Beginn des energetischen Sättigungsbereichs.
 
-    Berücksichtigt werden:
-    - Reduktion des Netzbezugs
-    - Erhöhung des Autarkiegrads
-    - Erhöhung der Eigenverbrauchsquote
+    Ein Schritt gilt als geringfügige Verbesserung, wenn:
 
-    Standard: 95 % der erreichbaren Verbesserung.
+    - die zusätzliche Netzbezugsreduktion weniger als 2 % des
+      Netzbezugs ohne Batterie beträgt,
+    - der Autarkiegrad um weniger als 1 Prozentpunkt steigt,
+    - die Eigenverbrauchsquote um weniger als 1 Prozentpunkt steigt.
+
+    Die Bedingungen müssen standardmässig bei zwei
+    aufeinanderfolgenden Kapazitätsschritten erfüllt sein.
     """
 
     df = (
@@ -2145,83 +2150,87 @@ def finde_energetische_empfehlung(
         .copy()
     )
 
-    if len(df) < 2:
+    if len(df) < erforderliche_folgeschritte + 1:
         return None
 
-    kapazitaeten = df["Batteriekapazität_kWh"].to_numpy(
-        dtype=float
+    netzbezug_ohne_batterie = float(
+        df.iloc[0]["Netzbezug_kWh_a"]
     )
 
-    # Kurven für die Auswertung monoton machen
-    netzbezug = np.minimum.accumulate(
-        df["Netzbezug_kWh_a"].to_numpy(dtype=float)
-    )
+    if netzbezug_ohne_batterie <= 0:
+        return None
 
-    autarkie = np.maximum.accumulate(
-        df["Autarkiegrad_%"].to_numpy(dtype=float)
-    )
+    geringe_schritte = []
 
-    eigenverbrauch = np.maximum.accumulate(
-        df["Eigenverbrauchsquote_%"].to_numpy(dtype=float)
-    )
-
-    def kapazitaet_fuer_sinkende_kennzahl(werte):
-        startwert = werte[0]
-        endwert = werte[-1]
-        verbesserung = startwert - endwert
-
-        if verbesserung <= 0:
-            return kapazitaeten[0]
-
-        zielwert = startwert - zielanteil * verbesserung
-
-        # Für np.interp muss die x-Reihe aufsteigend sein
-        return float(
-            np.interp(
-                zielwert,
-                werte[::-1],
-                kapazitaeten[::-1]
-            )
+    for i in range(1, len(df)):
+        kapazitaet_alt = float(
+            df.iloc[i - 1]["Batteriekapazität_kWh"]
+        )
+        kapazitaet_neu = float(
+            df.iloc[i]["Batteriekapazität_kWh"]
         )
 
-    def kapazitaet_fuer_steigende_kennzahl(werte):
-        startwert = werte[0]
-        endwert = werte[-1]
-        verbesserung = endwert - startwert
+        kapazitaetszunahme = kapazitaet_neu - kapazitaet_alt
 
-        if verbesserung <= 0:
-            return kapazitaeten[0]
+        if kapazitaetszunahme <= 0:
+            geringe_schritte.append(False)
+            continue
 
-        zielwert = startwert + zielanteil * verbesserung
+        # Unterschiede auf einen Standardschritt von 3 kWh normieren.
+        faktor_3_kwh = 3.0 / kapazitaetszunahme
 
-        return float(
-            np.interp(
-                zielwert,
-                werte,
-                kapazitaeten
-            )
+        netzbezug_reduktion = (
+            float(df.iloc[i - 1]["Netzbezug_kWh_a"])
+            - float(df.iloc[i]["Netzbezug_kWh_a"])
+        ) * faktor_3_kwh
+
+        netzbezug_reduktion_prozent = (
+            netzbezug_reduktion
+            / netzbezug_ohne_batterie
+            * 100
         )
 
-    kapazitaet_netzbezug = (
-        kapazitaet_fuer_sinkende_kennzahl(netzbezug)
-    )
+        autarkie_zunahme_pp = (
+            float(df.iloc[i]["Autarkiegrad_%"])
+            - float(df.iloc[i - 1]["Autarkiegrad_%"])
+        ) * faktor_3_kwh
 
-    kapazitaet_autarkie = (
-        kapazitaet_fuer_steigende_kennzahl(autarkie)
-    )
+        eigenverbrauch_zunahme_pp = (
+            float(df.iloc[i]["Eigenverbrauchsquote_%"])
+            - float(df.iloc[i - 1]["Eigenverbrauchsquote_%"])
+        ) * faktor_3_kwh
 
-    kapazitaet_eigenverbrauch = (
-        kapazitaet_fuer_steigende_kennzahl(eigenverbrauch)
-    )
+        schritt_ist_gering = (
+            netzbezug_reduktion_prozent
+            < max_netzbezug_reduktion_prozent
+            and autarkie_zunahme_pp
+            < max_autarkie_zunahme_pp
+            and eigenverbrauch_zunahme_pp
+            < max_eigenverbrauch_zunahme_pp
+        )
 
-    # Erst wenn alle drei Kennzahlen mindestens 95 % ihrer
-    # erreichbaren Verbesserung erzielt haben
-    return max(
-        kapazitaet_netzbezug,
-        kapazitaet_autarkie,
-        kapazitaet_eigenverbrauch
-    )
+        geringe_schritte.append(schritt_ist_gering)
 
+    # Ersten Bereich mit mehreren aufeinanderfolgenden
+    # geringfügigen Verbesserungen suchen.
+    for start in range(
+        len(geringe_schritte)
+        - erforderliche_folgeschritte
+        + 1
+    ):
+        pruefbereich = geringe_schritte[
+            start:start + erforderliche_folgeschritte
+        ]
+
+        if all(pruefbereich):
+            # Empfehlung ist die Kapazität vor dem ersten
+            # nur noch geringfügigen Erweiterungsschritt.
+            return float(
+                df.iloc[start]["Batteriekapazität_kWh"]
+            )
+
+    # Kein klarer Sättigungsbereich innerhalb der Varianten.
+    return None
 
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
