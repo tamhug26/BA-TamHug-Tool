@@ -4823,7 +4823,7 @@ if "df_ts" in st.session_state:
                 # Aktuelle Eigenverbrauchsquote markieren
                 fig_batterie_energie.add_trace(
                     go.Scatter(
-                        x=x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
+                        x=aktuelle_zeile_energie["Batteriekapazität_kWh"],
                         y=aktuelle_zeile_energie["Eigenverbrauchsquote_%"],
                         mode="markers",
                         yaxis="y2",
