@@ -5236,16 +5236,6 @@ if "df_ts" in st.session_state:
                     f"ungefähr {energetische_empfehlung_kwh:.0f} kWh relevant; "
                     f"darüber fallen die zusätzlichen Verbesserungen zunehmend gering aus."
                 )
-                if energetische_empfehlung_kwh is not None:
-                    st.info(
-                        f"Die aktuell gewählte Batteriekapazität beträgt "
-                        f"{batteriekapazität:.1f} kWh. "
-                        f"Finanziell liegt das Optimum in diesem Szenario bei ungefähr "
-                        f"{wirtschaftliches_optimum_kwh:.0f} kWh. "
-                        f"Aus energetischer Sicht sind zusätzliche Verbesserungen bis "
-                        f"ungefähr {energetische_empfehlung_kwh:.0f} kWh relevant; "
-                        f"darüber fallen die zusätzlichen Verbesserungen zunehmend gering aus."
-                    )
                 # ---------------------------------------------------------
                 # Ergebnistext anzeigen
                 # --------------------------------------------------------
