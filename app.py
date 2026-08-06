@@ -2113,6 +2113,117 @@ def finde_energetischen_saettigungspunkt(
 
     return float(df["Batteriekapazität_kWh"].max())
 
+def finde_energetische_empfehlung(
+    df_energie,
+    zielanteil=0.95
+):
+    """
+    Bestimmt die kleinste Batteriekapazität, bei der mindestens
+    der gewählte Anteil der insgesamt im untersuchten Bereich
+    erreichbaren Verbesserung erzielt wird.
+
+    Berücksichtigt werden:
+    - Reduktion des Netzbezugs
+    - Erhöhung des Autarkiegrads
+    - Erhöhung der Eigenverbrauchsquote
+
+    Standard: 95 % der erreichbaren Verbesserung.
+    """
+
+    df = (
+        df_energie[
+            [
+                "Batteriekapazität_kWh",
+                "Netzbezug_kWh_a",
+                "Autarkiegrad_%",
+                "Eigenverbrauchsquote_%"
+            ]
+        ]
+        .dropna()
+        .sort_values("Batteriekapazität_kWh")
+        .reset_index(drop=True)
+        .copy()
+    )
+
+    if len(df) < 2:
+        return None
+
+    kapazitaeten = df["Batteriekapazität_kWh"].to_numpy(
+        dtype=float
+    )
+
+    # Kurven für die Auswertung monoton machen
+    netzbezug = np.minimum.accumulate(
+        df["Netzbezug_kWh_a"].to_numpy(dtype=float)
+    )
+
+    autarkie = np.maximum.accumulate(
+        df["Autarkiegrad_%"].to_numpy(dtype=float)
+    )
+
+    eigenverbrauch = np.maximum.accumulate(
+        df["Eigenverbrauchsquote_%"].to_numpy(dtype=float)
+    )
+
+    def kapazitaet_fuer_sinkende_kennzahl(werte):
+        startwert = werte[0]
+        endwert = werte[-1]
+        verbesserung = startwert - endwert
+
+        if verbesserung <= 0:
+            return kapazitaeten[0]
+
+        zielwert = startwert - zielanteil * verbesserung
+
+        # Für np.interp muss die x-Reihe aufsteigend sein
+        return float(
+            np.interp(
+                zielwert,
+                werte[::-1],
+                kapazitaeten[::-1]
+            )
+        )
+
+    def kapazitaet_fuer_steigende_kennzahl(werte):
+        startwert = werte[0]
+        endwert = werte[-1]
+        verbesserung = endwert - startwert
+
+        if verbesserung <= 0:
+            return kapazitaeten[0]
+
+        zielwert = startwert + zielanteil * verbesserung
+
+        return float(
+            np.interp(
+                zielwert,
+                werte,
+                kapazitaeten
+            )
+        )
+
+    kapazitaet_netzbezug = (
+        kapazitaet_fuer_sinkende_kennzahl(netzbezug)
+    )
+
+    kapazitaet_autarkie = (
+        kapazitaet_fuer_steigende_kennzahl(autarkie)
+    )
+
+    kapazitaet_eigenverbrauch = (
+        kapazitaet_fuer_steigende_kennzahl(eigenverbrauch)
+    )
+
+    # Erst wenn alle drei Kennzahlen mindestens 95 % ihrer
+    # erreichbaren Verbesserung erzielt haben
+    return max(
+        kapazitaet_netzbezug,
+        kapazitaet_autarkie,
+        kapazitaet_eigenverbrauch
+    )
+
+
+
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 st.caption("Bachelorarbeit 2026, Fachhochschule Nordwestschweiz für Life Science Muttenz, Studiengang Umwelttechnologie")
 st.caption("Zuletzt aktualisiert: 04.08.2026")
@@ -4465,9 +4576,9 @@ if "df_ts" in st.session_state:
                     if df_energie[spalte].dropna().max() <= 1.0:
                         df_energie[spalte] = df_energie[spalte] * 100
 
-                saettigungspunkt_kwh = finde_energetischen_saettigungspunkt(
+                energetische_empfehlung_kwh = finde_energetische_empfehlung(
                     df_energie,
-                    schwelle_prozent=1.0
+                    zielanteil=0.95
                 )
 
                 fig_batterie_kosten = go.Figure()
@@ -4607,6 +4718,64 @@ if "df_ts" in st.session_state:
                             )
                         )
                     )
+
+                # Aktuelle Strompreiskurve auswählen
+                df_aktueller_preis = df_wirtschaft[
+                    np.isclose(
+                        df_wirtschaft["Strompreis_Rp_kWh"],
+                        aktueller_preis_rp,
+                        atol=0.01
+                    )
+                ].sort_values("Batteriekapazität_kWh").copy()
+
+                # Kapazität mit dem höchsten finanziellen Vorteil bestimmen
+                idx_wirtschaft_optimum = (
+                    df_aktueller_preis[
+                        "Finanzieller_Vorteil_CHF_a"
+                    ].idxmax()
+                )
+
+                wirtschaftliches_optimum_kwh = float(
+                    df_aktueller_preis.loc[
+                        idx_wirtschaft_optimum,
+                        "Batteriekapazität_kWh"
+                    ]
+                )
+
+                wirtschaftliches_optimum_chf = float(
+                    df_aktueller_preis.loc[
+                        idx_wirtschaft_optimum,
+                        "Finanzieller_Vorteil_CHF_a"
+                    ]
+                )
+
+                # Wirtschaftliches Optimum in der Grafik markieren
+                fig_batterie_kosten.add_trace(
+                    go.Scatter(
+                        x=[wirtschaftliches_optimum_kwh],
+                        y=[wirtschaftliches_optimum_chf],
+                        mode="markers",
+                        name=(
+                            f"Finanzielles Optimum: "
+                            f"{wirtschaftliches_optimum_kwh:.0f} kWh"
+                        ),
+                        marker=dict(
+                            size=15,
+                            symbol="diamond",
+                            color="#009E73",
+                            line=dict(
+                                color="white",
+                                width=2
+                            )
+                        ),
+                        hovertemplate=(
+                            "<b>Finanzielles Optimum</b><br>"
+                            "Batteriekapazität: %{x:.1f} kWh<br>"
+                            "Finanzieller Vorteil: %{y:,.0f} CHF/a"
+                            "<extra></extra>"
+                        )
+                    )
+                )
 
                 # Kostendeckungsgrenze
                 fig_batterie_kosten.add_hline(
@@ -4775,7 +4944,8 @@ if "df_ts" in st.session_state:
                         y=aktuelle_zeile_energie["Netzbezug_kWh_a"],
                         mode="markers",
                         yaxis="y",
-                        showlegend=False,
+                        name=f"Aktuell gewählt: {batteriekapazität:.1f} kWh",
+                        showlegend=True,
                         marker=dict(
                             color="#0068C9",
                             size=15,
@@ -4982,29 +5152,112 @@ if "df_ts" in st.session_state:
                         hide_index=True
                     )
 
-                # ---------------------------------------------------------
-                # Wirtschaftliches Optimum bestimmen
-                # ---------------------------------------------------------
+                st.write("")
 
-                df_aktueller_preis = df_wirtschaft[
-                    np.isclose(
-                        df_wirtschaft["Strompreis_Rp_kWh"],
-                        aktueller_preis_rp,
-                        atol=0.01
+                col_empfehlung1, col_empfehlung2 = st.columns(2)
+
+                with col_empfehlung1:
+                    st.markdown(
+                        f"""
+                        <div style="
+                            border: 1px solid rgba(0, 104, 201, 0.25);
+                            border-radius: 10px;
+                            padding: 18px;
+                            min-height: 145px;
+                        ">
+                            <div style="
+                                font-size: 17px;
+                                font-weight: 600;
+                                margin-bottom: 8px;
+                            ">
+                                Finanzielles Optimum
+                            </div>
+
+                            <div style="
+                                font-size: 38px;
+                                font-weight: 700;
+                                color: #0068C9;
+                            ">
+                                ca. {wirtschaftliches_optimum_kwh:.0f} kWh
+                            </div>
+
+                            <div style="
+                                font-size: 14px;
+                                margin-top: 8px;
+                                color: #6B7280;
+                            ">
+                                Bei dieser Kapazität ist der jährliche finanzielle
+                                Vorteil unter den untersuchten Varianten am höchsten.
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
                     )
-                ].copy()
 
-                idx_wirtschaft_optimum = (
-                    df_aktueller_preis["Finanzieller_Vorteil_CHF_a"].idxmax()
+                with col_empfehlung2:
+                    if energetische_empfehlung_kwh is not None:
+                        st.markdown(
+                            f"""
+                            <div style="
+                                border: 1px solid rgba(0, 158, 115, 0.25);
+                                border-radius: 10px;
+                                padding: 18px;
+                                min-height: 145px;
+                            ">
+                                <div style="
+                                    font-size: 17px;
+                                    font-weight: 600;
+                                    margin-bottom: 8px;
+                                ">
+                                    Energetisch sinnvoll bis
+                                </div>
+
+                                <div style="
+                                    font-size: 38px;
+                                    font-weight: 700;
+                                    color: #009E73;
+                                ">
+                                    ca. {energetische_empfehlung_kwh:.0f} kWh
+                                </div>
+
+                                <div style="
+                                    font-size: 14px;
+                                    margin-top: 8px;
+                                    color: #6B7280;
+                                ">
+                                    Bis zu dieser Kapazität werden rund 95 % der im
+                                    untersuchten Bereich erreichbaren Verbesserung
+                                    der Energiekennzahlen erzielt.
+                                </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.info(
+                            "Für die energetischen Kennzahlen konnte keine eindeutige "
+                            "Empfehlung bestimmt werden."
+                        )
+
+                st.info(
+                    f"Die aktuell gewählte Batteriekapazität beträgt "
+                    f"{batteriekapazität:.1f} kWh. "
+                    f"Finanziell liegt das Optimum in diesem Szenario bei ungefähr "
+                    f"{wirtschaftliches_optimum_kwh:.0f} kWh. "
+                    f"Aus energetischer Sicht sind zusätzliche Verbesserungen bis "
+                    f"ungefähr {energetische_empfehlung_kwh:.0f} kWh relevant; "
+                    f"darüber fallen die zusätzlichen Verbesserungen zunehmend gering aus."
                 )
-
-                wirtschaftliches_optimum_kwh = float(
-                    df_aktueller_preis.loc[
-                        idx_wirtschaft_optimum,
-                        "Batteriekapazität_kWh"
-                    ]
-                )
-
+                if energetische_empfehlung_kwh is not None:
+                    st.info(
+                        f"Die aktuell gewählte Batteriekapazität beträgt "
+                        f"{batteriekapazität:.1f} kWh. "
+                        f"Finanziell liegt das Optimum in diesem Szenario bei ungefähr "
+                        f"{wirtschaftliches_optimum_kwh:.0f} kWh. "
+                        f"Aus energetischer Sicht sind zusätzliche Verbesserungen bis "
+                        f"ungefähr {energetische_empfehlung_kwh:.0f} kWh relevant; "
+                        f"darüber fallen die zusätzlichen Verbesserungen zunehmend gering aus."
+                    )
                 # ---------------------------------------------------------
                 # Ergebnistext anzeigen
                 # --------------------------------------------------------
