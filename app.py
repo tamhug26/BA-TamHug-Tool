@@ -4586,8 +4586,7 @@ if "df_ts" in st.session_state:
                         df_energie[spalte] = df_energie[spalte] * 100
 
                 energetische_empfehlung_kwh = finde_energetische_empfehlung(
-                    df_energie,
-                    zielanteil=0.95
+                    df_energie
                 )
 
                 fig_batterie_kosten = go.Figure()
