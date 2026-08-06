@@ -5159,33 +5159,23 @@ if "df_ts" in st.session_state:
                 with col_empfehlung1:
                     st.markdown(
                         f"""
-                        <div style="
-                            border: 1px solid rgba(0, 104, 201, 0.25);
-                            border-radius: 10px;
-                            padding: 18px;
-                            min-height: 145px;
-                        ">
-                            <div style="
-                                font-size: 17px;
-                                font-weight: 600;
-                                margin-bottom: 8px;
-                            ">
+                        <div style="border:1px solid rgba(0,104,201,0.25);
+                                    border-radius:10px;
+                                    padding:18px;
+                                    min-height:145px;">
+                            <div style="font-size:17px;
+                                        font-weight:600;
+                                        margin-bottom:8px;">
                                 Finanzielles Optimum
                             </div>
-
-                            <div style="
-                                font-size: 38px;
-                                font-weight: 700;
-                                color: #0068C9;
-                            ">
+                            <div style="font-size:38px;
+                                        font-weight:700;
+                                        color:#0068C9;">
                                 ca. {wirtschaftliches_optimum_kwh:.0f} kWh
                             </div>
-
-                            <div style="
-                                font-size: 14px;
-                                margin-top: 8px;
-                                color: #6B7280;
-                            ">
+                            <div style="font-size:14px;
+                                        margin-top:8px;
+                                        color:#6B7280;">
                                 Bei dieser Kapazität ist der jährliche finanzielle
                                 Vorteil unter den untersuchten Varianten am höchsten.
                             </div>
@@ -5198,33 +5188,23 @@ if "df_ts" in st.session_state:
                     if energetische_empfehlung_kwh is not None:
                         st.markdown(
                             f"""
-                            <div style="
-                                border: 1px solid rgba(0, 158, 115, 0.25);
-                                border-radius: 10px;
-                                padding: 18px;
-                                min-height: 145px;
-                            ">
-                                <div style="
-                                    font-size: 17px;
-                                    font-weight: 600;
-                                    margin-bottom: 8px;
-                                ">
+                            <div style="border:1px solid rgba(0,158,115,0.25);
+                                        border-radius:10px;
+                                        padding:18px;
+                                        min-height:145px;">
+                                <div style="font-size:17px;
+                                            font-weight:600;
+                                            margin-bottom:8px;">
                                     Energetisch sinnvoll bis
                                 </div>
-
-                                <div style="
-                                    font-size: 38px;
-                                    font-weight: 700;
-                                    color: #009E73;
-                                ">
+                                <div style="font-size:38px;
+                                            font-weight:700;
+                                            color:#009E73;">
                                     ca. {energetische_empfehlung_kwh:.0f} kWh
                                 </div>
-
-                                <div style="
-                                    font-size: 14px;
-                                    margin-top: 8px;
-                                    color: #6B7280;
-                                ">
+                                <div style="font-size:14px;
+                                            margin-top:8px;
+                                            color:#6B7280;">
                                     Bis zu dieser Kapazität werden rund 95 % der im
                                     untersuchten Bereich erreichbaren Verbesserung
                                     der Energiekennzahlen erzielt.
