@@ -5515,9 +5515,10 @@ if "df_ts" in st.session_state:
             )
 
             st.write(
-                "Da in diesem Szenario PV-Energie abgeregelt wird, kann geprüft "
-                "werden, wie sich eine schrittweise Verringerung der Ladeleistung "
-                "auf die maximale Einspeiseleistung und die Abregelung auswirkt."
+                "Da in diesem Szenario PV-Energie abgeregelt wird, wird "
+                "automatisch geprüft, wie sich eine schrittweise Verringerung "
+                "der Ladeleistung auf die maximale Einspeiseleistung und die "
+                "Abregelung auswirkt."
             )
 
             st.caption(
@@ -5526,18 +5527,20 @@ if "df_ts" in st.session_state:
                 "verringert."
             )
 
-            if st.button(
-                "Ladeleistungen analysieren",
-                type="primary",
-                key="button_ladeleistungsanalyse"
+            # Automatisch einmal pro neuer Hauptsimulation berechnen
+            if (
+                "df_ladeleistungsanalyse" not in st.session_state
+                and "df_ts_basis_fuer_batterieanalyse" in st.session_state
             ):
 
                 with st.spinner(
-                    "Ladeleistungsvarianten werden berechnet …"
+                    "Ladeleistungsvarianten werden automatisch berechnet …"
                 ):
                     df_ladeleistungsanalyse = (
                         berechne_ladeleistungsanalyse(
-                            df_basis=df_ts_basis_fuer_batterieanalyse,
+                            df_basis=st.session_state[
+                                "df_ts_basis_fuer_batterieanalyse"
+                            ].copy(),
                             prioritaeten=prioritaeten,
                             ww_config=ww_config,
                             ev_config=ev_config,
@@ -5565,17 +5568,16 @@ if "df_ts" in st.session_state:
                     "df_ladeleistungsanalyse"
                 ] = df_ladeleistungsanalyse
 
-                st.rerun()
+            # Ergebnisse anzeigen
+            if "df_ladeleistungsanalyse" in st.session_state:
 
-        if "df_ladeleistungsanalyse" in st.session_state:
+                df_ladeanalyse = st.session_state[
+                    "df_ladeleistungsanalyse"
+                ].copy()
 
-            df_ladeanalyse = st.session_state[
-                "df_ladeleistungsanalyse"
-            ].copy()
-
-            if not df_ladeanalyse.empty:
-
-                st.write("### Auswirkungen auf das Verteilnetz")
+                if not df_ladeanalyse.empty:
+                    # Ab hier bleiben deine Grafiken stehen
+                    st.write("### Auswirkungen auf das Verteilnetz")
 
                 col_peak, col_abregelung = st.columns(2)
 
