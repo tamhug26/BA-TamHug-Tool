@@ -4400,7 +4400,7 @@ if "df_ts" in st.session_state:
         st.write("------------------------------")
         st.subheader("Jahreskennzahlen")
 
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             
@@ -4425,10 +4425,7 @@ if "df_ts" in st.session_state:
                 """,
                 unsafe_allow_html=True
             )
-        with col2:
             st.metric("Eigenverbrauchsquote", f"{jahreskennzahlen['Eigenverbrauchsquote_%']:,.1f} %".replace(",", "'"))
-
-        with col3:
             st.metric("Abgeregelte Energie", f"{jahreskennzahlen['Abgeregelte_Energie_kWh']:,.1f} kWh".replace(",", "'"))
             if jahreskennzahlen["Abgeregelte_Energie_kWh"] > 0:
                 st.info(
@@ -4443,7 +4440,7 @@ if "df_ts" in st.session_state:
                     f"{df_ts['pv_power_kW'].max():.2f} kW liegt und zusätzlich ein Teil direkt verbraucht oder gespeichert wird, "
                     "entsteht in diesem Szenario keine Abregelung."
                 )
-        with col4:
+        with col2:
             st.metric(
                 "Vermiedene Bezugskosten",
                 f"{jahreskennzahlen['Eingesparte_Stromkosten_CHF']:,.0f} CHF/a".replace(",", "'")
@@ -4452,11 +4449,58 @@ if "df_ts" in st.session_state:
                 "Entspricht den vermiedenen Strombezugskosten durch direkt genutzten PV-Strom. "
                 "Einspeisevergütung, Betriebskosten und Investitionskosten werden unten in der Kostenabschätzung berücksichtigt."
             )
-        with col5:
             st.metric(
                 "PV-Jahresproduktion",
                 f"{jahreskennzahlen['PV_Produktion_kWh']:,.0f} kWh/a".replace(",", "'")
             )
+        with col3:
+            df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
+            df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
+            fig_year = go.Figure()
+            fig_year.add_trace(go.Bar(
+                            x=df_year_plot.index,
+                            y=df_year_plot["monatslast_kWh"],
+                            name="Gesamtlast"
+                        ))
+            fig_year.update_layout(
+                            title="Monatliche Gesamtlast Strom in kWh/Monat",
+                            xaxis_title="Monat",
+                            yaxis_title="Elektrische Gesamtlast in kWh pro Monat",
+                            height=450
+                        )
+            fig_year.update_xaxes(
+                            tickformat="%b",
+                            dtick="M1"
+                        )
+            fig_year.update_yaxes(rangemode="tozero")
+            
+            st.plotly_chart(fig_year, use_container_width=True)
+                        
+            pv_monat = df_ts["pv_kWh"].resample("MS").sum()
+        with col4:
+            fig_pv_monat = go.Figure()
+            fig_pv_monat.add_trace(go.Bar(
+                x=pv_monat.index,
+                        y=pv_monat,
+                        name="PV-Produktion"
+                    ))
+        
+            fig_pv_monat.update_layout(
+                        title="Monatliche PV-Produktion in kWh/Monat",
+                        xaxis_title="Monat",
+                        yaxis_title="PV-Produktion in kWh pro Monat",
+                        height=450
+                    )
+        
+            fig_pv_monat.update_xaxes(
+                        tickformat="%b",
+                        dtick="M1"
+                    )
+        
+            fig_pv_monat.update_yaxes(rangemode="tozero")
+        
+            st.plotly_chart(fig_pv_monat, use_container_width=True)
+
         # Wirtschaftliche Ergebnisse anzeigen
         if "kostenkennzahlen" in st.session_state:
             kostenkennzahlen = st.session_state["kostenkennzahlen"]
@@ -5255,61 +5299,6 @@ if "df_ts" in st.session_state:
                     "können sich der Kurvenverlauf, das wirtschaftliche Optimum "
                     "und der energetische Sättigungspunkt verschieben."
                 )
-
-
-        st.write("---------------------")
-        # Monatliche Gesamtlast und PV-Produktion darstellen
-        col1, col2 =st.columns(2)
-
-        with col1:
-
-            df_year_plot = df_ts["gesamtlast_kWh"].resample("MS").sum().to_frame()
-            df_year_plot = df_year_plot.rename(columns={"gesamtlast_kWh": "monatslast_kWh"})
-            fig_year = go.Figure()
-            fig_year.add_trace(go.Bar(
-                x=df_year_plot.index,
-                y=df_year_plot["monatslast_kWh"],
-                name="Gesamtlast"
-            ))
-            fig_year.update_layout(
-                title="Monatliche Gesamtlast Strom in kWh/Monat",
-                xaxis_title="Monat",
-                yaxis_title="Elektrische Gesamtlast in kWh pro Monat",
-                height=450
-            )
-            fig_year.update_xaxes(
-                tickformat="%b",
-                dtick="M1"
-            )
-            fig_year.update_yaxes(rangemode="tozero")
-
-            st.plotly_chart(fig_year, use_container_width=True)
-            
-            pv_monat = df_ts["pv_kWh"].resample("MS").sum()
-
-        with col2: 
-            fig_pv_monat = go.Figure()
-            fig_pv_monat.add_trace(go.Bar(
-                x=pv_monat.index,
-                y=pv_monat,
-                name="PV-Produktion"
-            ))
-
-            fig_pv_monat.update_layout(
-                title="Monatliche PV-Produktion in kWh/Monat",
-                xaxis_title="Monat",
-                yaxis_title="PV-Produktion in kWh pro Monat",
-                height=450
-            )
-
-            fig_pv_monat.update_xaxes(
-                tickformat="%b",
-                dtick="M1"
-            )
-
-            fig_pv_monat.update_yaxes(rangemode="tozero")
-
-            st.plotly_chart(fig_pv_monat, use_container_width=True)
 
         df_umwelt = st.session_state["df_umwelt"]
 
