@@ -3735,7 +3735,7 @@ with col2:
         st.caption(
             f"Richtwert: {batteriekosten_chf_kwh:,.0f} CHF/kWh × "
             f"{batteriekapazität:.1f} kWh = {batteriekosten_vorschlag:,.0f} CHF. "
-            "Die spezifischen Speicherkosten werden vereinfacht zwischen 600 und 900 CHF/kWh angesetzt."
+            "Die spezifischen Speicherkosten werden vereinfacht zwischen 600 und 700 CHF/kWh angesetzt."
             .replace(",", "'")
         )
     else:
