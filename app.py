@@ -2690,13 +2690,13 @@ if vergleichsmodus:
 #allgemein
 col1, col2, col3 = st.columns(3)
 with col1: 
-    EBFm2 = st.number_input("Energiebezugsfläche (EBF) in m²", 50, 5000, 200)
+    EBFm2 = st.number_input("Energiebezugsfläche (EBF) in m²", 50, 5000, 240)
     st.caption(
         "Falls die Energiebezugsfläche nicht bekannt ist, kann näherungsweise die Wohnfläche verwendet werden. "
         "Die EBF umfasst alle beheizten bzw. klimatisierten Bereiche eines Gebäudes."
     ) 
 with col2:
-    personen = st.number_input("Anzahl Personen im Haushalt", 1, 20, 4)
+    personen = st.number_input("Anzahl Personen im Haushalt", 1, 20, 3)
 
 with col3:
     Stromnutzung = st.radio(
@@ -2827,13 +2827,13 @@ col1, col2 =st.columns(2)
 with col1:
     st.subheader("Heizwärmebedarf-Ermittlung")
     # aus Baujahr Heizwärmebedarf kWh/m2
-    m2 = st.number_input("Fläche des EFH in m²", 50, 5000, 200)
+    m2 = st.number_input("Fläche des EFH in m²", 50, 5000, 240)
     bau_typ = st.selectbox(
         "Gebäudestandard",
         ["Baujahr", "Minergie", "Minergie-P"]
     )
     if bau_typ == "Baujahr":
-        Baujahr = st.number_input("Baujahr", 1900, 2015, 1990)
+        Baujahr = st.number_input("Baujahr", 1900, 2015, 1983)
 
         treffer = df_Bautyp_Heizwaermebedarf.loc[
             df_Bautyp_Heizwaermebedarf["Bautyp"] == Baujahr,
@@ -3297,7 +3297,7 @@ with col2:
             "Fahrstrecke außerhalb der gewählten Fahrtage in km/Tag",
             min_value=0.0,
             max_value=300.0,
-            value=0.0,
+            value=10.0,
             step=5.0,
             format="%.1f"
         )
@@ -3310,7 +3310,7 @@ with col2:
             "E-Auto Ladeleistung in kW",
             min_value=0.1,
             max_value=22.0,
-            value=3.7,
+            value=9.0,
             step=0.1,
             format="%.1f"
         )
@@ -3705,9 +3705,9 @@ with col1:
     batterie_aktiv = st.checkbox("Batterie vorhanden", value=True)
 
     if batterie_aktiv:
-        batteriekapazität = st.slider("Batteriekapazität in kWh", 1, 50, 10)
-        maxLadeleistungBatterie = st.slider("Maximale Ladeleistung der Batterie in kW", 1, 20, 10)
-        maxEntladeleistungBatterie = st.slider("Maximale Entladeleistung der Batterie in kW", 1, 20, 10)
+        batteriekapazität = st.slider("Batteriekapazität in kWh", 1, 50, 9)
+        maxLadeleistungBatterie = st.slider("Maximale Ladeleistung der Batterie in kW", 1, 20, 5)
+        maxEntladeleistungBatterie = st.slider("Maximale Entladeleistung der Batterie in kW", 1, 20, 5)
         minSoC = st.number_input("Minimal SoC in %", 0, 50, 20)
         maxSoC = st.number_input("Maximal SoC in %", 60, 100, 80)
         st.caption("SoC = State of Charge, also Ladezustand der Batterie. Min. SoC verhindert Tiefentladung, Max. SoC begrenzt die nutzbare obere Kapazität.")
