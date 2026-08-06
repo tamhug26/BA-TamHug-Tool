@@ -4410,7 +4410,7 @@ if "df_ts" in st.session_state:
 
             st.markdown(
                 f"""
-                <div style="text-align:center">
+                <div style="text-align:left">
                     <div style="font-size:18px;">
                         Autarkiegrad
                     </div>
