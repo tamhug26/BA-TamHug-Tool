@@ -2232,6 +2232,206 @@ def finde_energetische_empfehlung(
     # Kein klarer Sättigungsbereich innerhalb der Varianten.
     return None
 
+def berechne_ladeleistungsanalyse(
+    df_basis,
+    prioritaeten,
+    ww_config,
+    ev_config,
+    batteriekapazitaet_kwh,
+    aktuelle_ladeleistung_kw,
+    aktuelle_entladeleistung_kw,
+    min_soc_prozent,
+    max_soc_prozent,
+    einspeisegrenze_kw,
+    bezugsgrenze_kw,
+    batterie_wirkungsgrad,
+    schrittweite_kw=1.0,
+    minimale_ladeleistung_kw=1.0,
+    entladeleistung_mit_variieren=False
+):
+    """
+    Untersucht die Auswirkungen einer schrittweisen Verringerung
+    der Batterieladeleistung.
+
+    Standardmässig bleibt die Entladeleistung unverändert, weil für
+    die Reduktion von PV-Einspeisespitzen insbesondere die Ladeleistung
+    entscheidend ist.
+    """
+
+    aktuelle_ladeleistung_kw = float(aktuelle_ladeleistung_kw)
+    aktuelle_entladeleistung_kw = float(aktuelle_entladeleistung_kw)
+    schrittweite_kw = float(schrittweite_kw)
+    minimale_ladeleistung_kw = float(minimale_ladeleistung_kw)
+
+    if aktuelle_ladeleistung_kw <= 0:
+        return pd.DataFrame()
+
+    # Beispielsweise aus 5 kW:
+    # 5, 4, 3, 2, 1 kW
+    ladeleistungen = []
+
+    leistung = aktuelle_ladeleistung_kw
+
+    while leistung >= minimale_ladeleistung_kw:
+        ladeleistungen.append(round(leistung, 3))
+        leistung -= schrittweite_kw
+
+    # Sicherstellen, dass die Mindestleistung enthalten ist
+    if (
+        ladeleistungen
+        and ladeleistungen[-1] > minimale_ladeleistung_kw
+    ):
+        ladeleistungen.append(minimale_ladeleistung_kw)
+
+    ladeleistungen = sorted(
+        set(ladeleistungen),
+        reverse=True
+    )
+
+    ergebnisse = []
+
+    for ladeleistung_kw in ladeleistungen:
+
+        if entladeleistung_mit_variieren:
+            entladeleistung_kw = min(
+                aktuelle_entladeleistung_kw,
+                ladeleistung_kw
+            )
+        else:
+            entladeleistung_kw = aktuelle_entladeleistung_kw
+
+        # ---------------------------------------------------------
+        # HIER deinen bestehenden simulate_ems-Aufruf verwenden
+        # ---------------------------------------------------------
+
+        df_variante = simulate_ems(
+            df=df_basis.copy(),
+            prioritaeten=prioritaeten,
+            ww_config=ww_config,
+            ev_config=ev_config,
+            batterie_aktiv=True,
+            batteriekapazitaet=batteriekapazitaet_kwh,
+            max_ladeleistung=max(ladeleistung_kw, 0.0),
+            max_entladeleistung=max(entladeleistung_kw, 0.0),
+            min_soc=min_soc_prozent,
+            max_soc=max_soc_prozent,
+            einspeisegrenze_kw=einspeisegrenze_kw,
+            bezugsgrenze_kw=bezugsgrenze_kw,
+            batterie_wirkungsgrad=batterie_wirkungsgrad
+        )
+
+        # Jahreswerte berechnen
+        netzbezug_kwh_a = float(
+            df_variante["netzbezug_kWh"].sum()
+        )
+
+        netzeinspeisung_kwh_a = float(
+            df_variante["netzeinspeisung_kWh"].sum()
+        )
+
+        abregelung_kwh_a = float(
+            df_variante["abregelung_kWh"].sum()
+        )
+
+        pv_produktion_kwh_a = float(
+            df_variante["pv_kWh"].sum()
+        )
+
+        gesamtlast_kwh_a = float(
+            df_variante["gesamtlast_kWh"].sum()
+        )
+
+        # 15-Minuten-Zeitreihe:
+        # kWh je Zeitschritt / 0.25 h = kW
+        max_einspeiseleistung_kw = float(
+            df_variante["netzeinspeisung_kWh"].max()
+            / 0.25
+        )
+
+        # Direktverbrauch inklusive Batterienutzung
+        eigenverbrauch_kwh_a = max(
+            pv_produktion_kwh_a
+            - netzeinspeisung_kwh_a
+            - abregelung_kwh_a,
+            0.0
+        )
+
+        if pv_produktion_kwh_a > 0:
+            eigenverbrauchsquote_prozent = (
+                eigenverbrauch_kwh_a
+                / pv_produktion_kwh_a
+                * 100
+            )
+        else:
+            eigenverbrauchsquote_prozent = 0.0
+
+        if gesamtlast_kwh_a > 0:
+            autarkiegrad_prozent = (
+                1
+                - netzbezug_kwh_a / gesamtlast_kwh_a
+            ) * 100
+        else:
+            autarkiegrad_prozent = 0.0
+
+        ergebnisse.append(
+            {
+                "Ladeleistung_kW": ladeleistung_kw,
+                "Entladeleistung_kW": entladeleistung_kw,
+                "Max_Einspeiseleistung_kW":
+                    max_einspeiseleistung_kw,
+                "Abregelung_kWh_a":
+                    abregelung_kwh_a,
+                "Netzbezug_kWh_a":
+                    netzbezug_kwh_a,
+                "Autarkiegrad_%":
+                    autarkiegrad_prozent,
+                "Eigenverbrauchsquote_%":
+                    eigenverbrauchsquote_prozent
+            }
+        )
+
+    df_analyse = (
+        pd.DataFrame(ergebnisse)
+        .sort_values(
+            "Ladeleistung_kW",
+            ascending=False
+        )
+        .reset_index(drop=True)
+    )
+
+    if df_analyse.empty:
+        return df_analyse
+
+    # Aktuelle Leistung ist die erste Variante
+    referenz = df_analyse.iloc[0]
+
+    df_analyse["Änderung_Max_Einspeisung_kW"] = (
+        df_analyse["Max_Einspeiseleistung_kW"]
+        - referenz["Max_Einspeiseleistung_kW"]
+    )
+
+    df_analyse["Änderung_Abregelung_kWh_a"] = (
+        df_analyse["Abregelung_kWh_a"]
+        - referenz["Abregelung_kWh_a"]
+    )
+
+    df_analyse["Änderung_Netzbezug_kWh_a"] = (
+        df_analyse["Netzbezug_kWh_a"]
+        - referenz["Netzbezug_kWh_a"]
+    )
+
+    df_analyse["Änderung_Autarkiegrad_pp"] = (
+        df_analyse["Autarkiegrad_%"]
+        - referenz["Autarkiegrad_%"]
+    )
+
+    df_analyse["Änderung_Eigenverbrauchsquote_pp"] = (
+        df_analyse["Eigenverbrauchsquote_%"]
+        - referenz["Eigenverbrauchsquote_%"]
+    )
+
+    return df_analyse
+
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 st.caption("Bachelorarbeit 2026, Fachhochschule Nordwestschweiz für Life Science Muttenz, Studiengang Umwelttechnologie")
@@ -5299,6 +5499,414 @@ if "df_ts" in st.session_state:
                     "können sich der Kurvenverlauf, das wirtschaftliche Optimum "
                     "und der energetische Sättigungspunkt verschieben."
                 )
+
+        # ---------------------------------------------------------
+        # Analyse der Ladeleistung bei vorhandener Abregelung
+        # ---------------------------------------------------------
+
+        if (
+            batterie_aktiv
+            and jahreskennzahlen["Abgeregelte_Energie_kWh"] > 0
+        ):
+
+            st.write("------------------------------")
+            st.subheader(
+                "Einfluss der Batterieladeleistung auf Einspeisespitzen"
+            )
+
+            st.write(
+                "Da in diesem Szenario PV-Energie abgeregelt wird, kann geprüft "
+                "werden, wie sich eine schrittweise Verringerung der Ladeleistung "
+                "auf die maximale Einspeiseleistung und die Abregelung auswirkt."
+            )
+
+            st.caption(
+                "Die Batteriekapazität und die Entladeleistung bleiben dabei "
+                "unverändert. Nur die Ladeleistung wird in Schritten von 1 kW "
+                "verringert."
+            )
+
+            if st.button(
+                "Ladeleistungen analysieren",
+                type="primary",
+                key="button_ladeleistungsanalyse"
+            ):
+
+                with st.spinner(
+                    "Ladeleistungsvarianten werden berechnet …"
+                ):
+                    df_ladeleistungsanalyse = (
+                        berechne_ladeleistungsanalyse(
+                            df_basis=df_ts_basis_fuer_batterieanalyse,
+                            prioritaeten=prioritaeten,
+                            ww_config=ww_config,
+                            ev_config=ev_config,
+                            batteriekapazitaet_kwh=batteriekapazität,
+                            aktuelle_ladeleistung_kw=(
+                                maxLadeleistungBatterie
+                            ),
+                            aktuelle_entladeleistung_kw=(
+                                maxEntladeleistungBatterie
+                            ),
+                            min_soc_prozent=minSoC,
+                            max_soc_prozent=maxSoC,
+                            einspeisegrenze_kw=EinspeisegrenzekW,
+                            bezugsgrenze_kw=Bezugsgrenze,
+                            batterie_wirkungsgrad=(
+                                batterieWirkungsgrad
+                            ),
+                            schrittweite_kw=1.0,
+                            minimale_ladeleistung_kw=1.0,
+                            entladeleistung_mit_variieren=False
+                        )
+                    )
+
+                st.session_state[
+                    "df_ladeleistungsanalyse"
+                ] = df_ladeleistungsanalyse
+
+                st.rerun()
+
+        if "df_ladeleistungsanalyse" in st.session_state:
+
+            df_ladeanalyse = st.session_state[
+                "df_ladeleistungsanalyse"
+            ].copy()
+
+            if not df_ladeanalyse.empty:
+
+                st.write("### Auswirkungen auf das Verteilnetz")
+
+                col_peak, col_abregelung = st.columns(2)
+
+                # ---------------------------------------------------------
+                # Maximale Einspeiseleistung
+                # ---------------------------------------------------------
+
+                fig_peak = go.Figure()
+
+                fig_peak.add_trace(
+                    go.Bar(
+                        x=df_ladeanalyse["Ladeleistung_kW"],
+                        y=df_ladeanalyse[
+                            "Max_Einspeiseleistung_kW"
+                        ],
+                        name="Maximale Einspeiseleistung",
+                        customdata=np.column_stack(
+                            [
+                                df_ladeanalyse[
+                                    "Änderung_Max_Einspeisung_kW"
+                                ]
+                            ]
+                        ),
+                        hovertemplate=(
+                            "<b>Ladeleistung: %{x:.1f} kW</b><br>"
+                            "Maximale Einspeiseleistung: "
+                            "%{y:.2f} kW<br>"
+                            "Veränderung gegenüber Ausgangswert: "
+                            "%{customdata[0]:+.2f} kW"
+                            "<extra></extra>"
+                        )
+                    )
+                )
+
+                fig_peak.update_layout(
+                    title="Maximale Einspeiseleistung",
+                    xaxis_title="Batterieladeleistung in kW",
+                    yaxis_title="Maximale Einspeiseleistung in kW",
+                    height=430,
+                    showlegend=False,
+                    margin=dict(
+                        l=60,
+                        r=20,
+                        t=70,
+                        b=60
+                    )
+                )
+
+                fig_peak.update_xaxes(
+                    autorange="reversed"
+                )
+
+                fig_peak.update_yaxes(
+                    rangemode="tozero"
+                )
+
+                # ---------------------------------------------------------
+                # Abregelung
+                # ---------------------------------------------------------
+
+                fig_abregelung = go.Figure()
+
+                fig_abregelung.add_trace(
+                    go.Bar(
+                        x=df_ladeanalyse["Ladeleistung_kW"],
+                        y=df_ladeanalyse["Abregelung_kWh_a"],
+                        name="Abgeregelte PV-Energie",
+                        customdata=np.column_stack(
+                            [
+                                df_ladeanalyse[
+                                    "Änderung_Abregelung_kWh_a"
+                                ]
+                            ]
+                        ),
+                        hovertemplate=(
+                            "<b>Ladeleistung: %{x:.1f} kW</b><br>"
+                            "Abregelung: %{y:,.1f} kWh/a<br>"
+                            "Veränderung gegenüber Ausgangswert: "
+                            "%{customdata[0]:+,.1f} kWh/a"
+                            "<extra></extra>"
+                        )
+                    )
+                )
+
+                fig_abregelung.update_layout(
+                    title="Jährlich abgeregelte PV-Energie",
+                    xaxis_title="Batterieladeleistung in kW",
+                    yaxis_title="Abregelung in kWh/a",
+                    height=430,
+                    showlegend=False,
+                    margin=dict(
+                        l=60,
+                        r=20,
+                        t=70,
+                        b=60
+                    )
+                )
+
+                fig_abregelung.update_xaxes(
+                    autorange="reversed"
+                )
+
+                fig_abregelung.update_yaxes(
+                    rangemode="tozero"
+                )
+
+                with col_peak:
+                    st.plotly_chart(
+                        fig_peak,
+                        use_container_width=True,
+                        config={"displayModeBar": False}
+                    )
+
+                with col_abregelung:
+                    st.plotly_chart(
+                        fig_abregelung,
+                        use_container_width=True,
+                        config={"displayModeBar": False}
+                    )
+
+                st.write("### Auswirkungen auf die Energiekennzahlen")
+
+                fig_folgen = go.Figure()
+
+                # Veränderung des Netzbezugs
+                fig_folgen.add_trace(
+                    go.Bar(
+                        x=df_ladeanalyse["Ladeleistung_kW"],
+                        y=df_ladeanalyse[
+                            "Änderung_Netzbezug_kWh_a"
+                        ],
+                        name="Zusätzlicher Netzbezug",
+                        yaxis="y",
+                        hovertemplate=(
+                            "<b>Ladeleistung: %{x:.1f} kW</b><br>"
+                            "Änderung Netzbezug: %{y:+,.1f} kWh/a"
+                            "<extra></extra>"
+                        )
+                    )
+                )
+
+                # Veränderung Autarkiegrad
+                fig_folgen.add_trace(
+                    go.Scatter(
+                        x=df_ladeanalyse["Ladeleistung_kW"],
+                        y=df_ladeanalyse[
+                            "Änderung_Autarkiegrad_pp"
+                        ],
+                        mode="lines+markers",
+                        name="Änderung Autarkiegrad",
+                        yaxis="y2",
+                        line=dict(
+                            dash="dash",
+                            width=3
+                        ),
+                        hovertemplate=(
+                            "<b>Ladeleistung: %{x:.1f} kW</b><br>"
+                            "Änderung Autarkiegrad: "
+                            "%{y:+.2f} Prozentpunkte"
+                            "<extra></extra>"
+                        )
+                    )
+                )
+
+                # Veränderung Eigenverbrauchsquote
+                fig_folgen.add_trace(
+                    go.Scatter(
+                        x=df_ladeanalyse["Ladeleistung_kW"],
+                        y=df_ladeanalyse[
+                            "Änderung_Eigenverbrauchsquote_pp"
+                        ],
+                        mode="lines+markers",
+                        name="Änderung Eigenverbrauchsquote",
+                        yaxis="y2",
+                        line=dict(
+                            dash="dot",
+                            width=3
+                        ),
+                        hovertemplate=(
+                            "<b>Ladeleistung: %{x:.1f} kW</b><br>"
+                            "Änderung Eigenverbrauchsquote: "
+                            "%{y:+.2f} Prozentpunkte"
+                            "<extra></extra>"
+                        )
+                    )
+                )
+
+                fig_folgen.add_hline(
+                    y=0,
+                    line_dash="dash",
+                    line_width=1
+                )
+
+                fig_folgen.update_layout(
+                    title=(
+                        "Veränderung gegenüber der aktuell "
+                        "eingestellten Ladeleistung"
+                    ),
+                    xaxis=dict(
+                        title="Batterieladeleistung in kW",
+                        autorange="reversed"
+                    ),
+                    yaxis=dict(
+                        title="Änderung Netzbezug in kWh/a",
+                        zeroline=True,
+                        showgrid=True
+                    ),
+                    yaxis2=dict(
+                        title=(
+                            "Änderung Autarkiegrad / "
+                            "Eigenverbrauchsquote in Prozentpunkten"
+                        ),
+                        overlaying="y",
+                        side="right",
+                        zeroline=True,
+                        showgrid=False
+                    ),
+                    height=470,
+                    hovermode="x unified",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="left",
+                        x=0
+                    ),
+                    margin=dict(
+                        l=70,
+                        r=80,
+                        t=100,
+                        b=70
+                    )
+                )
+
+                st.plotly_chart(
+                    fig_folgen,
+                    use_container_width=True,
+                    config={"displayModeBar": False}
+                )
+
+                # ---------------------------------------------------------
+                # Sinnvolle Ladeleistung bestimmen
+                # ---------------------------------------------------------
+
+                referenz = df_ladeanalyse.iloc[0]
+
+                kandidaten = df_ladeanalyse[
+                    (
+                        df_ladeanalyse[
+                            "Max_Einspeiseleistung_kW"
+                        ]
+                        <= referenz[
+                            "Max_Einspeiseleistung_kW"
+                        ] - 0.1
+                    )
+                    &
+                    (
+                        df_ladeanalyse[
+                            "Abregelung_kWh_a"
+                        ]
+                        < referenz["Abregelung_kWh_a"]
+                    )
+                    &
+                    (
+                        df_ladeanalyse[
+                            "Änderung_Autarkiegrad_pp"
+                        ]
+                        >= -1.0
+                    )
+                    &
+                    (
+                        df_ladeanalyse[
+                            "Änderung_Eigenverbrauchsquote_pp"
+                        ]
+                        >= -1.0
+                    )
+                ].copy()
+
+                if not kandidaten.empty:
+                    # Höchste Ladeleistung wählen, die die Bedingungen erfüllt
+                    empfehlung = kandidaten.sort_values(
+                        "Ladeleistung_kW",
+                        ascending=False
+                    ).iloc[0]
+
+                    st.success(
+                        f"Unter den untersuchten Varianten bietet eine "
+                        f"Ladeleistung von ungefähr "
+                        f"{empfehlung['Ladeleistung_kW']:.1f} kW einen "
+                        f"sinnvollen Kompromiss. Gegenüber der aktuell "
+                        f"eingestellten Ladeleistung sinkt die maximale "
+                        f"Einspeiseleistung um "
+                        f"{abs(empfehlung['Änderung_Max_Einspeisung_kW']):.2f} kW "
+                        f"und die jährliche Abregelung verändert sich um "
+                        f"{empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a. "
+                        f"Der Autarkiegrad verändert sich dabei um "
+                        f"{empfehlung['Änderung_Autarkiegrad_pp']:+.2f} "
+                        f"Prozentpunkte."
+                    )
+                else:
+                    st.info(
+                        "Innerhalb der untersuchten Ladeleistungen wurde keine "
+                        "Variante gefunden, die die Einspeisespitze und die "
+                        "Abregelung deutlich reduziert, ohne die übrigen "
+                        "Energiekennzahlen stärker zu verschlechtern."
+                    )
+
+                with st.expander(
+                    "Berechnete Ladeleistungsvarianten anzeigen",
+                    expanded=False
+                ):
+                    st.dataframe(
+                        df_ladeanalyse.round(
+                            {
+                                "Ladeleistung_kW": 1,
+                                "Entladeleistung_kW": 1,
+                                "Max_Einspeiseleistung_kW": 2,
+                                "Abregelung_kWh_a": 1,
+                                "Netzbezug_kWh_a": 0,
+                                "Autarkiegrad_%": 1,
+                                "Eigenverbrauchsquote_%": 1,
+                                "Änderung_Max_Einspeisung_kW": 2,
+                                "Änderung_Abregelung_kWh_a": 1,
+                                "Änderung_Netzbezug_kWh_a": 0,
+                                "Änderung_Autarkiegrad_pp": 2,
+                                "Änderung_Eigenverbrauchsquote_pp": 2
+                            }
+                        ),
+                        use_container_width=True,
+                        hide_index=True
+                    )
 
         df_umwelt = st.session_state["df_umwelt"]
 
