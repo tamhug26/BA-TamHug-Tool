@@ -6156,12 +6156,6 @@ if "df_ts" in st.session_state:
                     )
                 )
 
-                st.plotly_chart(
-                    fig_optimal_folgen,
-                    use_container_width=True,
-                    config={"displayModeBar": False}
-                )
-
         st.write("### Auswirkungen auf die Energiekennzahlen")
 
         col_aktuell, col_optimal = st.columns(2)
