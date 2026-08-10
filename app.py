@@ -2434,7 +2434,7 @@ def berechne_ladeleistungsanalyse(
 
 st.header("Dimensionierungstool für Photovoltaik- und Batterieanlagen in Einfamilienhäusern mit Leistungsbegrenzung der elektrischen Einspeisung und des Bezugs ")
 st.caption("Bachelorarbeit 2026, Fachhochschule Nordwestschweiz für Life Science Muttenz, Studiengang Umwelttechnologie")
-st.caption("Zuletzt aktualisiert: 04.08.2026")
+st.caption("Zuletzt aktualisiert: 10.08.2026")
 #profile
 st.subheader("Profile")
 profil_name = st.text_input("Profilname", value="Profil 1")
