@@ -5835,12 +5835,12 @@ if "df_ts" in st.session_state:
                         )
                     )
 
-                    st.plotly_chart(
-                        fig_folgen,
-                        use_container_width=True,
-                        config={"displayModeBar": False}
-                    )
-
+                st.plotly_chart(
+                    fig_folgen,
+                    use_container_width=True,
+                    config={"displayModeBar": False},
+                    key="fig_folgen_verteilnetz"
+                )
                 # ---------------------------------------------------------
                 # Sinnvolle Ladeleistung bestimmen
                 # ---------------------------------------------------------
@@ -6171,23 +6171,31 @@ if "df_ts" in st.session_state:
                 fig_folgen,
                 use_container_width=True,
                 config={"displayModeBar": False},
-                key="fig_folgen_aktuell"
+                key="fig_folgen_vergleich_aktuelle_batterie"
             )
 
         with col_optimal:
             st.markdown("#### Energetisch sinnvolle Batteriekapazität")
 
-            st.caption(
-                f"Batteriekapazität: ca. "
-                f"{energetische_empfehlung_kwh:.0f} kWh"
-            )
+            if energetische_empfehlung_kwh is not None:
 
-            st.plotly_chart(
-                fig_optimal_folgen,
-                use_container_width=True,
-                config={"displayModeBar": False},
-                key="fig_optimal_folgen_energetisch"
-            )
+                st.caption(
+                    f"Batteriekapazität: ca. "
+                    f"{energetische_empfehlung_kwh:.0f} kWh"
+                )
+
+                st.plotly_chart(
+                    fig_optimal_folgen,
+                    use_container_width=True,
+                    config={"displayModeBar": False},
+                    key="fig_folgen_vergleich_optimale_batterie"
+                )
+
+            else:
+                st.info(
+                    "Für dieses Szenario konnte keine energetisch sinnvolle "
+                    "Batteriekapazität bestimmt werden."
+                )
         st.write("------------------------------")
         st.subheader("Umweltwirkungen")
 
