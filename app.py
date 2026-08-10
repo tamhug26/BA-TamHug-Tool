@@ -5828,16 +5828,17 @@ if "df_ts" in st.session_state:
                         hovermode="x unified",
                         legend=dict(
                             orientation="h",
-                            yanchor="bottom",
-                            y=1.02,
+                            yanchor="top",
+                            y=-0.18,
                             xanchor="left",
-                            x=0
+                            x=0,
+                            font=dict(size=9)
                         ),
                         margin=dict(
-                            l=70,
-                            r=80,
-                            t=100,
-                            b=70
+                            l=60,
+                            r=65,
+                            t=65,
+                            b=115
                         )
                     )
 
@@ -6128,7 +6129,7 @@ if "df_ts" in st.session_state:
                 )
 
                 fig_optimal_folgen.update_layout(
-                    title=None,
+                    title="",
 
                     xaxis=dict(
                         title="Batterieladeleistung in kW",
@@ -6164,17 +6165,17 @@ if "df_ts" in st.session_state:
 
                     legend=dict(
                         orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
+                        yanchor="top",
+                        y=-0.18,
                         xanchor="left",
-                        x=0
+                        x=0,
+                        font=dict(size=9)
                     ),
-
                     margin=dict(
                         l=70,
                         r=80,
-                        t=100,
-                        b=70
+                        t=50,
+                        b=115
                     )
                 )
 
