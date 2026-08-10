@@ -6170,7 +6170,8 @@ if "df_ts" in st.session_state:
             st.plotly_chart(
                 fig_folgen,
                 use_container_width=True,
-                config={"displayModeBar": False}
+                config={"displayModeBar": False},
+                key="fig_folgen_aktuell"
             )
 
         with col_optimal:
@@ -6184,7 +6185,8 @@ if "df_ts" in st.session_state:
             st.plotly_chart(
                 fig_optimal_folgen,
                 use_container_width=True,
-                config={"displayModeBar": False}
+                config={"displayModeBar": False},
+                key="fig_optimal_folgen_energetisch"
             )
         st.write("------------------------------")
         st.subheader("Umweltwirkungen")
