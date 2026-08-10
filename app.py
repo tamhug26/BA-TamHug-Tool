@@ -4246,6 +4246,10 @@ if run_simulation:
             "fahrtage": ev_fahrtage
         }
 
+        st.session_state["ww_config_simulation"] = copy.deepcopy(ww_config)
+        st.session_state["ev_config_simulation"] = copy.deepcopy(ev_config)
+        st.session_state["prioritaeten_simulation"] = copy.deepcopy(prioritaeten)
+
         # Prüfen, ob der Fahrbedarf im gewählten Ladefenster gedeckt werden kann
         ev_check = pruefe_ev_plausibilitaet(ev_config)
 
@@ -5539,6 +5543,9 @@ if "df_ts" in st.session_state:
             if (
                 "df_ladeleistungsanalyse" not in st.session_state
                 and "df_ts_basis_fuer_batterieanalyse" in st.session_state
+                and "ww_config_simulation" in st.session_state
+                and "ev_config_simulation" in st.session_state
+                and "prioritaeten_simulation" in st.session_state
             ):
 
                 with st.spinner(
@@ -5549,9 +5556,15 @@ if "df_ts" in st.session_state:
                             df_basis=st.session_state[
                                 "df_ts_basis_fuer_batterieanalyse"
                             ].copy(),
-                            prioritaeten=prioritaeten,
-                            ww_config=ww_config,
-                            ev_config=ev_config,
+                            prioritaeten=st.session_state[
+                                "prioritaeten_simulation"
+                            ],
+                            ww_config=st.session_state[
+                                "ww_config_simulation"
+                            ],
+                            ev_config=st.session_state[
+                                "ev_config_simulation"
+                            ],
                             batteriekapazitaet_kwh=batteriekapazität,
                             aktuelle_ladeleistung_kw=(
                                 maxLadeleistungBatterie
