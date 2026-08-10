@@ -6112,10 +6112,7 @@ if "df_ts" in st.session_state:
                 )
 
                 fig_optimal_folgen.update_layout(
-                    title=(
-                        f"{energetische_empfehlung_kwh:.0f} kWh Batterie: "
-                        f"Einfluss der Ladeleistung"
-                    ),
+                    title=None,
 
                     xaxis=dict(
                         title="Batterieladeleistung in kW",
@@ -6165,11 +6162,41 @@ if "df_ts" in st.session_state:
                     config={"displayModeBar": False}
                 )
 
+        st.write("### Auswirkungen auf die Energiekennzahlen")
+
+        col_aktuell, col_optimal = st.columns(2)
+
+        with col_aktuell:
+            st.markdown("#### Aktuell eingestellte Batteriekapazität")
+
+            st.caption(
+                f"Batteriekapazität: {batteriekapazität:.1f} kWh"
+            )
+
+            st.plotly_chart(
+                fig_folgen,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+        with col_optimal:
+            st.markdown("#### Energetisch sinnvolle Batteriekapazität")
+
+            st.caption(
+                f"Batteriekapazität: ca. "
+                f"{energetische_empfehlung_kwh:.0f} kWh"
+            )
+
+            st.plotly_chart(
+                fig_optimal_folgen,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
         st.write("------------------------------")
         st.subheader("Umweltwirkungen")
 
         df_umwelt = st.session_state["df_umwelt"]
-        
+
         # Gesamtumweltwirkungen berechnen
         total_ubp = df_umwelt["UBP/a"].sum()
         total_co2 = df_umwelt["kg CO2-eq/a"].sum()
