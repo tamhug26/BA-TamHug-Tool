@@ -5801,7 +5801,13 @@ if "df_ts" in st.session_state:
                         title="Auswirkungen auf Energiekennzahlen",
                         xaxis=dict(
                             title="Batterieladeleistung in kW",
-                            autorange="reversed"
+                            autorange="reversed",
+                            tickmode="array",
+                            tickvals=df_ladeanalyse["Ladeleistung_kW"].tolist(),
+                            ticktext=[
+                                f"{x:g}"
+                                for x in df_ladeanalyse["Ladeleistung_kW"]
+                            ]
                         ),
                         yaxis=dict(
                             title="Änderung Netzbezug in kWh/a",
@@ -5835,12 +5841,12 @@ if "df_ts" in st.session_state:
                         )
                     )
 
-                st.plotly_chart(
-                    fig_folgen,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                    key="fig_folgen_verteilnetz"
-                )
+                    st.plotly_chart(
+                        fig_folgen,
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                        key="fig_folgen_verteilnetz"
+                    )
                 # ---------------------------------------------------------
                 # Sinnvolle Ladeleistung bestimmen
                 # ---------------------------------------------------------
@@ -5948,8 +5954,18 @@ if "df_ts" in st.session_state:
         ):
 
             st.write("------------------------------")
-            st.subheader(
-                "Ladeleistung bei energetisch sinnvoller Batteriekapazität"
+            st.subheader("Einfluss der Ladeleistung auf die Energiekennzahlen")
+
+            st.caption(
+
+                "Verglichen wird die aktuell eingestellte Batteriekapazität mit der "
+
+                "energetisch sinnvollen Batteriekapazität. In beiden Fällen wird geprüft, "
+
+                "wie sich eine Verringerung der Ladeleistung auf Netzbezug, Autarkiegrad "
+
+                "und Eigenverbrauchsquote auswirkt."
+
             )
 
             # Ladeleistung nach 10-Stunden-Regel
@@ -6116,7 +6132,13 @@ if "df_ts" in st.session_state:
 
                     xaxis=dict(
                         title="Batterieladeleistung in kW",
-                        autorange="reversed"
+                        autorange="reversed",
+                        tickmode="array",
+                        tickvals=df_ladeanalyse_optimal["Ladeleistung_kW"].tolist(),
+                        ticktext=[
+                            f"{x:g}"
+                            for x in df_ladeanalyse_optimal["Ladeleistung_kW"]
+                        ]
                     ),
 
                     yaxis=dict(
@@ -6156,7 +6178,7 @@ if "df_ts" in st.session_state:
                     )
                 )
 
-        st.write("### Auswirkungen auf die Energiekennzahlen")
+        #st.write("### Auswirkungen auf die Energiekennzahlen")
 
         col_aktuell, col_optimal = st.columns(2)
 
