@@ -4845,6 +4845,10 @@ if "df_ts" in st.session_state:
                     df_energie
                 )
 
+                st.session_state["energetische_empfehlung_kwh"] = (
+                    energetische_empfehlung_kwh
+                )
+                
                 fig_batterie_kosten = go.Figure()
 
                 # Linienmuster für die grauen Vergleichskurven
@@ -5326,17 +5330,18 @@ if "df_ts" in st.session_state:
 
                     legend=dict(
                         orientation="h",
-                        yanchor="bottom",
+                        yanchor="top",
                         y=1.02,
                         xanchor="left",
-                        x=0
+                        x=0,
+                        font=dict(size=10)
                     ),
 
                     margin=dict(
-                        l=70,
-                        r=85,
-                        t=110,
-                        b=80
+                        l=65,
+                        r=65,
+                        t=125,
+                        b=60
                     )
                 )
 
@@ -5793,10 +5798,7 @@ if "df_ts" in st.session_state:
                     )
 
                     fig_folgen.update_layout(
-                        title=(
-                            "Veränderung gegenüber der aktuell "
-                            "eingestellten Ladeleistung"
-                        ),
+                        title="Auswirkungen auf Energiekennzahlen",
                         xaxis=dict(
                             title="Batterieladeleistung in kW",
                             autorange="reversed"
@@ -5934,6 +5936,10 @@ if "df_ts" in st.session_state:
         # ---------------------------------------------------------
         # Ladeleistungsanalyse für energetisch sinnvolle Batterie
         # ---------------------------------------------------------
+
+        energetische_empfehlung_kwh = st.session_state.get(
+            "energetische_empfehlung_kwh"
+        )
 
         if (
             energetische_empfehlung_kwh is not None
@@ -6159,11 +6165,11 @@ if "df_ts" in st.session_state:
                     config={"displayModeBar": False}
                 )
 
-        df_umwelt = st.session_state["df_umwelt"]
-
         st.write("------------------------------")
         st.subheader("Umweltwirkungen")
 
+        df_umwelt = st.session_state["df_umwelt"]
+        
         # Gesamtumweltwirkungen berechnen
         total_ubp = df_umwelt["UBP/a"].sum()
         total_co2 = df_umwelt["kg CO2-eq/a"].sum()
