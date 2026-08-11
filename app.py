@@ -4512,7 +4512,7 @@ if "df_ts" in st.session_state:
         jahreskennzahlen = st.session_state["jahreskennzahlen"]
 
         st.subheader("01 Jahresergebnisse", divider="gray")
-        st.subheader(":record_button: , Zeitverlauf Graphik")
+        st.subheader(":record_button: Zeitverlauf Graphik")
 
         zeitraum = st.selectbox(
             "Zeitraum wählen",
