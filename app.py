@@ -6252,6 +6252,13 @@ if "df_ts" in st.session_state:
                 )
        
         st.subheader("04 Umweltwirkungen", divider="gray")
+        st.caption(
+            "Die Umweltbewertung stellt die jährlichen Umweltwirkungen des "
+            "simulierten Energiesystems dar. Berücksichtigt werden sowohl die "
+            "anteilig auf die Lebensdauer verteilten Herstellungswirkungen der "
+            "Anlagenkomponenten als auch die betrieblichen Auswirkungen des "
+            "Netzstrombezugs."
+        )
 
         df_umwelt = st.session_state["df_umwelt"]
 
