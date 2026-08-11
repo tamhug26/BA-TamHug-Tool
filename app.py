@@ -4729,7 +4729,13 @@ if "df_ts" in st.session_state:
             kostenkennzahlen = st.session_state["kostenkennzahlen"]
 
             st.subheader("02 Kostenabschätzung", divider="gray")
-
+            st.caption(
+                "Die Kostenabschätzung vergleicht die jährlichen Stromkosten ohne "
+                "PV-Anlage mit den Stromkosten des simulierten Systems. Berücksichtigt "
+                "werden Investitionskosten, Förderung, Netzbezug, Einspeiseerlöse und "
+                "laufende Betriebskosten. Die Berechnung stellt eine vereinfachte "
+                "Wirtschaftlichkeitsabschätzung dar."
+            )
             col1, col2, col3 = st.columns(3)
 
             with col1:
@@ -4809,9 +4815,8 @@ if "df_ts" in st.session_state:
                 and "df_batterie_wirtschaftlichkeit" in st.session_state
             ):
 
-                st.write("------------------------------")
                 st.subheader(
-                    "Wirtschaftlichkeit der gewählten Batteriekapazität"
+                    "● Wirtschaftlichkeit der gewählten Batteriekapazität"
                 )
 
                 df_wirtschaft = st.session_state[
@@ -5539,7 +5544,7 @@ if "df_ts" in st.session_state:
             
             st.subheader("03 Wirtschaftlichkeit und Ladeleistung", divider="gray")
             st.subheader(
-                "Einfluss der Batterieladeleistung auf Einspeisespitzen"
+                "● Einfluss der Batterieladeleistung auf Einspeisespitzen"
             )
 
             st.write(
@@ -5614,7 +5619,7 @@ if "df_ts" in st.session_state:
 
                 if not df_ladeanalyse.empty:
                     # Ab hier bleiben deine Grafiken stehen
-                    st.write("### Auswirkungen auf das Verteilnetz")
+                    st.write("### ● Auswirkungen auf das Verteilnetz")
 
                 col_peak, col_abregelung,col3 = st.columns(3)
 
@@ -5721,7 +5726,7 @@ if "df_ts" in st.session_state:
                     rangemode="tozero"
                 )
 
-                st.write("### Auswirkungen auf die Energiekennzahlen")
+                st.write("### ● Auswirkungen auf die Energiekennzahlen")
                 with col_peak:
                     st.plotly_chart(
                         fig_peak,
@@ -5966,7 +5971,7 @@ if "df_ts" in st.session_state:
         ):
 
             
-            st.subheader("Einfluss der Ladeleistung auf die Energiekennzahlen")
+            st.subheader("● Einfluss der Ladeleistung auf die Energiekennzahlen")
 
             st.caption(
 
