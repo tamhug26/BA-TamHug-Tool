@@ -4511,8 +4511,8 @@ if "df_ts" in st.session_state:
         monatsbilanz = st.session_state["monatsbilanz"]
         jahreskennzahlen = st.session_state["jahreskennzahlen"]
 
-        st.badge("Zeitverlauf Graphik",  color="blue")
-        #st.subheader("Zeitverlauf Graphik")
+        st.subheader("01 Jahresergebnisse", divider="gray")
+        st.subheader("Zeitverlauf Graphik")
 
         zeitraum = st.selectbox(
             "Zeitraum wählen",
@@ -4719,6 +4719,7 @@ if "df_ts" in st.session_state:
             kostenkennzahlen = st.session_state["kostenkennzahlen"]
 
             st.write("------------------------------")
+            st.subheader("02 Wirtschaftlichkeit", divider="gray")
             st.subheader("Kostenabschätzung")
 
             col1, col2, col3 = st.columns(3)
@@ -5528,6 +5529,7 @@ if "df_ts" in st.session_state:
         ):
 
             st.write("------------------------------")
+            st.subheader("03 Wirtschaftlichkeit", divider="gray")
             st.subheader(
                 "Einfluss der Batterieladeleistung auf Einspeisespitzen"
             )
@@ -6221,7 +6223,7 @@ if "df_ts" in st.session_state:
                     "Batteriekapazität bestimmt werden."
                 )
         st.write("------------------------------")
-        st.subheader("Umweltwirkungen")
+        st.subheader("04 Umweltwirkungen", divider="gray")
 
         df_umwelt = st.session_state["df_umwelt"]
 
