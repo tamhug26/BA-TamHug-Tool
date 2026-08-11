@@ -5955,7 +5955,7 @@ if "df_ts" in st.session_state:
             and "df_ts_basis_fuer_batterieanalyse" in st.session_state
         ):
 
-            st.write("------------------------------")
+            
             st.subheader("Einfluss der Ladeleistung auf die Energiekennzahlen")
 
             st.caption(
