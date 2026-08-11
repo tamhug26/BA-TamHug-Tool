@@ -5542,7 +5542,14 @@ if "df_ts" in st.session_state:
         ):
 
             
-            st.subheader("03 Wirtschaftlichkeit und Ladeleistung", divider="gray")
+            st.subheader("03 Netz- und Batterieoptimierung", divider="gray")
+            st.caption(
+                "Bei einer Begrenzung der Einspeiseleistung kann überschüssige "
+                "PV-Energie abgeregelt werden. In diesem Abschnitt wird untersucht, "
+                "ob durch eine angepasste Batterieladeleistung Einspeisespitzen und "
+                "Abregelungsverluste reduziert werden können und welche Auswirkungen "
+                "dies auf Netzbezug, Autarkiegrad und Eigenverbrauchsquote hat."
+            )
             st.subheader(
                 "● Einfluss der Batterieladeleistung auf Einspeisespitzen"
             )
@@ -6197,6 +6204,14 @@ if "df_ts" in st.session_state:
 
         #st.write("### Auswirkungen auf die Energiekennzahlen")
 
+        st.markdown(
+            "### ● Vergleich der Ladeleistung bei unterschiedlicher Batteriekapazität"
+        )
+        st.caption(
+            "Die Auswirkungen einer reduzierten Ladeleistung werden für die aktuell "
+            "eingestellte Batterie und für die zuvor ermittelte energetisch sinnvolle "
+            "Batteriekapazität gegenübergestellt."
+        )
         col_aktuell, col_optimal = st.columns(2)
 
         with col_aktuell:
