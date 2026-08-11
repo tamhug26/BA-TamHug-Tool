@@ -4801,28 +4801,23 @@ if "df_ts" in st.session_state:
 
                 st.dataframe(df_kosten, use_container_width=True)
 
-            st.caption(
-                "Die Kostenabschätzung vergleicht die jährlichen Stromkosten ohne PV-Anlage mit den "
-                "Stromkosten bei PV-Nutzung. Berücksichtigt werden Netzbezugskosten, Einspeiseerlöse, "
-                "Investitionskosten, Förderung und laufende Betriebskosten. Die Berechnung stellt eine "
-                "vereinfachte Abschätzung dar und ersetzt keine detaillierte Wirtschaftlichkeitsanalyse."
-            )
+        
             # ---------------------------------------------------------
             # Wirtschaftlichkeitskurve der Batterie anzeigen
             
-            if (
-                batterie_aktiv
-                and "df_batterie_wirtschaftlichkeit" in st.session_state
-            ):
-
-                st.subheader("03 Netz- und Batterieoptimierung", divider="gray")
-                st.caption(
+            st.subheader("03 Netz- und Batterieoptimierung", divider="gray")
+            st.caption(
                                 "Bei einer Begrenzung der Einspeiseleistung kann überschüssige "
                                 "PV-Energie abgeregelt werden. In diesem Abschnitt wird untersucht, "
                                 "ob durch eine angepasste Batterieladeleistung Einspeisespitzen und "
                                 "Abregelungsverluste reduziert werden können und welche Auswirkungen "
                                 "dies auf Netzbezug, Autarkiegrad und Eigenverbrauchsquote hat."
                             )
+
+            if (
+                batterie_aktiv
+                and "df_batterie_wirtschaftlichkeit" in st.session_state
+            ):
 
                 st.subheader(
                     "● Wirtschaftlichkeit der gewählten Batteriekapazität"
