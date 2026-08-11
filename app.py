@@ -4021,7 +4021,7 @@ with col3:
 
 # Simulation starten und Ergebnisse zurücksetzen
 st.write("------------------------------")
-st.subheader("Test Zeitreihe")
+st.subheader("Simulation")
 run_simulation = st.button("Simulation starten")
 
 if run_simulation:
@@ -4512,7 +4512,7 @@ if "df_ts" in st.session_state:
         jahreskennzahlen = st.session_state["jahreskennzahlen"]
 
         st.subheader("01 Jahresergebnisse", divider="gray")
-        st.subheader("Zeitverlauf Graphik")
+        st.subheader(":record_button:, Zeitverlauf Graphik")
 
         zeitraum = st.selectbox(
             "Zeitraum wählen",
