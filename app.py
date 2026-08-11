@@ -4521,40 +4521,43 @@ if "df_ts" in st.session_state:
             "Der Zeitverlauf zeigt die simulierten Energieflüsse und Wetterdaten "
             "für einen frei wählbaren Zeitraum innerhalb des Simulationsjahres."
         )
-        zeitraum = st.selectbox(
-            "Zeitraum wählen",
-            ["Tag", "Woche", "Monat", "Jahr"]
-        )
-
-        if zeitraum in ["Tag", "Woche"]:
-            start_datum = st.date_input(
-                "Startdatum wählen",
-                value=df_ts.index.min().date(),
-                min_value=df_ts.index.min().date(),
-                max_value=df_ts.index.max().date()
+        col_zeitraum, col_start, col_info = st.columns(3)
+        with col_zeitraum:
+            zeitraum = st.selectbox(
+                "Zeitraum wählen",
+                ["Tag", "Woche", "Monat", "Jahr"]
             )
-            df_plot = get_display_dataframe(df_ts, zeitraum, start_datum=start_datum)
 
-        elif zeitraum == "Monat":
-            monat_namen = {
-                1: "Januar", 2: "Februar", 3: "März", 4: "April",
-                5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
-                9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
-            }
+        with col_start:
+            if zeitraum in ["Tag", "Woche"]:
+                start_datum = st.date_input(
+                    "Startdatum wählen",
+                    value=df_ts.index.min().date(),
+                    min_value=df_ts.index.min().date(),
+                    max_value=df_ts.index.max().date()
+                )
+                df_plot = get_display_dataframe(df_ts, zeitraum, start_datum=start_datum)
 
+            elif zeitraum == "Monat":
+                monat_namen = {
+                    1: "Januar", 2: "Februar", 3: "März", 4: "April",
+                    5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+                    9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
+                }
 
-            start_monat = st.selectbox(
-                "Monat wählen",
-                list(monat_namen.keys()),
-                format_func=lambda x: monat_namen[x]
-            )
-            df_plot = get_display_dataframe(df_ts, zeitraum, start_monat=start_monat)
+                start_monat = st.selectbox(
+                    "Monat wählen",
+                    list(monat_namen.keys()),
+                    format_func=lambda x: monat_namen[x]
+                )
+                df_plot = get_display_dataframe(df_ts, zeitraum, start_monat=start_monat)
 
-        else:
-            df_plot = get_display_dataframe(df_ts, zeitraum)
+            else:
+                df_plot = get_display_dataframe(df_ts, zeitraum)
 
-        st.write("Ausgewählter Zeitraum:")
-        st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
+        with col_info:
+            st.write("Ausgewählter Zeitraum:")
+            st.write(f"Anzahl Zeitschritte: {len(df_plot)}")
         # Energie- und Wetterverlauf darstellen
         fig = create_main_plot(df_plot, EinspeisegrenzekW, Bezugsgrenze, zeitraum)
         st.plotly_chart(fig, use_container_width=True)
