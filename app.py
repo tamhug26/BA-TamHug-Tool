@@ -4610,7 +4610,7 @@ if "df_ts" in st.session_state:
                 ]].round(3)
             )
 
-        st.write("------------------------------")
+        #---------------------------------------------
         st.subheader("Jahreskennzahlen")
 
         col1, col2, col3, col4 = st.columns(4)
@@ -4719,8 +4719,7 @@ if "df_ts" in st.session_state:
             kostenkennzahlen = st.session_state["kostenkennzahlen"]
 
             st.write("------------------------------")
-            st.subheader("02 Wirtschaftlichkeit", divider="gray")
-            st.subheader("Kostenabschätzung")
+            st.subheader("02 Kostenabschätzung", divider="gray")
 
             col1, col2, col3 = st.columns(3)
 
@@ -5528,8 +5527,8 @@ if "df_ts" in st.session_state:
             and jahreskennzahlen["Abgeregelte_Energie_kWh"] > 0
         ):
 
-            st.write("------------------------------")
-            st.subheader("03 Wirtschaftlichkeit", divider="gray")
+            
+            
             st.subheader(
                 "Einfluss der Batterieladeleistung auf Einspeisespitzen"
             )
@@ -6222,7 +6221,7 @@ if "df_ts" in st.session_state:
                     "Für dieses Szenario konnte keine energetisch sinnvolle "
                     "Batteriekapazität bestimmt werden."
                 )
-        st.write("------------------------------")
+       
         st.subheader("04 Umweltwirkungen", divider="gray")
 
         df_umwelt = st.session_state["df_umwelt"]
