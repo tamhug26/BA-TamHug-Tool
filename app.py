@@ -4022,6 +4022,10 @@ with col3:
 # Simulation starten und Ergebnisse zurücksetzen
 st.write("------------------------------")
 st.subheader("Simulation")
+st.caption(
+    "Auf Grundlage der eingegebenen Gebäude-, Verbraucher-, PV-, Batterie- "
+    "und Netzparameter wird eine zeitlich aufgelöste Jahressimulation durchgeführt."
+)
 run_simulation = st.button("Simulation starten")
 
 if run_simulation:
@@ -4512,8 +4516,11 @@ if "df_ts" in st.session_state:
         jahreskennzahlen = st.session_state["jahreskennzahlen"]
 
         st.subheader("01 Jahresergebnisse", divider="gray")
-        st.subheader(":record_button: Zeitverlauf Graphik")
-
+        st.subheader("● Zeitverlauf")
+        st.caption(
+            "Der Zeitverlauf zeigt die simulierten Energieflüsse und Wetterdaten "
+            "für einen frei wählbaren Zeitraum innerhalb des Simulationsjahres."
+        )
         zeitraum = st.selectbox(
             "Zeitraum wählen",
             ["Tag", "Woche", "Monat", "Jahr"]
@@ -4570,13 +4577,13 @@ if "df_ts" in st.session_state:
 
         # Passenden Titel für den ausgewählten Zeitraum festlegen
         if zeitraum == "Tag":
-            titel = "Zusammenfassung des ausgewählten Tages"
+            titel = "● Zusammenfassung des ausgewählten Tages"
         elif zeitraum == "Woche":
-            titel = "Zusammenfassung der ausgewählten Woche"
+            titel = "● Zusammenfassung der ausgewählten Woche"
         elif zeitraum == "Monat":
-            titel = "Zusammenfassung des ausgewählten Monats"
+            titel = "● Zusammenfassung des ausgewählten Monats"
         else:
-            titel = "Zusammenfassung des gesamten Jahres"
+            titel = "● Zusammenfassung des gesamten Jahres"
 
         st.subheader(titel)
 
@@ -4611,7 +4618,7 @@ if "df_ts" in st.session_state:
             )
 
         #---------------------------------------------
-        st.subheader("Jahreskennzahlen")
+        st.subheader("● Jahreskennzahlen")
 
         col1, col2, col3, col4 = st.columns(4)
 
