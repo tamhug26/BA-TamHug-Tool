@@ -4718,7 +4718,6 @@ if "df_ts" in st.session_state:
         if "kostenkennzahlen" in st.session_state:
             kostenkennzahlen = st.session_state["kostenkennzahlen"]
 
-            st.write("------------------------------")
             st.subheader("02 Kostenabschätzung", divider="gray")
 
             col1, col2, col3 = st.columns(3)
@@ -5528,7 +5527,7 @@ if "df_ts" in st.session_state:
         ):
 
             
-            
+            st.subheader("03 Wirtschaftlichkeit und Ladeleistung", divider="gray")
             st.subheader(
                 "Einfluss der Batterieladeleistung auf Einspeisespitzen"
             )
