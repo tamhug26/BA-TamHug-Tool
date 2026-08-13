@@ -6018,7 +6018,7 @@ if "df_ts" in st.session_state:
                     Auswirkungen gegenüber dem Ausgangszustand
                     </div>
                     <div style="font-size:16px; line-height:1.8;">
-                    <b>Max. Einspeisebedarf:</b> {empfehlung['Änderung_Max_Einspeisung_kW']:+.2f} kW<br>
+                    <b>Max. Einspeisebedarf:</b> {empfehlung['Änderung_Max_Einspeisebedarf_kW']:+.2f} kW<br>
                     <b>Abregelung:</b> {empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a<br>
                     <b>Netzbezug:</b> {empfehlung['Änderung_Netzbezug_kWh_a']:+.0f} kWh/a<br>
                     <b>Autarkiegrad:</b> {empfehlung['Änderung_Autarkiegrad_pp']:+.2f} Prozentpunkte<br>
