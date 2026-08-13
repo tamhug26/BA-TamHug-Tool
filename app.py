@@ -5647,7 +5647,7 @@ if "df_ts" in st.session_state:
                 ].copy()
 
                 if not df_ladeanalyse.empty:
-                    st.markdown("### Auswirkungen auf das Verteilnetz")
+                    st.markdown("")
 
                 col_peak, col_abregelung,col3 = st.columns(3)
 
@@ -6385,7 +6385,7 @@ if "df_ts" in st.session_state:
                 ):
 
                     st.caption(
-                        f"Batteriekapazität: ca. "
+                        f"Batteriekapazität: "
                         f"{energetische_empfehlung_kwh:.0f} kWh"
                     )
 
