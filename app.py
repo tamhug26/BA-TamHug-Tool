@@ -5544,20 +5544,20 @@ if "df_ts" in st.session_state:
 
         if (
             batterie_aktiv
-            and jahreskennzahlen["Abgeregelte_Energie_kWh"] > 0
         ):
 
             st.subheader(
                 "● Optimierung der Ladeleistung bei der gewählten Batterie"
             )
 
-            st.write(
-                "Da in diesem Szenario PV-Energie abgeregelt wird, wird "
-                "automatisch geprüft, wie sich eine schrittweise Verringerung "
-                "der Ladeleistung auf die maximale Einspeiseleistung und die "
-                "Abregelung auswirkt."
+            st.caption(
+                "Für die aktuell eingestellte Batteriekapazität wird untersucht, wie sich "
+                "eine schrittweise Verringerung der Ladeleistung auf die maximale "
+                "Einspeiseleistung, mögliche Abregelungsverluste sowie Netzbezug, "
+                "Autarkiegrad und Eigenverbrauchsquote auswirkt. Ziel ist zu prüfen, "
+                "ob Einspeisespitzen reduziert werden können, ohne die energetischen "
+                "Kennzahlen unnötig zu verschlechtern."
             )
-
             st.caption(
                 "Die Batteriekapazität und die Entladeleistung bleiben dabei "
                 "unverändert. Nur die Ladeleistung wird in Schritten von 1 kW "
@@ -5622,8 +5622,7 @@ if "df_ts" in st.session_state:
                 ].copy()
 
                 if not df_ladeanalyse.empty:
-                    # Ab hier bleiben deine Grafiken stehen
-                    st.write("### ● Auswirkungen auf das Verteilnetz")
+                    st.markdown("### Auswirkungen auf das Verteilnetz")
 
                 col_peak, col_abregelung,col3 = st.columns(3)
 
@@ -5730,7 +5729,6 @@ if "df_ts" in st.session_state:
                     rangemode="tozero"
                 )
 
-                st.write("### ● Auswirkungen auf die Energiekennzahlen")
                 with col_peak:
                     st.plotly_chart(
                         fig_peak,
@@ -6068,19 +6066,7 @@ if "df_ts" in st.session_state:
         ):
 
             
-            st.subheader("● Einfluss der Ladeleistung auf die Energiekennzahlen")
 
-            st.caption(
-
-                "Verglichen wird die aktuell eingestellte Batteriekapazität mit der "
-
-                "energetisch sinnvollen Batteriekapazität. In beiden Fällen wird geprüft, "
-
-                "wie sich eine Verringerung der Ladeleistung auf Netzbezug, Autarkiegrad "
-
-                "und Eigenverbrauchsquote auswirkt."
-
-            )
 
             # Ladeleistung nach 10-Stunden-Regel
             start_ladeleistung_optimal_kw = max(
@@ -6294,13 +6280,14 @@ if "df_ts" in st.session_state:
 
         #st.write("### Auswirkungen auf die Energiekennzahlen")
 
-        st.markdown(
-            "### ● Vergleich der Ladeleistung bei unterschiedlicher Batteriekapazität"
+        st.subheader(
+            "● Vergleich der Energiekennzahlen bei unterschiedlicher Ladeleistung"
         )
         st.caption(
-            "Die Auswirkungen einer reduzierten Ladeleistung werden für die aktuell "
-            "eingestellte Batterie und für die zuvor ermittelte energetisch sinnvolle "
-            "Batteriekapazität gegenübergestellt."
+            "Verglichen wird, wie empfindlich die Energiekennzahlen auf eine verringerte "
+            "Batterieladeleistung reagieren. Gegenübergestellt werden die aktuell "
+            "eingestellte Batteriekapazität und die zuvor bestimmte energetisch sinnvolle "
+            "Batteriekapazität."
         )
         col_aktuell, col_optimal = st.columns(2)
 
