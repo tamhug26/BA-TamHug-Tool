@@ -5990,42 +5990,20 @@ if "df_ts" in st.session_state:
                     # Karte 1: empfohlene Ladeleistung
                     # ---------------------------------------------------------
                     with col_empfehlung_ladeleistung:
-
                         st.markdown(
                             f"""
-                            <div style="
-                                border:1px solid rgba(0,104,201,0.25);
-                                border-radius:10px;
-                                padding:18px;
-                                min-height:175px;
-                            ">
-                                <div style="
-                                    font-size:17px;
-                                    font-weight:600;
-                                    margin-bottom:8px;
-                                ">
-                                    Empfohlene Ladeleistung
-                                </div>
-
-                                <div style="
-                                    font-size:38px;
-                                    font-weight:700;
-                                    color:#0068C9;
-                                ">
-                                    ca. {empfehlung['Ladeleistung_kW']:.1f} kW
-                                </div>
-
-                                <div style="
-                                    font-size:14px;
-                                    margin-top:8px;
-                                    color:#6B7280;
-                                ">
-                                    Diese Ladeleistung bietet unter den untersuchten
-                                    Varianten einen sinnvollen Kompromiss zwischen
-                                    Netzbelastung, Abregelung und Energiekennzahlen.
-                                </div>
-                            </div>
-                            """,
+                    <div style="border:1px solid rgba(0,104,201,0.25); border-radius:10px; padding:18px; min-height:175px;">
+                    <div style="font-size:17px; font-weight:600; margin-bottom:8px;">
+                    Empfohlene Ladeleistung
+                    </div>
+                    <div style="font-size:38px; font-weight:700; color:#0068C9;">
+                    ca. {empfehlung['Ladeleistung_kW']:.1f} kW
+                    </div>
+                    <div style="font-size:14px; margin-top:8px; color:#6B7280;">
+                    Diese Ladeleistung bietet unter den untersuchten Varianten einen sinnvollen Kompromiss zwischen Netzbelastung, Abregelung und Energiekennzahlen.
+                    </div>
+                    </div>
+                    """,
                             unsafe_allow_html=True
                         )
 
@@ -6033,44 +6011,21 @@ if "df_ts" in st.session_state:
                     # Karte 2: Auswirkungen
                     # ---------------------------------------------------------
                     with col_auswirkung:
-
                         st.markdown(
                             f"""
-                            <div style="
-                                border:1px solid rgba(0,158,115,0.25);
-                                border-radius:10px;
-                                padding:18px;
-                                min-height:175px;
-                            ">
-                                <div style="
-                                    font-size:17px;
-                                    font-weight:600;
-                                    margin-bottom:12px;
-                                ">
-                                    Auswirkungen gegenüber dem Ausgangszustand
-                                </div>
-
-                                <div style="
-                                    font-size:16px;
-                                    line-height:1.8;
-                                ">
-                                    <b>Max. Einspeisebedarf:</b>
-                                    {empfehlung['Änderung_Max_Einspeisebedarf_kW']:+.2f} kW<br>
-
-                                    <b>Abregelung:</b>
-                                    {empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a<br>
-
-                                    <b>Netzbezug:</b>
-                                    {empfehlung['Änderung_Netzbezug_kWh_a']:+.0f} kWh/a<br>
-
-                                    <b>Autarkiegrad:</b>
-                                    {empfehlung['Änderung_Autarkiegrad_pp']:+.2f} Prozentpunkte<br>
-
-                                    <b>Eigenverbrauchsquote:</b>
-                                    {empfehlung['Änderung_Eigenverbrauchsquote_pp']:+.2f} Prozentpunkte
-                                </div>
-                            </div>
-                            """,
+                    <div style="border:1px solid rgba(0,158,115,0.25); border-radius:10px; padding:18px; min-height:175px;">
+                    <div style="font-size:17px; font-weight:600; margin-bottom:12px;">
+                    Auswirkungen gegenüber dem Ausgangszustand
+                    </div>
+                    <div style="font-size:16px; line-height:1.8;">
+                    <b>Max. Einspeisebedarf:</b> {empfehlung['Änderung_Max_Einspeisung_kW']:+.2f} kW<br>
+                    <b>Abregelung:</b> {empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a<br>
+                    <b>Netzbezug:</b> {empfehlung['Änderung_Netzbezug_kWh_a']:+.0f} kWh/a<br>
+                    <b>Autarkiegrad:</b> {empfehlung['Änderung_Autarkiegrad_pp']:+.2f} Prozentpunkte<br>
+                    <b>Eigenverbrauchsquote:</b> {empfehlung['Änderung_Eigenverbrauchsquote_pp']:+.2f} Prozentpunkte
+                    </div>
+                    </div>
+                    """,
                             unsafe_allow_html=True
                         )
                     st.info(
