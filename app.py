@@ -4807,12 +4807,13 @@ if "df_ts" in st.session_state:
             
             st.subheader("03 Netz- und Batterieoptimierung", divider="gray")
             st.caption(
-                                "Bei einer Begrenzung der Einspeiseleistung kann überschüssige "
-                                "PV-Energie abgeregelt werden. In diesem Abschnitt wird untersucht, "
-                                "ob durch eine angepasste Batterieladeleistung Einspeisespitzen und "
-                                "Abregelungsverluste reduziert werden können und welche Auswirkungen "
-                                "dies auf Netzbezug, Autarkiegrad und Eigenverbrauchsquote hat."
-                            )
+                "Bei einer Begrenzung der Einspeiseleistung kann überschüssige "
+                "PV-Energie abgeregelt werden. In diesem Abschnitt wird untersucht, "
+                "welche Batteriekapazität wirtschaftlich und energetisch sinnvoll ist "
+                "und ob durch eine angepasste Batterieladeleistung Einspeisespitzen und "
+                "Abregelungsverluste reduziert werden können. Zusätzlich werden die "
+                "Auswirkungen auf Netzbezug, Autarkiegrad und Eigenverbrauchsquote betrachtet."
+            )
 
             if (
                 batterie_aktiv
@@ -4820,8 +4821,28 @@ if "df_ts" in st.session_state:
             ):
 
                 st.subheader(
-                    "● Wirtschaftlichkeit der gewählten Batteriekapazität"
+                    "● Optimierung der Batteriekapazität"
                 )
+
+                st.caption(
+                    "Für verschiedene Batteriekapazitäten werden der jährliche finanzielle Vorteil "
+                    "sowie Netzbezug, Autarkiegrad und Eigenverbrauchsquote verglichen. "
+                    "Daraus werden ein finanzielles Optimum und eine energetisch sinnvolle "
+                    "Batteriekapazität abgeleitet."
+                )
+
+                st.caption(
+                    "Die Wirtschaftlichkeitsrechnung berücksichtigt Netzbezug, Einspeiseerlöse, "
+                    "PV- und Batterieinvestition, Förderung, EMS- beziehungsweise Wallboxkosten "
+                    "und laufende Kosten. Finanzierung, Diskontierung und spätere Ersatzinvestitionen "
+                    "werden nicht berücksichtigt."
+                )
+
+                st.caption(
+                    "Die Ergebnisse gelten für die aktuell eingestellte Lade- und Entladeleistung "
+                    "sowie die gewählte EMS-Priorisierung."
+                )
+
 
                 df_wirtschaft = st.session_state[
                     "df_batterie_wirtschaftlichkeit"
@@ -5516,26 +5537,7 @@ if "df_ts" in st.session_state:
                     f"ungefähr {energetische_empfehlung_kwh:.0f} kWh relevant; "
                     f"darüber fallen die zusätzlichen Verbesserungen zunehmend gering aus."
                 )
-                # ---------------------------------------------------------
-                # Ergebnistext anzeigen
-                # --------------------------------------------------------
-
-                st.caption(
-                    "Verglichen wird das vollständige PV-Batteriesystem mit einem "
-                    "vollständigen Netzbezug ohne PV-Anlage und Batterie. "
-                    "Berücksichtigt werden Netzbezug, Einspeiseerlös, PV- und "
-                    "Batterieinvestition, Förderung, EMS- beziehungsweise "
-                    "Wallboxkosten und laufende Kosten. Finanzierung, Diskontierung "
-                    "und spätere Ersatzinvestitionen werden nicht berücksichtigt."
-                )
-                st.caption(
-                    "Die Auswertung gilt für die aktuell eingestellte Lade- und "
-                    "Entladeleistung sowie die gewählte EMS-Priorisierung. "
-                    "Bei einer Veränderung der Ladeleistung oder der EMS-Strategie "
-                    "können sich der Kurvenverlauf, das wirtschaftliche Optimum "
-                    "und der energetische Sättigungspunkt verschieben."
-                )
-
+             
         # ---------------------------------------------------------
         # Analyse der Ladeleistung bei vorhandener Abregelung
         # ---------------------------------------------------------
@@ -5546,7 +5548,7 @@ if "df_ts" in st.session_state:
         ):
 
             st.subheader(
-                "● Einfluss der Batterieladeleistung auf Einspeisespitzen"
+                "● Optimierung der Ladeleistung bei der gewählten Batterie"
             )
 
             st.write(
@@ -6025,6 +6027,22 @@ if "df_ts" in st.session_state:
                             """,
                             unsafe_allow_html=True
                         )
+                    st.info(
+                                            f"Bei einer Verringerung der Batterieladeleistung von "
+                                            f"{referenz['Ladeleistung_kW']:.1f} kW auf "
+                                            f"{empfehlung['Ladeleistung_kW']:.1f} kW verändert sich die "
+                                            f"maximale Einspeiseleistung um "
+                                            f"{empfehlung['Änderung_Max_Einspeisung_kW']:+.2f} kW und die "
+                                            f"jährliche Abregelung um "
+                                            f"{empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a. "
+                                            f"Der zusätzliche Netzbezug beträgt "
+                                            f"{empfehlung['Änderung_Netzbezug_kWh_a']:+.0f} kWh/a, "
+                                            f"während sich der Autarkiegrad um "
+                                            f"{empfehlung['Änderung_Autarkiegrad_pp']:+.2f} Prozentpunkte "
+                                            f"und die Eigenverbrauchsquote um "
+                                            f"{empfehlung['Änderung_Eigenverbrauchsquote_pp']:+.2f} "
+                                            f"Prozentpunkte verändert."
+                                        )
                 else:
                     st.info(
                         "Innerhalb der untersuchten Ladeleistungen wurde keine "
@@ -6032,7 +6050,7 @@ if "df_ts" in st.session_state:
                         "Abregelung deutlich reduziert, ohne die übrigen "
                         "Energiekennzahlen stärker zu verschlechtern."
                     )
-
+                
                 
 
         # ---------------------------------------------------------
