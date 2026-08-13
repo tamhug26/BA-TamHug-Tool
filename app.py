@@ -5866,6 +5866,31 @@ if "df_ts" in st.session_state:
                         config={"displayModeBar": False},
                         key="fig_folgen_verteilnetz"
                     )
+                with st.expander(
+                                    "Berechnete Ladeleistungsvarianten anzeigen",
+                                    expanded=False
+                                ):
+                                    st.dataframe(
+                                        df_ladeanalyse.round(
+                                            {
+                                                "Ladeleistung_kW": 1,
+                                                "Entladeleistung_kW": 1,
+                                                "Max_Einspeiseleistung_kW": 2,
+                                                "Abregelung_kWh_a": 1,
+                                                "Netzbezug_kWh_a": 0,
+                                                "Autarkiegrad_%": 1,
+                                                "Eigenverbrauchsquote_%": 1,
+                                                "Änderung_Max_Einspeisung_kW": 2,
+                                                "Änderung_Abregelung_kWh_a": 1,
+                                                "Änderung_Netzbezug_kWh_a": 0,
+                                                "Änderung_Autarkiegrad_pp": 2,
+                                                "Änderung_Eigenverbrauchsquote_pp": 2
+                                            }
+                                        ),
+                                        use_container_width=True,
+                                        hide_index=True
+                                    )
+
                 # ---------------------------------------------------------
                 # Sinnvolle Ladeleistung bestimmen
                 # ---------------------------------------------------------
@@ -5905,26 +5930,101 @@ if "df_ts" in st.session_state:
                 ].copy()
 
                 if not kandidaten.empty:
-                    # Höchste Ladeleistung wählen, die die Bedingungen erfüllt
+
                     empfehlung = kandidaten.sort_values(
                         "Ladeleistung_kW",
                         ascending=False
                     ).iloc[0]
 
-                    st.success(
-                        f"Unter den untersuchten Varianten bietet eine "
-                        f"Ladeleistung von ungefähr "
-                        f"{empfehlung['Ladeleistung_kW']:.1f} kW einen "
-                        f"sinnvollen Kompromiss. Gegenüber der aktuell "
-                        f"eingestellten Ladeleistung sinkt die maximale "
-                        f"Einspeiseleistung um "
-                        f"{abs(empfehlung['Änderung_Max_Einspeisung_kW']):.2f} kW "
-                        f"und die jährliche Abregelung verändert sich um "
-                        f"{empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a. "
-                        f"Der Autarkiegrad verändert sich dabei um "
-                        f"{empfehlung['Änderung_Autarkiegrad_pp']:+.2f} "
-                        f"Prozentpunkte."
-                    )
+                    col_empfehlung_ladeleistung, col_auswirkung = st.columns(2)
+
+                    # ---------------------------------------------------------
+                    # Karte 1: empfohlene Ladeleistung
+                    # ---------------------------------------------------------
+                    with col_empfehlung_ladeleistung:
+
+                        st.markdown(
+                            f"""
+                            <div style="
+                                border:1px solid rgba(0,104,201,0.25);
+                                border-radius:10px;
+                                padding:18px;
+                                min-height:175px;
+                            ">
+                                <div style="
+                                    font-size:17px;
+                                    font-weight:600;
+                                    margin-bottom:8px;
+                                ">
+                                    Empfohlene Ladeleistung
+                                </div>
+
+                                <div style="
+                                    font-size:38px;
+                                    font-weight:700;
+                                    color:#0068C9;
+                                ">
+                                    ca. {empfehlung['Ladeleistung_kW']:.1f} kW
+                                </div>
+
+                                <div style="
+                                    font-size:14px;
+                                    margin-top:8px;
+                                    color:#6B7280;
+                                ">
+                                    Diese Ladeleistung bietet unter den untersuchten
+                                    Varianten einen sinnvollen Kompromiss zwischen
+                                    Netzbelastung, Abregelung und Energiekennzahlen.
+                                </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                    # ---------------------------------------------------------
+                    # Karte 2: Auswirkungen
+                    # ---------------------------------------------------------
+                    with col_auswirkung:
+
+                        st.markdown(
+                            f"""
+                            <div style="
+                                border:1px solid rgba(0,158,115,0.25);
+                                border-radius:10px;
+                                padding:18px;
+                                min-height:175px;
+                            ">
+                                <div style="
+                                    font-size:17px;
+                                    font-weight:600;
+                                    margin-bottom:12px;
+                                ">
+                                    Auswirkungen gegenüber dem Ausgangszustand
+                                </div>
+
+                                <div style="
+                                    font-size:16px;
+                                    line-height:1.8;
+                                ">
+                                    <b>Max. Einspeiseleistung:</b>
+                                    {empfehlung['Änderung_Max_Einspeisung_kW']:+.2f} kW<br>
+
+                                    <b>Abregelung:</b>
+                                    {empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a<br>
+
+                                    <b>Netzbezug:</b>
+                                    {empfehlung['Änderung_Netzbezug_kWh_a']:+.0f} kWh/a<br>
+
+                                    <b>Autarkiegrad:</b>
+                                    {empfehlung['Änderung_Autarkiegrad_pp']:+.2f} Prozentpunkte<br>
+
+                                    <b>Eigenverbrauchsquote:</b>
+                                    {empfehlung['Änderung_Eigenverbrauchsquote_pp']:+.2f} Prozentpunkte
+                                </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
                 else:
                     st.info(
                         "Innerhalb der untersuchten Ladeleistungen wurde keine "
@@ -5933,30 +6033,7 @@ if "df_ts" in st.session_state:
                         "Energiekennzahlen stärker zu verschlechtern."
                     )
 
-                with st.expander(
-                    "Berechnete Ladeleistungsvarianten anzeigen",
-                    expanded=False
-                ):
-                    st.dataframe(
-                        df_ladeanalyse.round(
-                            {
-                                "Ladeleistung_kW": 1,
-                                "Entladeleistung_kW": 1,
-                                "Max_Einspeiseleistung_kW": 2,
-                                "Abregelung_kWh_a": 1,
-                                "Netzbezug_kWh_a": 0,
-                                "Autarkiegrad_%": 1,
-                                "Eigenverbrauchsquote_%": 1,
-                                "Änderung_Max_Einspeisung_kW": 2,
-                                "Änderung_Abregelung_kWh_a": 1,
-                                "Änderung_Netzbezug_kWh_a": 0,
-                                "Änderung_Autarkiegrad_pp": 2,
-                                "Änderung_Eigenverbrauchsquote_pp": 2
-                            }
-                        ),
-                        use_container_width=True,
-                        hide_index=True
-                    )
+                
 
         # ---------------------------------------------------------
         # Ladeleistungsanalyse für energetisch sinnvolle Batterie
