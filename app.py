@@ -6341,69 +6341,69 @@ if "df_ts" in st.session_state:
                 )
 
         # ---------------------------------------------------------
-# Vergleich der Energiekennzahlen
-# ---------------------------------------------------------
+        # Vergleich der Energiekennzahlen
+        # ---------------------------------------------------------
 
-if fig_folgen is not None:
+        if fig_folgen is not None:
 
-    st.subheader(
-        "● Vergleich der Energiekennzahlen bei unterschiedlicher Ladeleistung"
-    )
-
-    st.caption(
-        "Dargestellt wird, wie sich eine Verringerung der Batterieladeleistung "
-        "auf Netzbezug, Autarkiegrad und Eigenverbrauchsquote auswirkt. "
-        "Links wird die aktuell eingestellte Batteriekapazität betrachtet. "
-        "Falls eine energetisch sinnvolle Batteriekapazität bestimmt werden konnte, "
-        "wird diese rechts zusätzlich gegenübergestellt."
-    )
-
-    col_aktuell, col_optimal = st.columns(2)
-
-    with col_aktuell:
-
-        st.markdown("#### Aktuell eingestellte Batteriekapazität")
-
-        st.caption(
-            f"Batteriekapazität: {batteriekapazität:.1f} kWh"
-        )
-
-        st.plotly_chart(
-            fig_folgen,
-            use_container_width=True,
-            config={"displayModeBar": False},
-            key="fig_folgen_vergleich_aktuelle_batterie"
-        )
-
-    with col_optimal:
-
-        st.markdown("#### Energetisch sinnvolle Batteriekapazität")
-
-        if (
-            energetische_empfehlung_kwh is not None
-            and fig_optimal_folgen is not None
-        ):
+            st.subheader(
+                "● Vergleich der Energiekennzahlen bei unterschiedlicher Ladeleistung"
+            )
 
             st.caption(
-                f"Batteriekapazität: ca. "
-                f"{energetische_empfehlung_kwh:.0f} kWh"
+                "Dargestellt wird, wie sich eine Verringerung der Batterieladeleistung "
+                "auf Netzbezug, Autarkiegrad und Eigenverbrauchsquote auswirkt. "
+                "Links wird die aktuell eingestellte Batteriekapazität betrachtet. "
+                "Falls eine energetisch sinnvolle Batteriekapazität bestimmt werden konnte, "
+                "wird diese rechts zusätzlich gegenübergestellt."
             )
 
-            st.plotly_chart(
-                fig_optimal_folgen,
-                use_container_width=True,
-                config={"displayModeBar": False},
-                key="fig_folgen_vergleich_optimale_batterie"
-            )
+            col_aktuell, col_optimal = st.columns(2)
 
-        else:
+            with col_aktuell:
 
-            st.info(
-                "Für dieses Szenario konnte keine energetisch sinnvolle "
-                "Batteriekapazität beziehungsweise keine zugehörige "
-                "Ladeleistungsanalyse bestimmt werden."
-            )
-       
+                st.markdown("#### Aktuell eingestellte Batteriekapazität")
+
+                st.caption(
+                    f"Batteriekapazität: {batteriekapazität:.1f} kWh"
+                )
+
+                st.plotly_chart(
+                    fig_folgen,
+                    use_container_width=True,
+                    config={"displayModeBar": False},
+                    key="fig_folgen_vergleich_aktuelle_batterie"
+                )
+
+            with col_optimal:
+
+                st.markdown("#### Energetisch sinnvolle Batteriekapazität")
+
+                if (
+                    energetische_empfehlung_kwh is not None
+                    and fig_optimal_folgen is not None
+                ):
+
+                    st.caption(
+                        f"Batteriekapazität: ca. "
+                        f"{energetische_empfehlung_kwh:.0f} kWh"
+                    )
+
+                    st.plotly_chart(
+                        fig_optimal_folgen,
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                        key="fig_folgen_vergleich_optimale_batterie"
+                    )
+
+                else:
+
+                    st.info(
+                        "Für dieses Szenario konnte keine energetisch sinnvolle "
+                        "Batteriekapazität beziehungsweise keine zugehörige "
+                        "Ladeleistungsanalyse bestimmt werden."
+                    )
+            
         st.subheader("04 Umweltwirkungen", divider="gray")
         st.caption(
             "Die Umweltbewertung stellt die jährlichen Umweltwirkungen des "
