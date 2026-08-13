@@ -4043,6 +4043,8 @@ st.caption(
     "Auf Grundlage der eingegebenen Gebäude-, Verbraucher-, PV-, Batterie- "
     "und Netzparameter wird eine zeitlich aufgelöste Jahressimulation durchgeführt."
 )
+fig_folgen = None
+fig_optimal_folgen = None
 run_simulation = st.button("Simulation starten")
 
 if run_simulation:
