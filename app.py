@@ -1132,6 +1132,7 @@ def simulate_ems(
     df["soc_kWh"] = 0.0
     df["netzbezug_kWh"] = 0.0
     df["netzeinspeisung_kWh"] = 0.0
+    df["einspeisebedarf_vor_abregelung_kWh"] = 0.0
     df["abregelung_kWh"] = 0.0
     df["unterdeckung_kWh"] = 0.0
 
@@ -1250,6 +1251,11 @@ def simulate_ems(
                 restlast += ladung - pv_anteil
 
         # Einspeisung ist immer Pflicht: Rest-PV wird bis zur Grenze eingespeist
+        # Potenzieller Einspeisebedarf vor Anwendung der Einspeisegrenze
+        df.at[i, "einspeisebedarf_vor_abregelung_kWh"] = max(
+            0.0,
+            pv_rest
+        )
         einspeisegrenze_kWh = einspeisegrenze_kw * delta_t
         einspeisung = min(pv_rest, einspeisegrenze_kWh)
         df.at[i, "netzeinspeisung_kWh"] += einspeisung
@@ -2342,8 +2348,19 @@ def berechne_ladeleistungsanalyse(
 
         # 15-Minuten-Zeitreihe:
         # kWh je Zeitschritt / 0.25 h = kW
-        max_einspeiseleistung_kw = float(
+
+        # Tatsächlich ins Netz eingespeiste Maximalleistung
+        max_netzeinspeisung_kw = float(
             df_variante["netzeinspeisung_kWh"].max()
+            / 0.25
+        )
+
+        # Potenziell erforderliche Einspeiseleistung vor Anwendung
+        # der Einspeisegrenze
+        max_einspeisebedarf_kw = float(
+            df_variante[
+                "einspeisebedarf_vor_abregelung_kWh"
+            ].max()
             / 0.25
         )
 
@@ -2376,8 +2393,10 @@ def berechne_ladeleistungsanalyse(
             {
                 "Ladeleistung_kW": ladeleistung_kw,
                 "Entladeleistung_kW": entladeleistung_kw,
-                "Max_Einspeiseleistung_kW":
-                    max_einspeiseleistung_kw,
+                "Max_Netzeinspeisung_kW":
+                    max_netzeinspeisung_kw,
+                "Max_Einspeisebedarf_kW":
+                    max_einspeisebedarf_kw,
                 "Abregelung_kWh_a":
                     abregelung_kwh_a,
                 "Netzbezug_kWh_a":
@@ -2404,9 +2423,9 @@ def berechne_ladeleistungsanalyse(
     # Aktuelle Leistung ist die erste Variante
     referenz = df_analyse.iloc[0]
 
-    df_analyse["Änderung_Max_Einspeisung_kW"] = (
-        df_analyse["Max_Einspeiseleistung_kW"]
-        - referenz["Max_Einspeiseleistung_kW"]
+    df_analyse["Änderung_Max_Einspeisebedarf_kW"] = (
+        df_analyse["Max_Einspeisebedarf_kW"]
+        - referenz["Max_Einspeisebedarf_kW"]
     )
 
     df_analyse["Änderung_Abregelung_kWh_a"] = (
@@ -3733,8 +3752,6 @@ with col2:
     if batterie_aktiv and batteriekapazität > 0:
         ems_optionen.append("Batterie")
 
-    st.session_state.pop("df_batterie_wirtschaftlichkeit", None)
-
     prioritaeten = st.multiselect(
         "EMS-Priorität auswählen (1 links = höchste Priorität))",
         ems_optionen,
@@ -4274,10 +4291,16 @@ if run_simulation:
             "df_ts_basis_fuer_batterieanalyse"
         ] = df_ts_basis_fuer_batterieanalyse.copy()
 
+        # Alte Ladeleistungsanalyse der aktuell eingestellten Batterie löschen
         st.session_state.pop(
             "df_ladeleistungsanalyse",
             None
         )
+
+        # Alte Ladeleistungsanalysen der energetisch sinnvollen Batterie löschen
+        for key in list(st.session_state.keys()):
+            if key.startswith("df_ladeleistung_optimal_"):
+                del st.session_state[key]
 
         # Energieflüsse mit der gewählten EMS-Priorisierung simulieren
         df_ts = simulate_ems(
@@ -5514,9 +5537,7 @@ if "df_ts" in st.session_state:
                                 <div style="font-size:14px;
                                             margin-top:8px;
                                             color:#6B7280;">
-                                    Bis zu dieser Kapazität werden rund 95 % der im
-                                    untersuchten Bereich erreichbaren Verbesserung
-                                    der Energiekennzahlen erzielt.
+                                    Ab dieser Kapazität fallen die zusätzlichen Verbesserungen von Netzbezug, Autarkiegrad und Eigenverbrauchsquote über mehrere weitere Kapazitätsschritte nur noch gering aus.
                                 </div>
                             </div>
                             """,
@@ -5537,7 +5558,9 @@ if "df_ts" in st.session_state:
                     f"ungefähr {energetische_empfehlung_kwh:.0f} kWh relevant; "
                     f"darüber fallen die zusätzlichen Verbesserungen zunehmend gering aus."
                 )
-             
+        # Figuren für die späteren Vergleichsgrafiken vorbereiten
+        fig_folgen = None
+        fig_optimal_folgen = None     
         # ---------------------------------------------------------
         # Analyse der Ladeleistung bei vorhandener Abregelung
         # ---------------------------------------------------------
@@ -5636,19 +5659,19 @@ if "df_ts" in st.session_state:
                     go.Bar(
                         x=df_ladeanalyse["Ladeleistung_kW"],
                         y=df_ladeanalyse[
-                            "Max_Einspeiseleistung_kW"
+                            "Max_Einspeisebedarf_kW"
                         ],
                         name="Maximale Einspeiseleistung",
                         customdata=np.column_stack(
                             [
                                 df_ladeanalyse[
-                                    "Änderung_Max_Einspeisung_kW"
+                                    "Änderung_Max_Einspeisebedarf_kW"
                                 ]
                             ]
                         ),
                         hovertemplate=(
                             "<b>Ladeleistung: %{x:.1f} kW</b><br>"
-                            "Maximale Einspeiseleistung: "
+                            "Maximale Einspeisebedarf: "
                             "%{y:.2f} kW<br>"
                             "Veränderung gegenüber Ausgangswert: "
                             "%{customdata[0]:+.2f} kW"
@@ -5658,9 +5681,9 @@ if "df_ts" in st.session_state:
                 )
 
                 fig_peak.update_layout(
-                    title="Maximale Einspeiseleistung",
+                    title="Maximaler Einspeisebedarf vor Abregelung",
                     xaxis_title="Batterieladeleistung in kW",
-                    yaxis_title="Maximale Einspeiseleistung in kW",
+                    yaxis_title="Einspeisebedarf vor Abregelung in kW",
                     height=390,
                     showlegend=False,
                     margin=dict(
@@ -5875,12 +5898,13 @@ if "df_ts" in st.session_state:
                                             {
                                                 "Ladeleistung_kW": 1,
                                                 "Entladeleistung_kW": 1,
-                                                "Max_Einspeiseleistung_kW": 2,
+                                                "Max_Netzeinspeisung_kW": 2,
+                                                "Max_Einspeisebedarf_kW": 2,
                                                 "Abregelung_kWh_a": 1,
                                                 "Netzbezug_kWh_a": 0,
                                                 "Autarkiegrad_%": 1,
                                                 "Eigenverbrauchsquote_%": 1,
-                                                "Änderung_Max_Einspeisung_kW": 2,
+                                                "Änderung_Max_Einspeisebedarf_kW": 2,
                                                 "Änderung_Abregelung_kWh_a": 1,
                                                 "Änderung_Netzbezug_kWh_a": 0,
                                                 "Änderung_Autarkiegrad_pp": 2,
@@ -5897,37 +5921,59 @@ if "df_ts" in st.session_state:
 
                 referenz = df_ladeanalyse.iloc[0]
 
-                kandidaten = df_ladeanalyse[
-                    (
-                        df_ladeanalyse[
-                            "Max_Einspeiseleistung_kW"
-                        ]
-                        <= referenz[
-                            "Max_Einspeiseleistung_kW"
-                        ] - 0.1
-                    )
-                    &
-                    (
-                        df_ladeanalyse[
-                            "Abregelung_kWh_a"
-                        ]
-                        < referenz["Abregelung_kWh_a"]
-                    )
-                    &
-                    (
-                        df_ladeanalyse[
-                            "Änderung_Autarkiegrad_pp"
-                        ]
-                        >= -1.0
-                    )
-                    &
-                    (
-                        df_ladeanalyse[
-                            "Änderung_Eigenverbrauchsquote_pp"
-                        ]
-                        >= -1.0
-                    )
-                ].copy()
+                # ---------------------------------------------------------
+                # Sinnvolle Ladeleistung abhängig von vorhandener Abregelung
+                # bestimmen
+                # ---------------------------------------------------------
+
+                if referenz["Abregelung_kWh_a"] > 0:
+
+                    # Bei vorhandener Abregelung soll sowohl die Einspeisespitze
+                    # als auch die Abregelung reduziert werden.
+                    kandidaten = df_ladeanalyse[
+                        (
+                            df_ladeanalyse["Max_Einspeisebedarf_kW"]
+                            <= referenz["Max_Einspeisebedarf_kW"] - 0.1
+                        )
+                        &
+                        (
+                            df_ladeanalyse["Abregelung_kWh_a"]
+                            < referenz["Abregelung_kWh_a"]
+                        )
+                        &
+                        (
+                            df_ladeanalyse["Änderung_Autarkiegrad_pp"]
+                            >= -1.0
+                        )
+                        &
+                        (
+                            df_ladeanalyse["Änderung_Eigenverbrauchsquote_pp"]
+                            >= -1.0
+                        )
+                    ].copy()
+
+                else:
+
+                    # Ohne vorhandene Abregelung kann diese nicht weiter reduziert
+                    # werden. Deshalb wird nur geprüft, ob die Einspeisespitze
+                    # reduziert werden kann, ohne die Energiekennzahlen deutlich
+                    # zu verschlechtern.
+                    kandidaten = df_ladeanalyse[
+                        (
+                            df_ladeanalyse["Max_Einspeisebedarf_kW"]
+                            <= referenz["Max_Einspeisebedarf_kW"] - 0.1
+                        )
+                        &
+                        (
+                            df_ladeanalyse["Änderung_Autarkiegrad_pp"]
+                            >= -1.0
+                        )
+                        &
+                        (
+                            df_ladeanalyse["Änderung_Eigenverbrauchsquote_pp"]
+                            >= -1.0
+                        )
+                    ].copy()
 
                 if not kandidaten.empty:
 
@@ -6006,8 +6052,8 @@ if "df_ts" in st.session_state:
                                     font-size:16px;
                                     line-height:1.8;
                                 ">
-                                    <b>Max. Einspeiseleistung:</b>
-                                    {empfehlung['Änderung_Max_Einspeisung_kW']:+.2f} kW<br>
+                                    <b>Max. Einspeisebedarf:</b>
+                                    {empfehlung['Änderung_Max_Einspeisebedarf_kW']:+.2f} kW<br>
 
                                     <b>Abregelung:</b>
                                     {empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a<br>
@@ -6026,28 +6072,42 @@ if "df_ts" in st.session_state:
                             unsafe_allow_html=True
                         )
                     st.info(
-                                            f"Bei einer Verringerung der Batterieladeleistung von "
-                                            f"{referenz['Ladeleistung_kW']:.1f} kW auf "
-                                            f"{empfehlung['Ladeleistung_kW']:.1f} kW verändert sich die "
-                                            f"maximale Einspeiseleistung um "
-                                            f"{empfehlung['Änderung_Max_Einspeisung_kW']:+.2f} kW und die "
-                                            f"jährliche Abregelung um "
-                                            f"{empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a. "
-                                            f"Der zusätzliche Netzbezug beträgt "
-                                            f"{empfehlung['Änderung_Netzbezug_kWh_a']:+.0f} kWh/a, "
-                                            f"während sich der Autarkiegrad um "
-                                            f"{empfehlung['Änderung_Autarkiegrad_pp']:+.2f} Prozentpunkte "
-                                            f"und die Eigenverbrauchsquote um "
-                                            f"{empfehlung['Änderung_Eigenverbrauchsquote_pp']:+.2f} "
-                                            f"Prozentpunkte verändert."
-                                        )
-                else:
-                    st.info(
-                        "Innerhalb der untersuchten Ladeleistungen wurde keine "
-                        "Variante gefunden, die die Einspeisespitze und die "
-                        "Abregelung deutlich reduziert, ohne die übrigen "
-                        "Energiekennzahlen stärker zu verschlechtern."
+                        f"Bei einer Verringerung der Batterieladeleistung von "
+                        f"{referenz['Ladeleistung_kW']:.1f} kW auf "
+                        f"{empfehlung['Ladeleistung_kW']:.1f} kW verändert sich der "
+                        f"maximale Einspeisebedarf vor Anwendung der Einspeisegrenze um "
+                        f"{empfehlung['Änderung_Max_Einspeisebedarf_kW']:+.2f} kW und die "
+                        f"jährliche Abregelung um "
+                        f"{empfehlung['Änderung_Abregelung_kWh_a']:+.1f} kWh/a. "
+                        f"Der zusätzliche Netzbezug beträgt "
+                        f"{empfehlung['Änderung_Netzbezug_kWh_a']:+.0f} kWh/a, "
+                        f"während sich der Autarkiegrad um "
+                        f"{empfehlung['Änderung_Autarkiegrad_pp']:+.2f} Prozentpunkte "
+                        f"und die Eigenverbrauchsquote um "
+                        f"{empfehlung['Änderung_Eigenverbrauchsquote_pp']:+.2f} "
+                        f"Prozentpunkte verändert."
                     )
+                else:
+                    if referenz["Abregelung_kWh_a"] > 0:
+
+                        st.info(
+                            "Innerhalb der untersuchten Ladeleistungen wurde keine "
+                            "Variante gefunden, die den maximalen Einspeisebedarf und "
+                            "die Abregelung reduziert, ohne Autarkiegrad oder "
+                            "Eigenverbrauchsquote um mehr als 1 Prozentpunkt zu "
+                            "verschlechtern."
+                        )
+
+                    else:
+
+                        st.info(
+                            "In diesem Szenario tritt bereits bei der aktuell eingestellten "
+                            "Ladeleistung keine Abregelung auf. Innerhalb der untersuchten "
+                            "Ladeleistungen wurde keine niedrigere Ladeleistung gefunden, "
+                            "die den maximalen Einspeisebedarf um mindestens 0.1 kW reduziert, "
+                            "ohne Autarkiegrad oder Eigenverbrauchsquote um mehr als "
+                            "1 Prozentpunkt zu verschlechtern."
+                        )
                 
                 
 
@@ -6278,55 +6338,69 @@ if "df_ts" in st.session_state:
                     )
                 )
 
-        #st.write("### Auswirkungen auf die Energiekennzahlen")
+        # ---------------------------------------------------------
+# Vergleich der Energiekennzahlen
+# ---------------------------------------------------------
 
-        st.subheader(
-            "● Vergleich der Energiekennzahlen bei unterschiedlicher Ladeleistung"
-        )
+if fig_folgen is not None:
+
+    st.subheader(
+        "● Vergleich der Energiekennzahlen bei unterschiedlicher Ladeleistung"
+    )
+
+    st.caption(
+        "Dargestellt wird, wie sich eine Verringerung der Batterieladeleistung "
+        "auf Netzbezug, Autarkiegrad und Eigenverbrauchsquote auswirkt. "
+        "Links wird die aktuell eingestellte Batteriekapazität betrachtet. "
+        "Falls eine energetisch sinnvolle Batteriekapazität bestimmt werden konnte, "
+        "wird diese rechts zusätzlich gegenübergestellt."
+    )
+
+    col_aktuell, col_optimal = st.columns(2)
+
+    with col_aktuell:
+
+        st.markdown("#### Aktuell eingestellte Batteriekapazität")
+
         st.caption(
-            "Verglichen wird, wie empfindlich die Energiekennzahlen auf eine verringerte "
-            "Batterieladeleistung reagieren. Gegenübergestellt werden die aktuell "
-            "eingestellte Batteriekapazität und die zuvor bestimmte energetisch sinnvolle "
-            "Batteriekapazität."
+            f"Batteriekapazität: {batteriekapazität:.1f} kWh"
         )
-        col_aktuell, col_optimal = st.columns(2)
 
-        with col_aktuell:
-            st.markdown("#### Aktuell eingestellte Batteriekapazität")
+        st.plotly_chart(
+            fig_folgen,
+            use_container_width=True,
+            config={"displayModeBar": False},
+            key="fig_folgen_vergleich_aktuelle_batterie"
+        )
+
+    with col_optimal:
+
+        st.markdown("#### Energetisch sinnvolle Batteriekapazität")
+
+        if (
+            energetische_empfehlung_kwh is not None
+            and fig_optimal_folgen is not None
+        ):
 
             st.caption(
-                f"Batteriekapazität: {batteriekapazität:.1f} kWh"
+                f"Batteriekapazität: ca. "
+                f"{energetische_empfehlung_kwh:.0f} kWh"
             )
 
             st.plotly_chart(
-                fig_folgen,
+                fig_optimal_folgen,
                 use_container_width=True,
                 config={"displayModeBar": False},
-                key="fig_folgen_vergleich_aktuelle_batterie"
+                key="fig_folgen_vergleich_optimale_batterie"
             )
 
-        with col_optimal:
-            st.markdown("#### Energetisch sinnvolle Batteriekapazität")
+        else:
 
-            if energetische_empfehlung_kwh is not None:
-
-                st.caption(
-                    f"Batteriekapazität: ca. "
-                    f"{energetische_empfehlung_kwh:.0f} kWh"
-                )
-
-                st.plotly_chart(
-                    fig_optimal_folgen,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                    key="fig_folgen_vergleich_optimale_batterie"
-                )
-
-            else:
-                st.info(
-                    "Für dieses Szenario konnte keine energetisch sinnvolle "
-                    "Batteriekapazität bestimmt werden."
-                )
+            st.info(
+                "Für dieses Szenario konnte keine energetisch sinnvolle "
+                "Batteriekapazität beziehungsweise keine zugehörige "
+                "Ladeleistungsanalyse bestimmt werden."
+            )
        
         st.subheader("04 Umweltwirkungen", divider="gray")
         st.caption(
