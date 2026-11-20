@@ -169,7 +169,7 @@ EVU = {
     "EWZ": 15.9,
     "Axpo Holding AG": 62,
     "Alpiq AG": 13.4,
-    "Repower AG": 131,
+    "Repower AG": 31, #2025
     "Romande Energie": 11.3,
     "Schweiz": 97.4
 }
