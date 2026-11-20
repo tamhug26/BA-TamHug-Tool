@@ -5551,15 +5551,27 @@ if "df_ts" in st.session_state:
                             "Empfehlung bestimmt werden."
                         )
 
-                st.info(
+                hinweis = (
                     f"Die aktuell gewählte Batteriekapazität beträgt "
                     f"{batteriekapazität:.1f} kWh. "
-                    f"Finanziell liegt das Optimum in diesem Szenario bei ungefähr "
-                    f"{wirtschaftliches_optimum_kwh:.0f} kWh. "
-                    f"Aus energetischer Sicht sind zusätzliche Verbesserungen bis "
-                    f"ungefähr {energetische_empfehlung_kwh:.0f} kWh relevant; "
-                    f"darüber fallen die zusätzlichen Verbesserungen zunehmend gering aus."
+                    f"Finanziell liegt das Optimum unter den untersuchten "
+                    f"Varianten bei ungefähr {wirtschaftliches_optimum_kwh:.0f} kWh. "
                 )
+
+                if energetische_empfehlung_kwh is not None:
+                    hinweis += (
+                        f"Der ermittelte energetische Sättigungsbereich beginnt "
+                        f"bei ungefähr {energetische_empfehlung_kwh:.0f} kWh. "
+                        "Darüber fallen die zusätzlichen Verbesserungen "
+                        "über mehrere Kapazitätsschritte nur noch gering aus."
+                    )
+                else:
+                    hinweis += (
+                        "Innerhalb der untersuchten Batterievarianten wurde "
+                        "kein eindeutiger energetischer Sättigungsbereich gefunden."
+                    )
+
+                st.info(hinweis)
         # Figuren für die späteren Vergleichsgrafiken vorbereiten
         fig_folgen = None
         fig_optimal_folgen = None     
